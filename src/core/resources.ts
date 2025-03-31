@@ -6,18 +6,27 @@ import * as services from "./services/index.js";
  * @param server The MCP server instance
  */
 export function registerResources(server: McpServer) {
-  // Example resource
+  // Aha idea resource
   server.resource(
-    "example_resource", 
-    "example://{id}",
+    "aha_idea",
+    "aha://idea/{id}",
     async (uri: URL) => {
       const id = uri.pathname.split('/').pop();
-      return {
-        contents: [{
-          uri: uri.toString(),
-          text: `This is an example resource with ID: ${id}`
-        }]
-      };
+      if (!id) {
+        throw new Error('Invalid idea ID: ID is missing from URI');
+      }
+      try {
+        const idea = await services.AhaService.getIdea(id);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(idea, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving idea ${id}:`, error);
+        throw error;
+      }
     }
   );
-} 
+}

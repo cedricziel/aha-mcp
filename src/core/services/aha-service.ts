@@ -6,12 +6,14 @@ import axios from 'axios';
  * Service for interacting with the Aha.io API
  */
 export class AhaService {
-  private static apiKey: string | null = null;
-  private static subdomain: string | null = null;
-  private static baseUrl: string | null = null;
+  private static apiKey: string | null = process.env.AHA_TOKEN || null;
+  private static subdomain: string | null = process.env.AHA_COMPANY || null;
+  private static baseUrl: string | null = process.env.AHA_COMPANY ?
+    `https://${process.env.AHA_COMPANY}.aha.io/api/v1` : null;
 
   /**
    * Initialize the Aha.io API client with authentication
+   * This method is optional if AHA_TOKEN and AHA_COMPANY environment variables are set
    * @param apiKey The Aha.io API key
    * @param subdomain The Aha.io subdomain
    */
@@ -24,11 +26,11 @@ export class AhaService {
   /**
    * Get the Axios instance configured for Aha.io API
    * @returns Axios instance
-   * @throws Error if the API client is not initialized
+   * @throws Error if the API client is not initialized and environment variables are not set
    */
   private static getAxiosInstance() {
     if (!this.apiKey || !this.baseUrl) {
-      throw new Error('Aha API client not initialized. Call initialize() first.');
+      throw new Error('Aha API client not initialized. Either call initialize() or set AHA_TOKEN and AHA_COMPANY environment variables.');
     }
 
     return axios.create({
@@ -139,6 +141,23 @@ export class AhaService {
       return response.data;
     } catch (error) {
       console.error(`Error creating comment on feature ${featureId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a specific idea by ID
+   * @param ideaId The ID of the idea
+   * @returns The idea details
+   */
+  public static async getIdea(ideaId: string): Promise<any> {
+    const axiosInstance = this.getAxiosInstance();
+
+    try {
+      const response = await axiosInstance.get(`/ideas/${ideaId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting idea ${ideaId}:`, error);
       throw error;
     }
   }
