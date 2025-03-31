@@ -1,0 +1,21 @@
+# Goals
+1. Install the Node.js module from https://github.com/cedricziel/aha-js.git
+2. Add MCP tools that use the aha-js package
+3. Integrate the tools with the existing MCP server
+
+# Progress
+- Created .clinefile to track goals and progress
+- Attempted to use Bun but it's not available on the system
+- Successfully installed the package using npm: `npm install https://github.com/cedricziel/aha-js.git`
+- Confirmed the package was added to package.json as "aha-js": "github:cedricziel/aha-js"
+- Created AhaService class to interact with the Aha.io API
+- Fixed TypeScript errors by implementing a simpler approach using axios
+- Installed axios package: `npm install axios`
+- Updated services/index.ts to export the AhaService
+- Added Aha.io MCP tools to tools.ts:
+  - aha_initialize: Initialize the Aha.io API client
+  - aha_list_features: List features from Aha.io
+  - aha_get_feature: Get a specific feature by ID
+  - aha_list_users: List users from Aha.io
+  - aha_list_epics: List epics in a product
+  - aha_create_feature_comment: Create a comment on a feature
