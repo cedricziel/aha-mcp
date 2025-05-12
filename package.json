@@ -23,7 +23,7 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.7.0",
+    "@modelcontextprotocol/sdk": "^1.11.2",
     "aha-js": "github:cedricziel/aha-js",
     "axios": "^1.8.4",
     "cors": "^2.8.5",
