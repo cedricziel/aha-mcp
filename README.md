@@ -1,75 +1,41 @@
-# @mcpdotdirect/template-mcp-server
+# Aha MCP Server
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6)
 ![MCP](https://img.shields.io/badge/MCP-1.7+-green)
 
-A CLI tool to quickly get started building your very own MCP (Model Context Protocol) server.
-
-## 📋 Usage
-
-```bash
-# with npx
-npx @mcpdotdirect/create-mcp-server
-
-# Or with npm
-npm init @mcpdotdirect/create-mcp-server
-```
-
-## 🔭 What's Included
-
-The template includes:
-
-- Basic server setup with both stdio and HTTP transport options
-- Structure for defining MCP tools, resources, and prompts
-- TypeScript configuration
-- Development scripts and configuration
-
-## ✨ Features
-
-- **Dual Transport Support**: Run your MCP server over stdio or HTTP
-- **TypeScript**: Full TypeScript support for type safety
-- **MCP SDK**: Built on the official Model Context Protocol SDK
-- **Extensible**: Easy to add custom tools, resources, and prompts
+A Model Context Protocol (MCP) server that provides seamless integration with Aha.io's product management platform.
 
 ## 🚀 Getting Started
 
-After creating your project:
-
-1. Install dependencies using your preferred package manager:
+1. Install dependencies:
    ```bash
-   # Using npm
-   npm install
-
-   # Using yarn
-   yarn
-
-   # Using pnpm
-   pnpm install
-
-   # Using bun
    bun install
    ```
 
-2. Start the server:
+2. Configure environment variables:
    ```bash
-   # Start the stdio server
-   npm start
+   export AHA_COMPANY="your-company"  # Your Aha.io subdomain
+   export AHA_TOKEN="your-api-token"   # Your Aha.io API token
+   ```
+
+3. Start the server:
+   ```bash
+   # Start the stdio server (for MCP clients)
+   bun start
 
    # Or start the HTTP server
-   npm run start:http
+   bun run start:http
    ```
 
-3. For development with auto-reload:
+4. For development with auto-reload:
    ```bash
    # Development mode with stdio
-   npm run dev
+   bun run dev
 
    # Development mode with HTTP
-   npm run dev:http
+   bun run dev:http
    ```
-
-> **Note**: The default scripts in package.json use Bun as the runtime (e.g., `bun run src/index.ts`). If you prefer to use a different package manager or runtime, you can modify these scripts in your package.json file to use Node.js or another runtime of your choice.
 
 ## 🔌 Aha.io Integration
 
@@ -130,9 +96,22 @@ When adding custom tools, resources, or prompts to your MCP server:
 
 2. This naming convention ensures compatibility with Cursor and other AI tools that interact with your MCP server
 
+## 🏗️ Development
+
+To build for production:
+
+```bash
+# Build stdio server
+bun build
+
+# Build HTTP server
+bun run build:http
+```
+
 ## 📚 Documentation
 
-For more information about the Model Context Protocol, visit the [MCP Documentation](https://modelcontextprotocol.io/introduction).
+- [CLAUDE.md](CLAUDE.md) - Development guidance for Claude Code when working with this repository
+- [MCP Documentation](https://modelcontextprotocol.io/introduction) - Official Model Context Protocol documentation
 
 ## 📄 License
 
