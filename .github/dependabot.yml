@@ -13,7 +13,7 @@ updates:
       interval: "daily"
     # Assign pull requests to the repository owner
     assignees:
-      - "@cedricziel"
+      - "cedricziel"
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
@@ -22,3 +22,5 @@ updates:
     # Check for updates once a week
     schedule:
       interval: "daily"
+    assignees:
+      - "cedricziel"
