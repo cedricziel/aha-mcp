@@ -507,13 +507,17 @@ export class AhaService {
 
   /**
    * List products from Aha.io
+   * @param updatedSince UTC timestamp (ISO8601 format) (optional)
    * @returns A list of products
    */
-  public static async listProducts(): Promise<ProductsListResponse> {
+  public static async listProducts(updatedSince?: string): Promise<ProductsListResponse> {
     const productsApi = this.getProductsApi();
 
     try {
-      const response = await productsApi.productsGet();
+      const params: any = {};
+      if (updatedSince) params.updatedSince = updatedSince;
+
+      const response = await productsApi.productsGet(params);
       return response.data;
     } catch (error) {
       console.error('Error listing products:', error);
@@ -540,13 +544,28 @@ export class AhaService {
 
   /**
    * List initiatives from Aha.io
+   * @param query Search term to match against initiative name (optional)
+   * @param updatedSince UTC timestamp (ISO8601 format) (optional)
+   * @param assignedToUser ID or email address of a user (optional)
+   * @param onlyActive When true, returns only active initiatives (optional)
    * @returns A list of initiatives
    */
-  public static async listInitiatives(): Promise<InitiativesListResponse> {
+  public static async listInitiatives(
+    query?: string,
+    updatedSince?: string,
+    assignedToUser?: string,
+    onlyActive?: boolean
+  ): Promise<InitiativesListResponse> {
     const initiativesApi = this.getInitiativesApi();
 
     try {
-      const response = await initiativesApi.initiativesGet();
+      const params: any = {};
+      if (query) params.q = query;
+      if (updatedSince) params.updatedSince = updatedSince;
+      if (assignedToUser) params.assignedToUser = assignedToUser;
+      if (onlyActive !== undefined) params.onlyActive = onlyActive;
+
+      const response = await initiativesApi.initiativesGet(params);
       return response.data;
     } catch (error) {
       console.error('Error listing initiatives:', error);
@@ -557,13 +576,47 @@ export class AhaService {
   /**
    * List ideas for a specific product
    * @param productId The ID of the product
+   * @param query Search term to match against idea name (optional)
+   * @param spam When true, shows ideas marked as spam (optional)
+   * @param workflowStatus Filters to ideas with provided workflow status ID or name (optional)
+   * @param sort Sorting options: 'recent', 'trending', 'popular' (optional)
+   * @param createdBefore UTC timestamp (ISO8601 format) (optional)
+   * @param createdSince UTC timestamp (ISO8601 format) (optional)
+   * @param updatedSince UTC timestamp (ISO8601 format) (optional)
+   * @param tag String tag value (optional)
+   * @param userId ID of a user who created the idea (optional)
+   * @param ideaUserId ID of an idea user who created the idea (optional)
    * @returns A list of ideas for the product
    */
-  public static async listIdeasByProduct(productId: string): Promise<IdeasListResponse> {
+  public static async listIdeasByProduct(
+    productId: string,
+    query?: string,
+    spam?: boolean,
+    workflowStatus?: string,
+    sort?: string,
+    createdBefore?: string,
+    createdSince?: string,
+    updatedSince?: string,
+    tag?: string,
+    userId?: string,
+    ideaUserId?: string
+  ): Promise<IdeasListResponse> {
     const ideasApi = this.getIdeasApi();
 
     try {
-      const response = await ideasApi.productsProductIdIdeasGet({ productId });
+      const params: any = { productId };
+      if (query) params.q = query;
+      if (spam !== undefined) params.spam = spam;
+      if (workflowStatus) params.workflowStatus = workflowStatus;
+      if (sort) params.sort = sort;
+      if (createdBefore) params.createdBefore = createdBefore;
+      if (createdSince) params.createdSince = createdSince;
+      if (updatedSince) params.updatedSince = updatedSince;
+      if (tag) params.tag = tag;
+      if (userId) params.userId = userId;
+      if (ideaUserId) params.ideaUserId = ideaUserId;
+
+      const response = await ideasApi.productsProductIdIdeasGet(params);
       return response.data;
     } catch (error) {
       console.error(`Error listing ideas for product ${productId}:`, error);

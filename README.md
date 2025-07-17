@@ -74,14 +74,18 @@ You can set these environment variables in your MCP settings configuration file 
 - `aha_epic`: Access individual epics using `aha://epic/{id}`
 - `aha_product`: Access individual products using `aha://product/{id}`
 - `aha_initiative`: Access individual initiatives using `aha://initiative/{id}`
+- `aha_requirement`: Access individual requirements using `aha://requirement/{id}`
+- `aha_competitor`: Access individual competitors using `aha://competitor/{id}`
+- `aha_todo`: Access individual todos using `aha://todo/{id}`
 
 #### Collection Resources
 - `aha_features`: List features with optional filtering using `aha://features?query=...&tag=...`
 - `aha_users`: List all users using `aha://users`
 - `aha_epics`: List epics for a product using `aha://epics/{product_id}`
-- `aha_products`: List all products using `aha://products`
-- `aha_initiatives`: List all initiatives using `aha://initiatives`
-- `aha_ideas_by_product`: List ideas for a product using `aha://ideas/{product_id}`
+- `aha_products`: List all products using `aha://products?updatedSince=...`
+- `aha_initiatives`: List all initiatives using `aha://initiatives?query=...&onlyActive=true`
+- `aha_ideas_by_product`: List ideas for a product using `aha://ideas/{product_id}?query=...&spam=false&sort=recent`
+- `aha_competitors`: List competitors for a product using `aha://competitors/{product_id}`
 
 #### Comment Resources
 - `aha_epic_comments`: Access comments for an epic using `aha://comments/epic/{epic_id}`
@@ -109,18 +113,27 @@ You can set these environment variables in your MCP settings configuration file 
 
 #### Resource URI Examples
 ```
+# Individual Entity Resources
 aha://idea/IDEA-123               # Get specific idea
 aha://feature/PROJ-456            # Get specific feature
 aha://user/USER-789               # Get specific user
 aha://epic/EPIC-101               # Get specific epic
 aha://product/PROD-001            # Get specific product
 aha://initiative/INIT-202         # Get specific initiative
-aha://features?query=auth&tag=api # Search features
+aha://requirement/REQ-666         # Get specific requirement
+aha://competitor/COMP-444         # Get specific competitor
+aha://todo/TODO-777               # Get specific todo
+
+# Collection Resources (enhanced with filtering)
+aha://features?query=auth&tag=api&assignedToUser=user@example.com # Search features
 aha://users                       # List all users
 aha://epics/PROJ-001              # List epics for product
-aha://products                    # List all products
-aha://initiatives                 # List all initiatives
-aha://ideas/PROJ-001              # List ideas for product
+aha://products?updatedSince=2024-01-01T00:00:00Z # List products with filter
+aha://initiatives?query=mobile&onlyActive=true&assignedToUser=user@example.com # Search initiatives
+aha://ideas/PROJ-001?query=search&spam=false&sort=recent&tag=enhancement # List ideas with filters
+aha://competitors/PROJ-001        # List competitors for product
+
+# Comment Resources
 aha://comments/epic/EPIC-123      # Get comments for epic
 aha://comments/idea/IDEA-456      # Get comments for idea
 aha://comments/initiative/INIT-789 # Get comments for initiative
@@ -130,9 +143,13 @@ aha://comments/release/REL-333    # Get comments for release
 aha://comments/release-phase/RP-444 # Get comments for release phase
 aha://comments/requirement/REQ-666 # Get comments for requirement
 aha://comments/todo/TODO-777      # Get comments for todo
+
+# Goal Resources
 aha://goal/GOAL-123               # Get specific goal
 aha://goals                       # List all goals
 aha://goal/GOAL-456/epics         # Get epics for goal
+
+# Release Resources
 aha://release/REL-123             # Get specific release
 aha://releases                    # List all releases
 aha://release/REL-456/features    # Get features for release
@@ -143,14 +160,43 @@ aha://release-phases              # List all release phases
 
 ### Available Tools
 
+#### Core Tools
 - `aha_initialize`: Initialize the Aha.io API client (optional if environment variables are set)
-- `aha_list_features`: List features from Aha.io
+
+#### Feature & Product Tools
+- `aha_list_features`: List features from Aha.io with advanced filtering
 - `aha_get_feature`: Get a specific feature by ID
 - `aha_list_users`: List users from Aha.io
 - `aha_list_epics`: List epics in a product
+
+#### Comment Tools
 - `aha_create_feature_comment`: Create a comment on a feature
 - `aha_get_requirement_comments`: Get comments for a specific requirement
 - `aha_get_todo_comments`: Get comments for a specific todo
+
+**Note**: All MCP resources provide comprehensive access to Aha.io entities with advanced filtering capabilities. Most functionality is exposed through the resource system rather than individual tools, allowing for more flexible queries through URI parameters.
+
+### 🚀 Phase 7 Enhancements
+
+The MCP server has been significantly enhanced with comprehensive Aha.io SDK coverage:
+
+#### New Individual Entity Resources
+- **Requirements**: Access individual requirements via `aha://requirement/{id}`
+- **Competitors**: Access individual competitors via `aha://competitor/{id}` 
+- **Todos**: Access individual todos via `aha://todo/{id}`
+
+#### Enhanced Collection Resources with Advanced Filtering
+- **Features**: Enhanced with `query`, `updatedSince`, `tag`, `assignedToUser` parameters
+- **Products**: Enhanced with `updatedSince` parameter
+- **Initiatives**: Enhanced with `query`, `updatedSince`, `assignedToUser`, `onlyActive` parameters
+- **Ideas by Product**: Enhanced with comprehensive filtering including `query`, `spam`, `workflowStatus`, `sort`, date filters, `tag`, and user filters
+- **Competitors**: New collection resource for listing competitors by product
+
+#### Comprehensive API Coverage
+- Added 5 new API classes: CompetitorsApi, RequirementsApi, ReleasePhasesApi, ReleasesApi, DefaultApi
+- Implemented 4 new individual entity getters
+- Enhanced 3 existing list methods with advanced filtering
+- All 99 tests passing with full TypeScript type safety
 
 ## 🛠️ Adding Custom Tools and Resources
 

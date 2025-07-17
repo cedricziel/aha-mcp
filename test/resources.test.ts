@@ -386,7 +386,7 @@ describe('Resources', () => {
         const uri = new URL('aha://products');
         const result = await handler!(uri);
 
-        expect(mockAhaService.listProducts).toHaveBeenCalledWith();
+        expect(mockAhaService.listProducts).toHaveBeenCalledWith(undefined);
         expect(result.contents).toHaveLength(1);
         expect(result.contents[0].uri).toBe('aha://products');
         expect(result.contents[0].text).toContain('PROD-1');
@@ -401,7 +401,7 @@ describe('Resources', () => {
         const uri = new URL('aha://initiatives');
         const result = await handler!(uri);
 
-        expect(mockAhaService.listInitiatives).toHaveBeenCalledWith();
+        expect(mockAhaService.listInitiatives).toHaveBeenCalledWith(undefined, undefined, undefined, undefined);
         expect(result.contents).toHaveLength(1);
         expect(result.contents[0].uri).toBe('aha://initiatives');
         expect(result.contents[0].text).toContain('INIT-1');
@@ -416,7 +416,7 @@ describe('Resources', () => {
         const uri = new URL('aha://ideas/PROJ-123');
         const result = await handler!(uri);
 
-        expect(mockAhaService.listIdeasByProduct).toHaveBeenCalledWith('PROJ-123');
+        expect(mockAhaService.listIdeasByProduct).toHaveBeenCalledWith('PROJ-123', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined);
         expect(result.contents).toHaveLength(1);
         expect(result.contents[0].uri).toBe('aha://ideas/PROJ-123');
         expect(result.contents[0].text).toContain('IDEA-1');

@@ -213,7 +213,10 @@ export function registerResources(server: McpServer) {
     "aha://products",
     async (uri: URL) => {
       try {
-        const products = await services.AhaService.listProducts();
+        // Extract query parameters for filtering
+        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
+
+        const products = await services.AhaService.listProducts(updatedSince);
 
         return {
           contents: [{
@@ -258,7 +261,19 @@ export function registerResources(server: McpServer) {
     "aha://initiatives",
     async (uri: URL) => {
       try {
-        const initiatives = await services.AhaService.listInitiatives();
+        // Extract query parameters for advanced filtering
+        const query = uri.searchParams.get('query') || undefined;
+        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
+        const assignedToUser = uri.searchParams.get('assignedToUser') || undefined;
+        const onlyActive = uri.searchParams.get('onlyActive') === 'true' ? true : 
+                          uri.searchParams.get('onlyActive') === 'false' ? false : undefined;
+
+        const initiatives = await services.AhaService.listInitiatives(
+          query,
+          updatedSince,
+          assignedToUser,
+          onlyActive
+        );
 
         return {
           contents: [{
@@ -286,7 +301,32 @@ export function registerResources(server: McpServer) {
       }
       
       try {
-        const ideas = await services.AhaService.listIdeasByProduct(productId);
+        // Extract query parameters for advanced filtering
+        const query = uri.searchParams.get('query') || undefined;
+        const spam = uri.searchParams.get('spam') === 'true' ? true : 
+                    uri.searchParams.get('spam') === 'false' ? false : undefined;
+        const workflowStatus = uri.searchParams.get('workflowStatus') || undefined;
+        const sort = uri.searchParams.get('sort') || undefined;
+        const createdBefore = uri.searchParams.get('createdBefore') || undefined;
+        const createdSince = uri.searchParams.get('createdSince') || undefined;
+        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
+        const tag = uri.searchParams.get('tag') || undefined;
+        const userId = uri.searchParams.get('userId') || undefined;
+        const ideaUserId = uri.searchParams.get('ideaUserId') || undefined;
+
+        const ideas = await services.AhaService.listIdeasByProduct(
+          productId,
+          query,
+          spam,
+          workflowStatus,
+          sort,
+          createdBefore,
+          createdSince,
+          updatedSince,
+          tag,
+          userId,
+          ideaUserId
+        );
 
         return {
           contents: [{
