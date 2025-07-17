@@ -1,5 +1,5 @@
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
-import startServer from "./server.js";
+import startServer, { performHealthCheck, serverStatus } from "./server.js";
 import express, { Request, Response } from "express";
 import cors from "cors";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -147,28 +147,91 @@ app.post("/messages", (req: Request, res: Response) => {
   }
 });
 
-// Add a simple health check endpoint
-app.get("/health", (req: Request, res: Response) => {
-  res.status(200).json({ 
-    status: "ok",
-    server: server ? "initialized" : "initializing",
-    activeConnections: connections.size,
-    connectedSessionIds: Array.from(connections.keys())
+// Add comprehensive health check endpoint
+app.get("/health", async (req: Request, res: Response) => {
+  try {
+    if (!server) {
+      return res.status(503).json({
+        status: "unavailable",
+        message: "Server not initialized",
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const healthCheck = await performHealthCheck();
+    const httpStatus = healthCheck.status === "healthy" ? 200 : 
+                      healthCheck.status === "degraded" ? 200 : 503;
+    
+    res.status(httpStatus).json({
+      ...healthCheck,
+      http: {
+        activeConnections: connections.size,
+        connectedSessionIds: Array.from(connections.keys()),
+        port: PORT,
+        host: HOST
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Health check failed",
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Add detailed status endpoint
+app.get("/status", (req: Request, res: Response) => {
+  res.status(200).json({
+    ...serverStatus,
+    http: {
+      activeConnections: connections.size,
+      connectedSessionIds: Array.from(connections.keys()),
+      port: PORT,
+      host: HOST
+    },
+    systemInfo: {
+      nodeVersion: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      pid: process.pid,
+      workingDirectory: process.cwd(),
+      memoryUsage: {
+        heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+        external: Math.round(process.memoryUsage().external / 1024 / 1024),
+        rss: Math.round(process.memoryUsage().rss / 1024 / 1024)
+      }
+    }
   });
 });
 
 // Add a root endpoint for basic info
 app.get("/", (req: Request, res: Response) => {
   res.status(200).json({
-    name: "MCP Server",
-    version: "1.0.0",
+    name: "Aha.io MCP Server",
+    version: serverStatus.version,
     endpoints: {
       sse: "/sse",
       messages: "/messages",
-      health: "/health"
+      health: "/health",
+      status: "/status"
     },
     status: server ? "ready" : "initializing",
-    activeConnections: connections.size
+    activeConnections: connections.size,
+    capabilities: {
+      tools: "38 Aha.io integration tools (including health checks)",
+      resources: "40+ Aha.io entity resources",
+      prompts: "12 domain-specific workflow prompts",
+      features: [
+        "Context-aware prompts",
+        "Dual transport (stdio/HTTP)",
+        "Full CRUD operations",
+        "Health monitoring",
+        "Server diagnostics"
+      ]
+    }
   });
 });
 
@@ -192,10 +255,11 @@ process.on('SIGINT', () => {
 
 // Start the HTTP server on a different port (3001) to avoid conflicts
 const httpServer = app.listen(PORT, HOST, () => {
-  console.error(`Template MCP Server running at http://${HOST}:${PORT}`);
-  console.error(`SSE endpoint: http://${HOST}:${PORT}/sse`);
-  console.error(`Messages endpoint: http://${HOST}:${PORT}/messages (sessionId optional if only one connection)`);
-  console.error(`Health check: http://${HOST}:${PORT}/health`);
+  console.error(`🌐 Aha.io MCP Server HTTP transport running at http://${HOST}:${PORT}`);
+  console.error(`📡 SSE endpoint: http://${HOST}:${PORT}/sse`);
+  console.error(`💬 Messages endpoint: http://${HOST}:${PORT}/messages`);
+  console.error(`❤️  Health check: http://${HOST}:${PORT}/health`);
+  console.error(`📊 Status endpoint: http://${HOST}:${PORT}/status`);
 }).on('error', (err: Error) => {
   console.error(`Server error: ${err}`);
 }); 

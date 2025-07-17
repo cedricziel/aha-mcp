@@ -84,6 +84,42 @@ export class AhaService {
   }
 
   /**
+   * Check if the service is initialized
+   * @returns true if the service is initialized, false otherwise
+   */
+  public static isInitialized(): boolean {
+    return !!(this.apiKey && this.subdomain && this.configuration);
+  }
+
+  /**
+   * Get the current user (me) information
+   * @returns The current user information
+   */
+  public static async getMe(): Promise<User> {
+    try {
+      // Use direct API call since there's no specific method in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/users/current`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get current user: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting current user:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Initialize the aha-js client with the current credentials
    * @private
    */
