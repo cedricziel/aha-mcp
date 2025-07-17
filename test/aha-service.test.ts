@@ -287,5 +287,23 @@ describe('AhaService', () => {
     it('should have deleteIdea method', () => {
       expect(typeof AhaService.deleteIdea).toBe('function');
     });
+
+    // Competitor CRUD methods (Phase 8B.1)
+    it('should have createCompetitor method', () => {
+      expect(typeof AhaService.createCompetitor).toBe('function');
+    });
+
+    it('should have updateCompetitor method', () => {
+      expect(typeof AhaService.updateCompetitor).toBe('function');
+    });
+
+    it('should have deleteCompetitor method', () => {
+      expect(typeof AhaService.deleteCompetitor).toBe('function');
+    });
+
+    // Initiative enhancement methods (Phase 8B.2)
+    it('should have getInitiativeEpics method', () => {
+      expect(typeof AhaService.getInitiativeEpics).toBe('function');
+    });
   });
 });

@@ -1523,4 +1523,83 @@ export class AhaService {
       throw error;
     }
   }
+
+  // COMPETITOR CRUD OPERATIONS (PHASE 8B.1)
+
+  /**
+   * Create a competitor in a product
+   * @param productId The ID of the product
+   * @param competitorData The competitor data to create
+   * @returns The created competitor
+   */
+  public static async createCompetitor(productId: string, competitorData: any): Promise<any> {
+    const competitorsApi = this.getCompetitorsApi();
+
+    try {
+      const response = await competitorsApi.productsProductIdCompetitorsPost({
+        productId: productId,
+        competitorCreateRequest: competitorData
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error creating competitor in product ${productId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a competitor
+   * @param competitorId The ID of the competitor
+   * @param competitorData The competitor data to update
+   * @returns The updated competitor
+   */
+  public static async updateCompetitor(competitorId: string, competitorData: any): Promise<any> {
+    const competitorsApi = this.getCompetitorsApi();
+
+    try {
+      const response = await competitorsApi.competitorsCompetitorIdPut({
+        competitorId: competitorId,
+        competitorUpdateRequest: competitorData
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating competitor ${competitorId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a competitor
+   * @param competitorId The ID of the competitor
+   * @returns Success response
+   */
+  public static async deleteCompetitor(competitorId: string): Promise<void> {
+    const competitorsApi = this.getCompetitorsApi();
+
+    try {
+      await competitorsApi.competitorsCompetitorIdDelete({ competitorId: competitorId });
+    } catch (error) {
+      console.error(`Error deleting competitor ${competitorId}:`, error);
+      throw error;
+    }
+  }
+
+  // INITIATIVE ENHANCEMENT OPERATIONS (PHASE 8B.2)
+
+  /**
+   * Get epics associated with an initiative
+   * @param initiativeId The ID of the initiative
+   * @returns A list of epics associated with the initiative
+   */
+  public static async getInitiativeEpics(initiativeId: string): Promise<any> {
+    const initiativesApi = this.getInitiativesApi();
+
+    try {
+      const response = await initiativesApi.initiativesInitiativeIdEpicsGet({ initiativeId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting epics for initiative ${initiativeId}:`, error);
+      throw error;
+    }
+  }
 }

@@ -988,4 +988,158 @@ export function registerTools(server: McpServer) {
       }
     }
   );
+
+  // ============================
+  // COMPETITOR CRUD TOOLS (PHASE 8B.1)
+  // ============================
+
+  // Create competitor tool
+  server.tool(
+    "aha_create_competitor",
+    "Create a competitor in a product in Aha.io",
+    {
+      productId: z.string().describe("ID of the product"),
+      competitorData: z.object({
+        competitor: z.object({
+          name: z.string().describe("Name of the competitor"),
+          description: z.string().optional().describe("Description of the competitor"),
+          website: z.string().optional().describe("Website URL of the competitor")
+        }).describe("Competitor data object")
+      }).describe("Competitor creation data")
+    },
+    async (params: { productId: string; competitorData: any }) => {
+      try {
+        const competitor = await services.AhaService.createCompetitor(params.productId, params.competitorData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Competitor successfully created in product ${params.productId}:\n\n${JSON.stringify(competitor, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error creating competitor: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Update competitor tool
+  server.tool(
+    "aha_update_competitor",
+    "Update a competitor in Aha.io",
+    {
+      competitorId: z.string().describe("ID of the competitor"),
+      competitorData: z.object({
+        competitor: z.object({
+          name: z.string().optional().describe("Name of the competitor"),
+          description: z.string().optional().describe("Description of the competitor"),
+          website: z.string().optional().describe("Website URL of the competitor")
+        }).describe("Competitor data object")
+      }).describe("Competitor update data")
+    },
+    async (params: { competitorId: string; competitorData: any }) => {
+      try {
+        const competitor = await services.AhaService.updateCompetitor(params.competitorId, params.competitorData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Competitor ${params.competitorId} successfully updated:\n\n${JSON.stringify(competitor, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error updating competitor: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Delete competitor tool
+  server.tool(
+    "aha_delete_competitor",
+    "Delete a competitor in Aha.io",
+    {
+      competitorId: z.string().describe("ID of the competitor")
+    },
+    async (params: { competitorId: string }) => {
+      try {
+        await services.AhaService.deleteCompetitor(params.competitorId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Competitor ${params.competitorId} successfully deleted`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error deleting competitor: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // ============================
+  // INITIATIVE ENHANCEMENT TOOLS (PHASE 8B.2)
+  // ============================
+
+  // Get initiative epics tool
+  server.tool(
+    "aha_get_initiative_epics",
+    "Get epics associated with an initiative in Aha.io",
+    {
+      initiativeId: z.string().describe("ID of the initiative")
+    },
+    async (params: { initiativeId: string }) => {
+      try {
+        const epics = await services.AhaService.getInitiativeEpics(params.initiativeId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Epics for initiative ${params.initiativeId}:\n\n${JSON.stringify(epics, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error getting initiative epics: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
 }
