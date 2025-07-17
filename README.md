@@ -6,6 +6,47 @@
 
 A Model Context Protocol (MCP) server that provides seamless integration with Aha.io's product management platform.
 
+## 🔧 Client Configuration
+
+### Claude Desktop Configuration
+
+To use this MCP server with Claude Desktop, add the following to your `claude_desktop_config.json`:
+
+**Using npx:**
+```json
+{
+  "mcpServers": {
+    "aha": {
+      "command": "npx",
+      "args": ["@cedricziel/aha-mcp"],
+      "env": {
+        "AHA_COMPANY": "your-company",
+        "AHA_TOKEN": "your-api-token"
+      }
+    }
+  }
+}
+```
+
+**Using Docker:**
+```json
+{
+  "mcpServers": {
+    "aha": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "-e", "AHA_COMPANY=your-company",
+        "-e", "AHA_TOKEN=your-api-token",
+        "ghcr.io/cedricziel/aha-mcp"
+      ]
+    }
+  }
+}
+```
+
+> **Note:** Replace `your-company` and `your-api-token` with your actual Aha.io subdomain and API token.
+
 ## 🚀 Getting Started
 
 ### Quick Start with npx
