@@ -58,12 +58,96 @@ This MCP server includes integration with the Aha.io API, allowing you to access
 
 ### Configuration
 
-The Aha.io integration can be configured using environment variables:
+The Aha.io integration can be configured using multiple methods, with the following priority order:
+
+1. **Environment Variables** (highest priority)
+2. **Configuration File** (`~/.aha-mcp-config.json`)
+3. **Default Values** (lowest priority)
+
+#### Environment Variables
 
 - `AHA_COMPANY`: Your Aha.io subdomain (e.g., `mycompany` for `mycompany.aha.io`)
 - `AHA_TOKEN`: Your Aha.io API token
+- `MCP_TRANSPORT_MODE`: Transport mode (`stdio` or `sse`)
+- `MCP_PORT`: Port number for SSE mode (default: 3001)
+- `MCP_HOST`: Host address for SSE mode (default: 0.0.0.0)
 
-You can set these environment variables in your MCP settings configuration file or in your environment before starting the server.
+#### Runtime Configuration
+
+The server supports runtime configuration through MCP tools, allowing you to set up credentials without restarting:
+
+```bash
+# Configure server settings
+aha_mcp --mode stdio
+> Use the `configure_server` tool to set:
+> - company: "your-company-subdomain"
+> - token: "your-api-token"
+> - mode: "stdio" or "sse"
+> - port: 3001 (for SSE mode)
+> - host: "0.0.0.0" (for SSE mode)
+
+# Check current configuration
+> Use the `get_server_config` tool to view current settings
+
+# Test your configuration
+> Use the `test_configuration` tool to verify API connectivity
+```
+
+#### Command Line Arguments
+
+You can override configuration settings using command line arguments:
+
+```bash
+# Force stdio mode
+aha-mcp --mode stdio
+
+# Force SSE mode with custom port
+aha-mcp --mode sse --port 3000 --host localhost
+
+# Get help
+aha-mcp --help
+```
+
+#### Configuration File
+
+The server automatically creates and manages a configuration file at `~/.aha-mcp-config.json`. This file stores your settings with basic token obfuscation for security.
+
+Example configuration file:
+```json
+{
+  "company": "your-company",
+  "token": "base64-encoded-token",
+  "mode": "stdio",
+  "port": 3001,
+  "host": "0.0.0.0"
+}
+```
+
+#### Transport Modes
+
+The server supports two transport modes:
+
+1. **stdio**: Standard input/output mode for MCP client integration (default)
+2. **sse**: Server-Sent Events mode for HTTP-based integration
+
+Example usage:
+```bash
+# Stdio mode (default)
+aha-mcp
+
+# SSE mode
+aha-mcp --mode sse --port 3001
+```
+
+#### Configuration Management Tools
+
+The server provides three MCP tools for configuration management:
+
+1. **configure_server**: Update server settings at runtime
+2. **get_server_config**: View current configuration and validation status
+3. **test_configuration**: Test API connectivity with current settings
+
+These tools allow you to manage configuration without restarting the server, making it easy to switch between different Aha.io accounts or update credentials.
 
 ### Available Resources
 
