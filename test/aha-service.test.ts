@@ -11,6 +11,10 @@ describe('AhaService', () => {
     (AhaService as any).apiKey = null;
     (AhaService as any).subdomain = null;
     (AhaService as any).featuresApi = null;
+    (AhaService as any).ideasApi = null;
+    (AhaService as any).usersApi = null;
+    (AhaService as any).epicsApi = null;
+    (AhaService as any).defaultApi = null;
     (AhaService as any).configuration = null;
   });
 
@@ -77,6 +81,14 @@ describe('AhaService', () => {
 
     it('should have getIdea method', () => {
       expect(typeof AhaService.getIdea).toBe('function');
+    });
+
+    it('should have getUser method', () => {
+      expect(typeof AhaService.getUser).toBe('function');
+    });
+
+    it('should have getEpic method', () => {
+      expect(typeof AhaService.getEpic).toBe('function');
     });
   });
 });

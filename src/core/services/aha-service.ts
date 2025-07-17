@@ -187,6 +187,35 @@ export class AhaService {
   }
 
   /**
+   * Get a specific user by ID
+   * @param userId The ID of the user
+   * @returns The user details
+   */
+  public static async getUser(userId: string): Promise<any> {
+    try {
+      // Use direct API call since there's no specific method in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/users/${userId}`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get user: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Error getting user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * List epics in a product
    * @param productId The ID of the product
    * @returns A list of epics
@@ -202,6 +231,35 @@ export class AhaService {
       return response.data;
     } catch (error) {
       console.error(`Error listing epics for product ${productId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a specific epic by ID
+   * @param epicId The ID of the epic
+   * @returns The epic details
+   */
+  public static async getEpic(epicId: string): Promise<any> {
+    try {
+      // Use direct API call since there's no specific method in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/epics/${epicId}`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get epic: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Error getting epic ${epicId}:`, error);
       throw error;
     }
   }
