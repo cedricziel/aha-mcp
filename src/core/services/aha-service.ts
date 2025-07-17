@@ -8,6 +8,7 @@ import {
   InitiativesApi,
   CommentsApi,
   GoalsApi,
+  ToDosApi,
   // Types
   Feature,
   FeaturesListResponse,
@@ -48,6 +49,7 @@ export class AhaService {
   private static initiativesApi: InitiativesApi | null = null;
   private static commentsApi: CommentsApi | null = null;
   private static goalsApi: GoalsApi | null = null;
+  private static todosApi: ToDosApi | null = null;
 
   private static apiKey: string | null = process.env.AHA_TOKEN || null;
   private static subdomain: string | null = process.env.AHA_COMPANY || null;
@@ -93,6 +95,7 @@ export class AhaService {
       this.initiativesApi = new InitiativesApi(this.configuration);
       this.commentsApi = new CommentsApi(this.configuration);
       this.goalsApi = new GoalsApi(this.configuration);
+      this.todosApi = new ToDosApi(this.configuration);
     } catch (error) {
       console.error('Error initializing Aha.io client:', error);
       throw new Error(`Failed to initialize Aha.io client: ${error instanceof Error ? error.message : String(error)}`);
@@ -186,6 +189,17 @@ export class AhaService {
       this.initializeClient();
     }
     return this.goalsApi!;
+  }
+
+  /**
+   * Get the todos API instance
+   * @returns ToDosApi instance
+   */
+  private static getTodosApi(): ToDosApi {
+    if (!this.todosApi) {
+      this.initializeClient();
+    }
+    return this.todosApi!;
   }
 
 
@@ -623,10 +637,10 @@ export class AhaService {
    * @returns A list of comments for the todo
    */
   public static async getTodoComments(todoId: string): Promise<EpicsEpicIdCommentsGet200Response> {
-    const commentsApi = this.getCommentsApi();
+    const todosApi = this.getTodosApi();
 
     try {
-      const response = await commentsApi.todosTodoIdCommentsGet({ todoId });
+      const response = await todosApi.todosTodoIdCommentsGet({ todoId });
       return response.data;
     } catch (error) {
       console.error(`Error getting comments for todo ${todoId}:`, error);

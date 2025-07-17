@@ -20,6 +20,7 @@ describe('AhaService', () => {
     (AhaService as any).commentsApi = null;
     (AhaService as any).goalsApi = null;
     (AhaService as any).releasesApi = null;
+    (AhaService as any).todosApi = null;
     (AhaService as any).configuration = null;
   });
 

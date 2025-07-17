@@ -163,3 +163,60 @@ export interface IdeasByProductResponse {
     current_page?: number;
   };
 }
+
+/**
+ * Requirement entity (not available in SDK)
+ */
+export interface Requirement {
+  id?: string;
+  name?: string;
+  reference_num?: string;
+  created_at?: string;
+  updated_at?: string;
+  description?: string;
+  url?: string;
+  resource?: string;
+  feature_id?: string;
+  position?: number;
+  created_by_user?: User;
+}
+
+/**
+ * Todo entity (not available in SDK)
+ */
+export interface Todo {
+  id?: string;
+  name?: string;
+  reference_num?: string;
+  created_at?: string;
+  updated_at?: string;
+  description?: string;
+  url?: string;
+  resource?: string;
+  assignee?: User;
+  due_date?: string;
+  completed?: boolean;
+  completed_at?: string;
+  created_by_user?: User;
+}
+
+/**
+ * List response wrappers for Requirements and Todos
+ */
+export interface RequirementsListResponse {
+  requirements?: Requirement[];
+  pagination?: {
+    total_records?: number;
+    total_pages?: number;
+    current_page?: number;
+  };
+}
+
+export interface TodosListResponse {
+  todos?: Todo[];
+  pagination?: {
+    total_records?: number;
+    total_pages?: number;
+    current_page?: number;
+  };
+}

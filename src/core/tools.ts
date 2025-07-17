@@ -213,4 +213,70 @@ export function registerTools(server: McpServer) {
       }
     }
   );
+
+  // Get requirement comments tool
+  server.tool(
+    "aha_get_requirement_comments",
+    "Get comments for a specific requirement from Aha.io",
+    {
+      requirementId: z.string().describe("ID of the requirement")
+    },
+    async (params: { requirementId: string }) => {
+      try {
+        const comments = await services.AhaService.getRequirementComments(params.requirementId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Comments for requirement ${params.requirementId}:\n\n${JSON.stringify(comments, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error getting requirement comments: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Get todo comments tool
+  server.tool(
+    "aha_get_todo_comments",
+    "Get comments for a specific todo from Aha.io",
+    {
+      todoId: z.string().describe("ID of the todo")
+    },
+    async (params: { todoId: string }) => {
+      try {
+        const comments = await services.AhaService.getTodoComments(params.todoId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Comments for todo ${params.todoId}:\n\n${JSON.stringify(comments, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error getting todo comments: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
 }

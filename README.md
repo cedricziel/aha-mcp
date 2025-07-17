@@ -149,6 +149,8 @@ aha://release-phases              # List all release phases
 - `aha_list_users`: List users from Aha.io
 - `aha_list_epics`: List epics in a product
 - `aha_create_feature_comment`: Create a comment on a feature
+- `aha_get_requirement_comments`: Get comments for a specific requirement
+- `aha_get_todo_comments`: Get comments for a specific todo
 
 ## 🛠️ Adding Custom Tools and Resources
 
