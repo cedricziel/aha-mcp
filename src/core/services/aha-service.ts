@@ -4,13 +4,36 @@ import {
   IdeasApi,
   UsersApi,
   EpicsApi,
-  DefaultApi,
   ProductsApi,
   InitiativesApi,
   CommentsApi,
   GoalsApi,
-  ReleasesApi
+  // Types
+  Feature,
+  FeaturesListResponse,
+  Epic,
+  User,
+  IdeaResponse,
+  InitiativeResponse,
+  InitiativesListResponse,
+  ProductsListResponse,
+  EpicsEpicIdCommentsGet200Response,
+  ProductsProductIdEpicsGet200Response,
+  IdeasListResponse,
+  Comment
 } from '@cedricziel/aha-js';
+
+import {
+  Release,
+  ReleasePhase,
+  Goal,
+  Product,
+  ReleasesListResponse,
+  ReleasesPhasesListResponse,
+  GoalsListResponse,
+  ReleaseFeaturesResponse,
+  GoalEpicsResponse
+} from '../types/aha-types.js';
 
 /**
  * Service for interacting with the Aha.io API
@@ -21,12 +44,10 @@ export class AhaService {
   private static ideasApi: IdeasApi | null = null;
   private static usersApi: UsersApi | null = null;
   private static epicsApi: EpicsApi | null = null;
-  private static defaultApi: DefaultApi | null = null;
   private static productsApi: ProductsApi | null = null;
   private static initiativesApi: InitiativesApi | null = null;
   private static commentsApi: CommentsApi | null = null;
   private static goalsApi: GoalsApi | null = null;
-  private static releasesApi: ReleasesApi | null = null;
 
   private static apiKey: string | null = process.env.AHA_TOKEN || null;
   private static subdomain: string | null = process.env.AHA_COMPANY || null;
@@ -68,12 +89,10 @@ export class AhaService {
       this.ideasApi = new IdeasApi(this.configuration);
       this.usersApi = new UsersApi(this.configuration);
       this.epicsApi = new EpicsApi(this.configuration);
-      this.defaultApi = new DefaultApi(this.configuration);
       this.productsApi = new ProductsApi(this.configuration);
       this.initiativesApi = new InitiativesApi(this.configuration);
       this.commentsApi = new CommentsApi(this.configuration);
       this.goalsApi = new GoalsApi(this.configuration);
-      this.releasesApi = new ReleasesApi(this.configuration);
     } catch (error) {
       console.error('Error initializing Aha.io client:', error);
       throw new Error(`Failed to initialize Aha.io client: ${error instanceof Error ? error.message : String(error)}`);
@@ -124,16 +143,6 @@ export class AhaService {
     return this.epicsApi!;
   }
 
-  /**
-   * Get the default API instance
-   * @returns DefaultApi instance
-   */
-  private static getDefaultApi(): DefaultApi {
-    if (!this.defaultApi) {
-      this.initializeClient();
-    }
-    return this.defaultApi!;
-  }
 
   /**
    * Get the products API instance
@@ -179,16 +188,6 @@ export class AhaService {
     return this.goalsApi!;
   }
 
-  /**
-   * Get the releases API instance
-   * @returns ReleasesApi instance
-   */
-  private static getReleasesApi(): ReleasesApi {
-    if (!this.releasesApi) {
-      this.initializeClient();
-    }
-    return this.releasesApi!;
-  }
 
   /**
    * List features from Aha.io
@@ -203,7 +202,7 @@ export class AhaService {
     updatedSince?: string,
     tag?: string,
     assignedToUser?: string
-  ): Promise<any> {
+  ): Promise<FeaturesListResponse> {
     const featuresApi = this.getFeaturesApi();
 
     try {
@@ -227,12 +226,24 @@ export class AhaService {
    * @param featureId The ID of the feature
    * @returns The feature details
    */
-  public static async getFeature(featureId: string): Promise<any> {
-    const defaultApi = this.getDefaultApi();
-
+  public static async getFeature(featureId: string): Promise<Feature> {
     try {
-      const response = await defaultApi.featuresIdGet({ id: featureId });
-      return response.data;
+      // Use direct API call since SDK method returns void
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/features/${featureId}`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get feature: ${response.statusText}`);
+      }
+
+      return await response.json();
     } catch (error) {
       console.error(`Error getting feature ${featureId}:`, error);
       throw error;
@@ -243,13 +254,13 @@ export class AhaService {
    * List users from Aha.io
    * @returns A list of users
    */
-  public static async listUsers(): Promise<any> {
+  public static async listUsers(): Promise<{ users: User[] }> {
     const usersApi = this.getUsersApi();
 
     try {
       // Use the appropriate method from the UsersApi
       const response = await usersApi.usersGet();
-      return response.data;
+      return { users: response.data };
     } catch (error) {
       console.error('Error listing users:', error);
       throw error;
@@ -261,7 +272,7 @@ export class AhaService {
    * @param userId The ID of the user
    * @returns The user details
    */
-  public static async getUser(userId: string): Promise<any> {
+  public static async getUser(userId: string): Promise<User> {
     try {
       // Use direct API call since there's no specific method in the SDK
       const basePath = `https://${this.subdomain}.aha.io/api/v1`;
@@ -290,7 +301,7 @@ export class AhaService {
    * @param productId The ID of the product
    * @returns A list of epics
    */
-  public static async listEpics(productId: string): Promise<any> {
+  public static async listEpics(productId: string): Promise<ProductsProductIdEpicsGet200Response> {
     const epicsApi = this.getEpicsApi();
 
     try {
@@ -310,7 +321,7 @@ export class AhaService {
    * @param epicId The ID of the epic
    * @returns The epic details
    */
-  public static async getEpic(epicId: string): Promise<any> {
+  public static async getEpic(epicId: string): Promise<Epic> {
     try {
       // Use direct API call since there's no specific method in the SDK
       const basePath = `https://${this.subdomain}.aha.io/api/v1`;
@@ -340,7 +351,7 @@ export class AhaService {
    * @param body The comment body
    * @returns The created comment
    */
-  public static async createFeatureComment(featureId: string, body: string): Promise<any> {
+  public static async createFeatureComment(featureId: string, body: string): Promise<Comment> {
     const featuresApi = this.getFeaturesApi();
 
     try {
@@ -363,7 +374,7 @@ export class AhaService {
    * @param ideaId The ID of the idea
    * @returns The idea details
    */
-  public static async getIdea(ideaId: string): Promise<any> {
+  public static async getIdea(ideaId: string): Promise<IdeaResponse> {
     const ideasApi = this.getIdeasApi();
 
     try {
@@ -380,7 +391,7 @@ export class AhaService {
    * @param productId The ID of the product
    * @returns The product details
    */
-  public static async getProduct(productId: string): Promise<any> {
+  public static async getProduct(productId: string): Promise<Product> {
     try {
       // Use direct API call since there's no specific method in the SDK
       const basePath = `https://${this.subdomain}.aha.io/api/v1`;
@@ -408,7 +419,7 @@ export class AhaService {
    * List products from Aha.io
    * @returns A list of products
    */
-  public static async listProducts(): Promise<any> {
+  public static async listProducts(): Promise<ProductsListResponse> {
     const productsApi = this.getProductsApi();
 
     try {
@@ -425,7 +436,7 @@ export class AhaService {
    * @param initiativeId The ID of the initiative
    * @returns The initiative details
    */
-  public static async getInitiative(initiativeId: string): Promise<any> {
+  public static async getInitiative(initiativeId: string): Promise<InitiativeResponse> {
     const initiativesApi = this.getInitiativesApi();
 
     try {
@@ -441,7 +452,7 @@ export class AhaService {
    * List initiatives from Aha.io
    * @returns A list of initiatives
    */
-  public static async listInitiatives(): Promise<any> {
+  public static async listInitiatives(): Promise<InitiativesListResponse> {
     const initiativesApi = this.getInitiativesApi();
 
     try {
@@ -458,7 +469,7 @@ export class AhaService {
    * @param productId The ID of the product
    * @returns A list of ideas for the product
    */
-  public static async listIdeasByProduct(productId: string): Promise<any> {
+  public static async listIdeasByProduct(productId: string): Promise<IdeasListResponse> {
     const ideasApi = this.getIdeasApi();
 
     try {
@@ -475,7 +486,7 @@ export class AhaService {
    * @param epicId The ID of the epic
    * @returns A list of comments for the epic
    */
-  public static async getEpicComments(epicId: string): Promise<any> {
+  public static async getEpicComments(epicId: string): Promise<EpicsEpicIdCommentsGet200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
@@ -492,7 +503,7 @@ export class AhaService {
    * @param ideaId The ID of the idea
    * @returns A list of comments for the idea
    */
-  public static async getIdeaComments(ideaId: string): Promise<any> {
+  public static async getIdeaComments(ideaId: string): Promise<EpicsEpicIdCommentsGet200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
@@ -509,7 +520,7 @@ export class AhaService {
    * @param initiativeId The ID of the initiative
    * @returns A list of comments for the initiative
    */
-  public static async getInitiativeComments(initiativeId: string): Promise<any> {
+  public static async getInitiativeComments(initiativeId: string): Promise<EpicsEpicIdCommentsGet200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
@@ -526,7 +537,7 @@ export class AhaService {
    * @param productId The ID of the product
    * @returns A list of comments for the product
    */
-  public static async getProductComments(productId: string): Promise<any> {
+  public static async getProductComments(productId: string): Promise<EpicsEpicIdCommentsGet200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
@@ -543,7 +554,7 @@ export class AhaService {
    * @param goalId The ID of the goal
    * @returns A list of comments for the goal
    */
-  public static async getGoalComments(goalId: string): Promise<any> {
+  public static async getGoalComments(goalId: string): Promise<EpicsEpicIdCommentsGet200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
@@ -560,7 +571,7 @@ export class AhaService {
    * @param releaseId The ID of the release
    * @returns A list of comments for the release
    */
-  public static async getReleaseComments(releaseId: string): Promise<any> {
+  public static async getReleaseComments(releaseId: string): Promise<EpicsEpicIdCommentsGet200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
@@ -577,7 +588,7 @@ export class AhaService {
    * @param releasePhaseId The ID of the release phase
    * @returns A list of comments for the release phase
    */
-  public static async getReleasePhaseComments(releasePhaseId: string): Promise<any> {
+  public static async getReleasePhaseComments(releasePhaseId: string): Promise<EpicsEpicIdCommentsGet200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
@@ -594,7 +605,7 @@ export class AhaService {
    * @param requirementId The ID of the requirement
    * @returns A list of comments for the requirement
    */
-  public static async getRequirementComments(requirementId: string): Promise<any> {
+  public static async getRequirementComments(requirementId: string): Promise<EpicsEpicIdCommentsGet200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
@@ -611,7 +622,7 @@ export class AhaService {
    * @param todoId The ID of the todo
    * @returns A list of comments for the todo
    */
-  public static async getTodoComments(todoId: string): Promise<any> {
+  public static async getTodoComments(todoId: string): Promise<EpicsEpicIdCommentsGet200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
@@ -628,7 +639,7 @@ export class AhaService {
    * @param goalId The ID of the goal
    * @returns The goal details
    */
-  public static async getGoal(goalId: string): Promise<any> {
+  public static async getGoal(goalId: string): Promise<Goal> {
     try {
       // Use direct API call since there's no specific method in the SDK
       const basePath = `https://${this.subdomain}.aha.io/api/v1`;
@@ -656,7 +667,7 @@ export class AhaService {
    * List goals from Aha.io
    * @returns A list of goals
    */
-  public static async listGoals(): Promise<any> {
+  public static async listGoals(): Promise<GoalsListResponse> {
     try {
       // Use direct API call since there's no specific method in the SDK
       const basePath = `https://${this.subdomain}.aha.io/api/v1`;
@@ -685,7 +696,7 @@ export class AhaService {
    * @param goalId The ID of the goal
    * @returns A list of epics associated with the goal
    */
-  public static async getGoalEpics(goalId: string): Promise<any> {
+  public static async getGoalEpics(goalId: string): Promise<GoalEpicsResponse> {
     const goalsApi = this.getGoalsApi();
 
     try {
@@ -702,7 +713,7 @@ export class AhaService {
    * @param releaseId The ID of the release
    * @returns The release details
    */
-  public static async getRelease(releaseId: string): Promise<any> {
+  public static async getRelease(releaseId: string): Promise<Release> {
     try {
       // Use direct API call since there's no specific method in the SDK
       const basePath = `https://${this.subdomain}.aha.io/api/v1`;
@@ -730,7 +741,7 @@ export class AhaService {
    * List releases from Aha.io
    * @returns A list of releases
    */
-  public static async listReleases(): Promise<any> {
+  public static async listReleases(): Promise<ReleasesListResponse> {
     try {
       // Use direct API call since there's no specific method in the SDK
       const basePath = `https://${this.subdomain}.aha.io/api/v1`;
@@ -759,12 +770,24 @@ export class AhaService {
    * @param releaseId The ID of the release
    * @returns A list of features associated with the release
    */
-  public static async getReleaseFeatures(releaseId: string): Promise<any> {
-    const defaultApi = this.getDefaultApi();
-
+  public static async getReleaseFeatures(releaseId: string): Promise<ReleaseFeaturesResponse> {
     try {
-      const response = await defaultApi.releasesReleaseIdFeaturesGet({ releaseId });
-      return response.data;
+      // Use direct API call since SDK method returns void
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/releases/${releaseId}/features`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get release features: ${response.statusText}`);
+      }
+
+      return await response.json();
     } catch (error) {
       console.error(`Error getting features for release ${releaseId}:`, error);
       throw error;
@@ -776,7 +799,7 @@ export class AhaService {
    * @param releaseId The ID of the release
    * @returns A list of epics associated with the release
    */
-  public static async getReleaseEpics(releaseId: string): Promise<any> {
+  public static async getReleaseEpics(releaseId: string): Promise<ProductsProductIdEpicsGet200Response> {
     const epicsApi = this.getEpicsApi();
 
     try {
@@ -793,7 +816,7 @@ export class AhaService {
    * @param releasePhaseId The ID of the release phase
    * @returns The release phase details
    */
-  public static async getReleasePhase(releasePhaseId: string): Promise<any> {
+  public static async getReleasePhase(releasePhaseId: string): Promise<ReleasePhase> {
     try {
       // Use direct API call since there's no specific method in the SDK
       const basePath = `https://${this.subdomain}.aha.io/api/v1`;
@@ -821,7 +844,7 @@ export class AhaService {
    * List release phases from Aha.io
    * @returns A list of release phases
    */
-  public static async listReleasePhases(): Promise<any> {
+  public static async listReleasePhases(): Promise<ReleasesPhasesListResponse> {
     try {
       // Use direct API call since there's no specific method in the SDK
       const basePath = `https://${this.subdomain}.aha.io/api/v1`;
