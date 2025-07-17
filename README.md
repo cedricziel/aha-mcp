@@ -133,6 +133,7 @@ The Aha.io integration can be configured using multiple methods, with the follow
 - `MCP_TRANSPORT_MODE`: Transport mode (`stdio` or `sse`)
 - `MCP_PORT`: Port number for SSE mode (default: 3001)
 - `MCP_HOST`: Host address for SSE mode (default: 0.0.0.0)
+- `MCP_AUTH_TOKEN`: Authentication token for SSE mode (optional)
 
 #### Runtime Configuration
 
@@ -199,6 +200,85 @@ aha-mcp
 
 # SSE mode
 aha-mcp --mode sse --port 3001
+```
+
+#### Authentication (SSE Mode)
+
+The SSE mode supports optional Bearer token authentication for enhanced security:
+
+##### Environment Variable Configuration
+
+```bash
+# Set authentication token
+export MCP_AUTH_TOKEN="your-secure-token-here"
+
+# Start server with authentication
+aha-mcp --mode sse --port 3001
+```
+
+##### Client Authentication
+
+When authentication is enabled, clients must include a Bearer token in the Authorization header:
+
+```bash
+# SSE connection with authentication
+curl -H "Authorization: Bearer your-secure-token-here" \
+     http://localhost:3001/sse
+
+# Messages endpoint with authentication
+curl -X POST \
+     -H "Authorization: Bearer your-secure-token-here" \
+     -H "Content-Type: application/json" \
+     -d '{"method": "tools/list", "params": {}}' \
+     http://localhost:3001/messages
+```
+
+##### JavaScript Client Example
+
+```javascript
+// SSE connection with authentication
+const eventSource = new EventSource('http://localhost:3001/sse', {
+  headers: {
+    'Authorization': 'Bearer your-secure-token-here'
+  }
+});
+
+// Fetch with authentication
+fetch('http://localhost:3001/messages', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer your-secure-token-here'
+  },
+  body: JSON.stringify({
+    method: 'tools/list',
+    params: {}
+  })
+});
+```
+
+##### Security Notes
+
+- **Backward Compatibility**: Authentication is optional. If `MCP_AUTH_TOKEN` is not set, all requests are allowed.
+- **Token Security**: Use strong, randomly generated tokens (minimum 8 characters).
+- **HTTPS**: In production, always use HTTPS to protect tokens in transit.
+- **Token Storage**: Tokens are obfuscated (base64 encoded) in the configuration file but should be treated as sensitive data.
+
+##### Checking Authentication Status
+
+You can check if authentication is enabled by visiting the server info endpoint:
+
+```bash
+curl http://localhost:3001/
+
+# Response includes:
+# {
+#   "authentication": {
+#     "enabled": true,
+#     "type": "Bearer token",
+#     "note": "Authentication required for SSE and messages endpoints"
+#   }
+# }
 ```
 
 #### Configuration Management Tools
@@ -476,6 +556,14 @@ docker run --rm \
   -e AHA_COMPANY="your-company" \
   -e AHA_TOKEN="your-api-token" \
   ghcr.io/cedricziel/aha-mcp --mode sse
+
+# Run in SSE mode with authentication
+docker run --rm \
+  -p 3001:3001 \
+  -e AHA_COMPANY="your-company" \
+  -e AHA_TOKEN="your-api-token" \
+  -e MCP_AUTH_TOKEN="your-secure-token" \
+  ghcr.io/cedricziel/aha-mcp --mode sse
 ```
 
 #### Persistent Configuration
@@ -520,6 +608,7 @@ Example `.env` file:
 ```env
 AHA_COMPANY=mycompany
 AHA_TOKEN=your-api-token-here
+MCP_AUTH_TOKEN=your-secure-token-here
 ```
 
 ### Docker Environment Variables
@@ -533,6 +622,7 @@ The Docker image supports all the same environment variables as the npm package:
 | `MCP_TRANSPORT_MODE` | Transport mode (`stdio` or `sse`) | `stdio` |
 | `MCP_PORT` | Port for SSE mode | `3001` |
 | `MCP_HOST` | Host for SSE mode | `0.0.0.0` |
+| `MCP_AUTH_TOKEN` | Authentication token for SSE mode | - |
 | `MCP_CONFIG_DIR` | Configuration directory | `/home/mcp/.config` |
 
 ### Health Checks

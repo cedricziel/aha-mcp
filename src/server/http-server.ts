@@ -3,6 +3,7 @@ import startServer, { performHealthCheck, serverStatus } from "./server.js";
 import express, { Request, Response } from "express";
 import cors from "cors";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { bearerAuth, isAuthEnabled } from "./middleware/auth.js";
 
 // Environment variables - hardcoded values
 const PORT = 3001;
@@ -39,7 +40,7 @@ startServer().then(s => {
 
 // Define routes
 // @ts-ignore
-app.get("/sse", (req: Request, res: Response) => {
+app.get("/sse", bearerAuth, (req: Request, res: Response) => {
   console.error(`Received SSE connection request from ${req.ip}`);
   console.error(`Query parameters: ${JSON.stringify(req.query)}`);
   
@@ -98,7 +99,7 @@ app.get("/sse", (req: Request, res: Response) => {
 });
 
 // @ts-ignore
-app.post("/messages", (req: Request, res: Response) => {
+app.post("/messages", bearerAuth, (req: Request, res: Response) => {
   // Extract the session ID from the URL query parameters
   let sessionId = req.query.sessionId?.toString();
   
@@ -220,6 +221,11 @@ app.get("/", (req: Request, res: Response) => {
     },
     status: server ? "ready" : "initializing",
     activeConnections: connections.size,
+    authentication: {
+      enabled: isAuthEnabled(),
+      type: isAuthEnabled() ? "Bearer token" : "none",
+      note: isAuthEnabled() ? "Authentication required for SSE and messages endpoints" : "No authentication required"
+    },
     capabilities: {
       tools: "41 Aha.io integration tools (including health checks & configuration)",
       resources: "40+ Aha.io entity resources",
@@ -230,7 +236,8 @@ app.get("/", (req: Request, res: Response) => {
         "Full CRUD operations",
         "Health monitoring",
         "Server diagnostics",
-        "Runtime configuration"
+        "Runtime configuration",
+        "Bearer token authentication"
       ]
     }
   });
