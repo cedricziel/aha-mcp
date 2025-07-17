@@ -10,6 +10,7 @@ export interface ServerConfig {
   mode: TransportMode;
   port?: number;
   host?: string;
+  authToken?: string | null;
 }
 
 export interface ConfigValidationResult {
@@ -27,7 +28,8 @@ export class ConfigService {
     token: null,
     mode: 'stdio',
     port: 3001,
-    host: '0.0.0.0'
+    host: '0.0.0.0',
+    authToken: null
   };
 
   private static currentConfig: ServerConfig | null = null;
@@ -77,6 +79,9 @@ export class ConfigService {
     if (process.env.MCP_HOST) {
       config.host = process.env.MCP_HOST;
     }
+    if (process.env.MCP_AUTH_TOKEN) {
+      config.authToken = process.env.MCP_AUTH_TOKEN;
+    }
 
     this.currentConfig = config;
     return config;
@@ -87,10 +92,11 @@ export class ConfigService {
    */
   public static saveConfig(config: ServerConfig): void {
     try {
-      // Don't save sensitive token in plain text - use simple obfuscation
+      // Don't save sensitive tokens in plain text - use simple obfuscation
       const configToSave = {
         ...config,
-        token: config.token ? this.obfuscateToken(config.token) : null
+        token: config.token ? this.obfuscateToken(config.token) : null,
+        authToken: config.authToken ? this.obfuscateToken(config.authToken) : null
       };
 
       writeFileSync(this.CONFIG_FILE, JSON.stringify(configToSave, null, 2));
@@ -151,6 +157,16 @@ export class ConfigService {
       }
     }
 
+    // Validate auth token format (basic check)
+    if (config.authToken) {
+      if (config.authToken.length < 8) {
+        errors.push('Auth token appears to be too short (minimum 8 characters)');
+      }
+      if (!/^[A-Za-z0-9._-]+$/.test(config.authToken)) {
+        errors.push('Auth token contains invalid characters');
+      }
+    }
+
     // Validate transport mode
     if (!['stdio', 'sse'].includes(config.mode)) {
       errors.push('Mode must be either "stdio" or "sse"');
@@ -200,6 +216,7 @@ export class ConfigService {
     return {
       company: config.company || 'not configured',
       tokenConfigured: !!config.token,
+      authTokenConfigured: !!config.authToken,
       mode: config.mode,
       port: config.port,
       host: config.host,
@@ -234,16 +251,19 @@ export class ConfigService {
   private static loadConfigWithDeobfuscation(): ServerConfig {
     const config = this.loadConfig();
     
-    // If token is obfuscated in config file, deobfuscate it
-    if (config.token && this.currentConfig === null && existsSync(this.CONFIG_FILE)) {
+    // If tokens are obfuscated in config file, deobfuscate them
+    if (this.currentConfig === null && existsSync(this.CONFIG_FILE)) {
       try {
         const fileContent = readFileSync(this.CONFIG_FILE, 'utf8');
         const fileConfig = JSON.parse(fileContent);
-        if (fileConfig.token) {
+        if (fileConfig.token && config.token) {
           config.token = this.deobfuscateToken(fileConfig.token);
         }
+        if (fileConfig.authToken && config.authToken) {
+          config.authToken = this.deobfuscateToken(fileConfig.authToken);
+        }
       } catch (error) {
-        // If deobfuscation fails, keep the token as-is
+        // If deobfuscation fails, keep the tokens as-is
       }
     }
 
