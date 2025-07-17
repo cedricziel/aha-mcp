@@ -12,37 +12,110 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `bun build` - Build the stdio server for production
 - `bun run build:http` - Build the HTTP server for production
 
+## Runtime Configuration
+
+The server supports runtime configuration through three key parameters:
+
+### Configuration Parameters
+
+- **Company**: Aha.io company subdomain (e.g., "mycompany" for mycompany.aha.io)
+- **Token**: Aha.io API token for authentication
+- **Mode**: Transport mode - either "stdio" or "sse"
+
+### Configuration Sources (Priority Order)
+
+1. **Environment Variables** (highest priority)
+   - `AHA_COMPANY` - Company subdomain
+   - `AHA_TOKEN` - API token
+   - `MCP_TRANSPORT_MODE` - Transport mode
+   - `MCP_PORT` - Port for SSE mode (default: 3001)
+   - `MCP_HOST` - Host for SSE mode (default: 0.0.0.0)
+
+2. **Configuration File**
+   - Located at `~/.aha-mcp-config.json`
+   - Automatically created when using configuration tools
+   - Token is obfuscated for basic security
+
+3. **Defaults** (lowest priority)
+   - Mode: "stdio"
+   - Port: 3001
+   - Host: "0.0.0.0"
+
+### Command Line Usage
+
+```bash
+# Use configuration settings
+aha-mcp
+
+# Force stdio mode
+aha-mcp --mode stdio
+
+# Force SSE mode
+aha-mcp --mode sse
+
+# Custom SSE configuration
+aha-mcp --mode sse --port 3000 --host localhost
+
+# Show help
+aha-mcp --help
+```
+
+### MCP Configuration Tools
+
+The server includes three MCP tools for runtime configuration:
+
+1. **configure_server** - Update server configuration
+   ```json
+   {
+     "company": "mycompany",
+     "token": "your-api-token",
+     "mode": "sse",
+     "port": 3000,
+     "host": "localhost"
+   }
+   ```
+
+2. **get_server_config** - View current configuration and validation status
+
+3. **test_configuration** - Test Aha.io connection with current credentials
+
 ## Architecture
 
 This is a Model Context Protocol (MCP) server that provides integration with Aha.io's API. The codebase follows a modular structure:
 
 ### Core Architecture
 
-- **Entry Points**: Two transport modes supported - stdio (`src/index.ts`) and HTTP (`src/server/http-server.ts`)
+- **Entry Points**: Unified entry point (`src/index.ts`) supports both transport modes
 - **Server Factory**: `src/server/server.ts` creates and configures the MCP server instance
-- **Core Modules**: Split into tools, resources, and prompts in `src/core/`
+- **Core Modules**: Split into tools, resources, prompts, and configuration in `src/core/`
 - **Service Layer**: `src/core/services/` contains the Aha.io API integration
+- **Configuration**: `src/core/config.ts` handles runtime configuration management
 
 ### Key Components
 
 - **AhaService**: Singleton service class that wraps the `aha-js` library for API interactions
-- **Tools**: Six MCP tools for Aha.io operations (initialize, list/get features, list users/epics, create comments)
-- **Resources**: Single resource type for accessing ideas via `aha://idea/{id}` URI scheme
-- **Authentication**: Supports both environment variables (`AHA_TOKEN`, `AHA_COMPANY`) and runtime initialization
+- **ConfigService**: Manages runtime configuration with file persistence and validation
+- **Tools**: 41 MCP tools for Aha.io operations (CRUD, health checks, configuration)
+- **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes
+- **Prompts**: 12 domain-specific workflow prompts with context-aware responses
+- **Authentication**: Runtime configuration with environment variables and config file support
 
 ### Transport Layer
 
-The server supports dual transport modes:
+The server supports dual transport modes from a unified entry point:
 
 - **Stdio**: Primary mode for MCP client integration (default)
-- **HTTP**: Alternative transport with Express.js and CORS support
+- **SSE**: HTTP-based Server-Sent Events transport with Express.js and CORS support
 
-### Configuration Requirements
+### Configuration Management
 
-Environment variables for Aha.io integration:
+The server includes comprehensive configuration management:
 
-- `AHA_COMPANY`: Subdomain for your Aha.io instance
-- `AHA_TOKEN`: API token for authentication
+- **Runtime Updates**: Configuration changes apply immediately without restart
+- **Validation**: Input validation and Aha.io connection testing
+- **Persistence**: JSON file storage in user's home directory
+- **Security**: Token obfuscation and secure credential handling
+- **Priority System**: Environment variables → config file → defaults
 
 ### Naming Convention
 
