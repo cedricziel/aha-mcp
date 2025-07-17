@@ -21,6 +21,9 @@ describe('AhaService', () => {
     (AhaService as any).goalsApi = null;
     (AhaService as any).releasesApi = null;
     (AhaService as any).todosApi = null;
+    (AhaService as any).competitorsApi = null;
+    (AhaService as any).requirementsApi = null;
+    (AhaService as any).releasePhasesApi = null;
     (AhaService as any).configuration = null;
   });
 
@@ -187,6 +190,22 @@ describe('AhaService', () => {
 
     it('should have listReleasePhases method', () => {
       expect(typeof AhaService.listReleasePhases).toBe('function');
+    });
+
+    it('should have getRequirement method', () => {
+      expect(typeof AhaService.getRequirement).toBe('function');
+    });
+
+    it('should have getCompetitor method', () => {
+      expect(typeof AhaService.getCompetitor).toBe('function');
+    });
+
+    it('should have getTodo method', () => {
+      expect(typeof AhaService.getTodo).toBe('function');
+    });
+
+    it('should have listCompetitors method', () => {
+      expect(typeof AhaService.listCompetitors).toBe('function');
     });
   });
 });

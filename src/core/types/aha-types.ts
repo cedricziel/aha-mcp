@@ -220,3 +220,33 @@ export interface TodosListResponse {
     current_page?: number;
   };
 }
+
+/**
+ * Competitor entity (not available in SDK)
+ */
+export interface Competitor {
+  id?: string;
+  name?: string;
+  created_at?: string;
+  updated_at?: string;
+  description?: string;
+  url?: string;
+  resource?: string;
+  product_id?: string;
+  website?: string;
+  strengths?: string;
+  weaknesses?: string;
+  created_by_user?: User;
+}
+
+/**
+ * List response wrapper for Competitors
+ */
+export interface CompetitorsListResponse {
+  competitors?: Competitor[];
+  pagination?: {
+    total_records?: number;
+    total_pages?: number;
+    current_page?: number;
+  };
+}

@@ -9,6 +9,11 @@ import {
   CommentsApi,
   GoalsApi,
   ToDosApi,
+  CompetitorsApi,
+  RequirementsApi,
+  ReleasePhasesApi,
+  ReleasesApi,
+  DefaultApi,
   // Types
   Feature,
   FeaturesListResponse,
@@ -29,11 +34,17 @@ import {
   ReleasePhase,
   Goal,
   Product,
+  Requirement,
+  Todo,
+  Competitor,
   ReleasesListResponse,
   ReleasesPhasesListResponse,
   GoalsListResponse,
   ReleaseFeaturesResponse,
-  GoalEpicsResponse
+  GoalEpicsResponse,
+  RequirementsListResponse,
+  TodosListResponse,
+  CompetitorsListResponse
 } from '../types/aha-types.js';
 
 /**
@@ -50,6 +61,11 @@ export class AhaService {
   private static commentsApi: CommentsApi | null = null;
   private static goalsApi: GoalsApi | null = null;
   private static todosApi: ToDosApi | null = null;
+  private static competitorsApi: CompetitorsApi | null = null;
+  private static requirementsApi: RequirementsApi | null = null;
+  private static releasePhasesApi: ReleasePhasesApi | null = null;
+  private static releasesApi: ReleasesApi | null = null;
+  private static defaultApi: DefaultApi | null = null;
 
   private static apiKey: string | null = process.env.AHA_TOKEN || null;
   private static subdomain: string | null = process.env.AHA_COMPANY || null;
@@ -96,6 +112,11 @@ export class AhaService {
       this.commentsApi = new CommentsApi(this.configuration);
       this.goalsApi = new GoalsApi(this.configuration);
       this.todosApi = new ToDosApi(this.configuration);
+      this.competitorsApi = new CompetitorsApi(this.configuration);
+      this.requirementsApi = new RequirementsApi(this.configuration);
+      this.releasePhasesApi = new ReleasePhasesApi(this.configuration);
+      this.releasesApi = new ReleasesApi(this.configuration);
+      this.defaultApi = new DefaultApi(this.configuration);
     } catch (error) {
       console.error('Error initializing Aha.io client:', error);
       throw new Error(`Failed to initialize Aha.io client: ${error instanceof Error ? error.message : String(error)}`);
@@ -200,6 +221,61 @@ export class AhaService {
       this.initializeClient();
     }
     return this.todosApi!;
+  }
+
+  /**
+   * Get the competitors API instance
+   * @returns CompetitorsApi instance
+   */
+  private static getCompetitorsApi(): CompetitorsApi {
+    if (!this.competitorsApi) {
+      this.initializeClient();
+    }
+    return this.competitorsApi!;
+  }
+
+  /**
+   * Get the requirements API instance
+   * @returns RequirementsApi instance
+   */
+  private static getRequirementsApi(): RequirementsApi {
+    if (!this.requirementsApi) {
+      this.initializeClient();
+    }
+    return this.requirementsApi!;
+  }
+
+  /**
+   * Get the release phases API instance
+   * @returns ReleasePhasesApi instance
+   */
+  private static getReleasePhasesApi(): ReleasePhasesApi {
+    if (!this.releasePhasesApi) {
+      this.initializeClient();
+    }
+    return this.releasePhasesApi!;
+  }
+
+  /**
+   * Get the releases API instance
+   * @returns ReleasesApi instance
+   */
+  private static getReleasesApi(): ReleasesApi {
+    if (!this.releasesApi) {
+      this.initializeClient();
+    }
+    return this.releasesApi!;
+  }
+
+  /**
+   * Get the default API instance
+   * @returns DefaultApi instance
+   */
+  private static getDefaultApi(): DefaultApi {
+    if (!this.defaultApi) {
+      this.initializeClient();
+    }
+    return this.defaultApi!;
   }
 
 
@@ -878,6 +954,98 @@ export class AhaService {
       return await response.json();
     } catch (error) {
       console.error('Error listing release phases:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a specific requirement by ID
+   * @param requirementId The ID of the requirement
+   * @returns The requirement details
+   */
+  public static async getRequirement(requirementId: string): Promise<Requirement> {
+    try {
+      // Use direct API call since there's no specific method in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/requirements/${requirementId}`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get requirement: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Error getting requirement ${requirementId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a specific competitor by ID
+   * @param competitorId The ID of the competitor
+   * @returns The competitor details
+   */
+  public static async getCompetitor(competitorId: string): Promise<Competitor> {
+    const competitorsApi = this.getCompetitorsApi();
+
+    try {
+      const response = await competitorsApi.competitorsCompetitorIdGet({ competitorId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting competitor ${competitorId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a specific todo by ID
+   * @param todoId The ID of the todo
+   * @returns The todo details
+   */
+  public static async getTodo(todoId: string): Promise<Todo> {
+    try {
+      // Use direct API call since there's no specific method in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/todos/${todoId}`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get todo: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Error getting todo ${todoId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * List competitors for a specific product
+   * @param productId The ID of the product
+   * @returns A list of competitors for the product
+   */
+  public static async listCompetitors(productId: string): Promise<CompetitorsListResponse> {
+    const competitorsApi = this.getCompetitorsApi();
+
+    try {
+      const response = await competitorsApi.productsProductIdCompetitorsGet({ productId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error listing competitors for product ${productId}:`, error);
       throw error;
     }
   }

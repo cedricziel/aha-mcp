@@ -771,4 +771,100 @@ export function registerResources(server: McpServer) {
       }
     }
   );
+
+  // Aha requirement resource
+  server.resource(
+    "aha_requirement",
+    "aha://requirement/{id}",
+    async (uri: URL) => {
+      const id = uri.pathname.split('/').pop();
+      if (!id) {
+        throw new Error('Invalid requirement ID: ID is missing from URI');
+      }
+      try {
+        const requirement = await services.AhaService.getRequirement(id);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(requirement, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving requirement ${id}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha competitor resource
+  server.resource(
+    "aha_competitor",
+    "aha://competitor/{id}",
+    async (uri: URL) => {
+      const id = uri.pathname.split('/').pop();
+      if (!id) {
+        throw new Error('Invalid competitor ID: ID is missing from URI');
+      }
+      try {
+        const competitor = await services.AhaService.getCompetitor(id);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(competitor, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving competitor ${id}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha todo resource
+  server.resource(
+    "aha_todo",
+    "aha://todo/{id}",
+    async (uri: URL) => {
+      const id = uri.pathname.split('/').pop();
+      if (!id) {
+        throw new Error('Invalid todo ID: ID is missing from URI');
+      }
+      try {
+        const todo = await services.AhaService.getTodo(id);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(todo, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving todo ${id}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha competitors list resource
+  server.resource(
+    "aha_competitors",
+    "aha://competitors/{product_id}",
+    async (uri: URL) => {
+      const productId = uri.pathname.split('/').pop();
+      if (!productId) {
+        throw new Error('Invalid product ID: Product ID is missing from URI');
+      }
+      try {
+        const competitors = await services.AhaService.listCompetitors(productId);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(competitors, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving competitors for product ${productId}:`, error);
+        throw error;
+      }
+    }
+  );
 }
