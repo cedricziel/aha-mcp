@@ -6,6 +6,8 @@ import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import * as services from "../core/services/index.js";
+import { ConfigService } from "../core/config.js";
+import { z } from "zod";
 
 // Get package.json info for server metadata
 const __filename = fileURLToPath(import.meta.url);
@@ -87,6 +89,14 @@ async function startServer() {
   try {
     updateServerStatus("initializing");
     
+    // Initialize configuration service
+    const config = ConfigService.initialize();
+    
+    // Initialize AhaService if we have complete configuration
+    if (ConfigService.isConfigComplete(config)) {
+      services.AhaService.initialize(config.token, config.company);
+    }
+    
     // Create a new MCP server instance with enhanced metadata
     const server = new McpServer({
       name: "Aha.io MCP Server",
@@ -145,6 +155,143 @@ async function startServer() {
       }
     );
 
+    // Add configuration management tools
+    server.tool(
+      "configure_server",
+      "Configure server settings (company, token, mode)",
+      {
+        company: z.string().optional().describe("Aha.io company subdomain"),
+        token: z.string().optional().describe("Aha.io API token"),
+        mode: z.enum(["stdio", "sse"]).optional().describe("Transport mode"),
+        port: z.number().optional().describe("Port number for SSE mode"),
+        host: z.string().optional().describe("Host address for SSE mode")
+      },
+      async (params) => {
+        try {
+          const updates: any = {};
+          
+          if (params.company !== undefined) updates.company = params.company;
+          if (params.token !== undefined) updates.token = params.token;
+          if (params.mode !== undefined) updates.mode = params.mode;
+          if (params.port !== undefined) updates.port = params.port;
+          if (params.host !== undefined) updates.host = params.host;
+
+          const newConfig = ConfigService.updateConfig(updates);
+          
+          // Update AhaService with new credentials if provided
+          if (params.company || params.token) {
+            services.AhaService.initialize(newConfig.token, newConfig.company);
+          }
+
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                message: "Configuration updated successfully",
+                config: ConfigService.getConfigSummary(),
+                note: "Server restart may be required for transport mode changes"
+              }, null, 2)
+            }]
+          };
+        } catch (error) {
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                success: false,
+                error: error instanceof Error ? error.message : String(error)
+              }, null, 2)
+            }]
+          };
+        }
+      }
+    );
+
+    server.tool(
+      "get_server_config",
+      "Get current server configuration",
+      {},
+      async () => {
+        const configSummary = ConfigService.getConfigSummary();
+        const currentConfig = ConfigService.getConfig();
+        
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              ...configSummary,
+              validation: ConfigService.validateConfig(currentConfig),
+              environmentOverrides: {
+                company: !!process.env.AHA_COMPANY,
+                token: !!process.env.AHA_TOKEN,
+                mode: !!process.env.MCP_TRANSPORT_MODE,
+                port: !!process.env.MCP_PORT,
+                host: !!process.env.MCP_HOST
+              }
+            }, null, 2)
+          }]
+        };
+      }
+    );
+
+    server.tool(
+      "test_configuration",
+      "Test current Aha.io configuration",
+      {},
+      async () => {
+        try {
+          const config = ConfigService.getConfig();
+          
+          if (!ConfigService.isConfigComplete(config)) {
+            return {
+              content: [{
+                type: "text",
+                text: JSON.stringify({
+                  success: false,
+                  error: "Configuration is incomplete. Company and token are required.",
+                  config: ConfigService.getConfigSummary()
+                }, null, 2)
+              }]
+            };
+          }
+
+          // Test connection by trying to get current user
+          const user = await services.AhaService.getMe();
+          
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                message: "Configuration test successful",
+                connection: {
+                  status: "connected",
+                  user: {
+                    name: user.name,
+                    email: user.email,
+                    role: user.role
+                  },
+                  company: config.company
+                }
+              }, null, 2)
+            }]
+          };
+        } catch (error) {
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
+                suggestion: "Check your company subdomain and API token"
+              }, null, 2)
+            }]
+          };
+        }
+      }
+    );
+
     // Register all resources, tools, and prompts
     registerResources(server);
     registerTools(server);
@@ -163,13 +310,14 @@ async function startServer() {
     console.error(`📂 Working directory: ${process.cwd()}`);
     console.error("");
     console.error("🔌 Server capabilities:");
-    console.error("  ✅ Tools: 38 Aha.io integration tools (including health checks)");
+    console.error("  ✅ Tools: 41 Aha.io integration tools (including health checks & configuration)");
     console.error("  ✅ Resources: 40+ Aha.io entity resources");
     console.error("  ✅ Prompts: 12 domain-specific workflow prompts");
     console.error("  ✅ Context-aware: Auto-fetch Aha.io data for prompts");
     console.error("  ✅ Dual transport: stdio and HTTP modes");
     console.error("  ✅ Full CRUD: Complete lifecycle management");
     console.error("  ✅ Health checks: Server monitoring and diagnostics");
+    console.error("  ✅ Runtime configuration: Company, token, and mode settings");
     console.error("");
     console.error("📡 Server is ready to handle requests");
     

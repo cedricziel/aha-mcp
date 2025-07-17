@@ -221,7 +221,7 @@ app.get("/", (req: Request, res: Response) => {
     status: server ? "ready" : "initializing",
     activeConnections: connections.size,
     capabilities: {
-      tools: "38 Aha.io integration tools (including health checks)",
+      tools: "41 Aha.io integration tools (including health checks & configuration)",
       resources: "40+ Aha.io entity resources",
       prompts: "12 domain-specific workflow prompts",
       features: [
@@ -229,7 +229,8 @@ app.get("/", (req: Request, res: Response) => {
         "Dual transport (stdio/HTTP)",
         "Full CRUD operations",
         "Health monitoring",
-        "Server diagnostics"
+        "Server diagnostics",
+        "Runtime configuration"
       ]
     }
   });
