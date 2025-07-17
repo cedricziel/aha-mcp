@@ -1102,4 +1102,171 @@ export class AhaService {
       throw error;
     }
   }
+
+  // ============================
+  // RELATIONSHIP/ASSOCIATION METHODS
+  // ============================
+
+  /**
+   * Associate a feature with an epic
+   * @param featureId The ID of the feature
+   * @param epicId The ID or name of the epic
+   * @returns The updated feature response
+   */
+  public static async associateFeatureWithEpic(featureId: string, epicId: string): Promise<Feature> {
+    const featuresApi = this.getFeaturesApi();
+
+    try {
+      const response = await featuresApi.featuresIdEpicPut({
+        id: featureId,
+        featuresIdEpicPutRequest: {
+          feature: {
+            epic: epicId
+          }
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error associating feature ${featureId} with epic ${epicId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Move a feature to a different release
+   * @param featureId The ID of the feature
+   * @param releaseId The ID or key of the target release
+   * @returns The updated feature response
+   */
+  public static async moveFeatureToRelease(featureId: string, releaseId: string): Promise<Feature> {
+    const featuresApi = this.getFeaturesApi();
+
+    try {
+      const response = await featuresApi.featuresIdReleasePut({
+        id: featureId,
+        featuresIdReleasePutRequest: {
+          feature: {
+            release: releaseId
+          }
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error moving feature ${featureId} to release ${releaseId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Associate a feature with multiple goals
+   * @param featureId The ID of the feature
+   * @param goalIds Array of goal IDs to associate with the feature
+   * @returns The updated feature response
+   */
+  public static async associateFeatureWithGoals(featureId: string, goalIds: number[]): Promise<Feature> {
+    const featuresApi = this.getFeaturesApi();
+
+    try {
+      const response = await featuresApi.featuresIdGoalsPut({
+        id: featureId,
+        featuresIdGoalsPutRequest: {
+          feature: {
+            goals: goalIds
+          }
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error associating feature ${featureId} with goals ${goalIds.join(', ')}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update feature tags (metadata association)
+   * @param featureId The ID of the feature
+   * @param tags Array of tag strings to associate with the feature
+   * @returns The updated feature response
+   */
+  public static async updateFeatureTags(featureId: string, tags: string[]): Promise<Feature> {
+    const featuresApi = this.getFeaturesApi();
+
+    try {
+      const response = await featuresApi.featuresIdTagsPut({
+        id: featureId,
+        featuresIdTagsPutRequest: {
+          feature: {
+            tags: tags
+          }
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating tags for feature ${featureId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create an epic within a specific product
+   * @param productId The ID of the product
+   * @param epicData The epic data to create
+   * @returns The created epic response
+   */
+  public static async createEpicInProduct(productId: string, epicData: any): Promise<Epic> {
+    const epicsApi = this.getEpicsApi();
+
+    try {
+      const response = await epicsApi.productsProductIdEpicsPost({
+        productId: productId,
+        epicCreateRequest: epicData
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error creating epic in product ${productId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create an epic within a specific release
+   * @param releaseId The ID of the release
+   * @param epicData The epic data to create
+   * @returns The created epic response
+   */
+  public static async createEpicInRelease(releaseId: string, epicData: any): Promise<Epic> {
+    const epicsApi = this.getEpicsApi();
+
+    try {
+      const response = await epicsApi.releasesReleaseIdEpicsPost({
+        releaseId: releaseId,
+        epicCreateRequest: epicData
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error creating epic in release ${releaseId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create an initiative within a specific product
+   * @param productId The ID of the product
+   * @param initiativeData The initiative data to create
+   * @returns The created initiative response
+   */
+  public static async createInitiativeInProduct(productId: string, initiativeData: any): Promise<InitiativeResponse> {
+    const initiativesApi = this.getInitiativesApi();
+
+    try {
+      const response = await initiativesApi.productsProductIdInitiativesPost({
+        productId: productId,
+        initiativeCreateRequest: initiativeData
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error creating initiative in product ${productId}:`, error);
+      throw error;
+    }
+  }
 }

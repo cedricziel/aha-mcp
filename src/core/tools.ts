@@ -279,4 +279,261 @@ export function registerTools(server: McpServer) {
       }
     }
   );
+
+  // ============================
+  // RELATIONSHIP/ASSOCIATION TOOLS
+  // ============================
+
+  // Associate feature with epic tool
+  server.tool(
+    "aha_associate_feature_with_epic",
+    "Associate a feature with an epic in Aha.io",
+    {
+      featureId: z.string().describe("ID of the feature"),
+      epicId: z.string().describe("ID or name of the epic")
+    },
+    async (params: { featureId: string; epicId: string }) => {
+      try {
+        const feature = await services.AhaService.associateFeatureWithEpic(params.featureId, params.epicId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Feature ${params.featureId} successfully associated with epic ${params.epicId}:\n\n${JSON.stringify(feature, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error associating feature with epic: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Move feature to release tool
+  server.tool(
+    "aha_move_feature_to_release",
+    "Move a feature to a different release in Aha.io",
+    {
+      featureId: z.string().describe("ID of the feature"),
+      releaseId: z.string().describe("ID or key of the target release")
+    },
+    async (params: { featureId: string; releaseId: string }) => {
+      try {
+        const feature = await services.AhaService.moveFeatureToRelease(params.featureId, params.releaseId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Feature ${params.featureId} successfully moved to release ${params.releaseId}:\n\n${JSON.stringify(feature, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error moving feature to release: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Associate feature with goals tool
+  server.tool(
+    "aha_associate_feature_with_goals",
+    "Associate a feature with multiple goals in Aha.io",
+    {
+      featureId: z.string().describe("ID of the feature"),
+      goalIds: z.array(z.number()).describe("Array of goal IDs to associate with the feature")
+    },
+    async (params: { featureId: string; goalIds: number[] }) => {
+      try {
+        const feature = await services.AhaService.associateFeatureWithGoals(params.featureId, params.goalIds);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Feature ${params.featureId} successfully associated with goals ${params.goalIds.join(', ')}:\n\n${JSON.stringify(feature, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error associating feature with goals: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Update feature tags tool
+  server.tool(
+    "aha_update_feature_tags",
+    "Update tags for a feature in Aha.io",
+    {
+      featureId: z.string().describe("ID of the feature"),
+      tags: z.array(z.string()).describe("Array of tag strings to associate with the feature")
+    },
+    async (params: { featureId: string; tags: string[] }) => {
+      try {
+        const feature = await services.AhaService.updateFeatureTags(params.featureId, params.tags);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Feature ${params.featureId} tags successfully updated to [${params.tags.join(', ')}]:\n\n${JSON.stringify(feature, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error updating feature tags: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Create epic in product tool
+  server.tool(
+    "aha_create_epic_in_product",
+    "Create an epic within a specific product in Aha.io",
+    {
+      productId: z.string().describe("ID of the product"),
+      epicData: z.object({
+        epic: z.object({
+          name: z.string().describe("Name of the epic"),
+          description: z.string().optional().describe("Description of the epic")
+        }).describe("Epic data object")
+      }).describe("Epic creation data")
+    },
+    async (params: { productId: string; epicData: any }) => {
+      try {
+        const epic = await services.AhaService.createEpicInProduct(params.productId, params.epicData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Epic successfully created in product ${params.productId}:\n\n${JSON.stringify(epic, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error creating epic in product: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Create epic in release tool
+  server.tool(
+    "aha_create_epic_in_release",
+    "Create an epic within a specific release in Aha.io",
+    {
+      releaseId: z.string().describe("ID of the release"),
+      epicData: z.object({
+        epic: z.object({
+          name: z.string().describe("Name of the epic"),
+          description: z.string().optional().describe("Description of the epic")
+        }).describe("Epic data object")
+      }).describe("Epic creation data")
+    },
+    async (params: { releaseId: string; epicData: any }) => {
+      try {
+        const epic = await services.AhaService.createEpicInRelease(params.releaseId, params.epicData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Epic successfully created in release ${params.releaseId}:\n\n${JSON.stringify(epic, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error creating epic in release: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Create initiative in product tool
+  server.tool(
+    "aha_create_initiative_in_product",
+    "Create an initiative within a specific product in Aha.io",
+    {
+      productId: z.string().describe("ID of the product"),
+      initiativeData: z.object({
+        initiative: z.object({
+          name: z.string().describe("Name of the initiative"),
+          description: z.string().optional().describe("Description of the initiative")
+        }).describe("Initiative data object")
+      }).describe("Initiative creation data")
+    },
+    async (params: { productId: string; initiativeData: any }) => {
+      try {
+        const initiative = await services.AhaService.createInitiativeInProduct(params.productId, params.initiativeData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Initiative successfully created in product ${params.productId}:\n\n${JSON.stringify(initiative, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error creating initiative in product: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
 }

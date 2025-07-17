@@ -207,5 +207,34 @@ describe('AhaService', () => {
     it('should have listCompetitors method', () => {
       expect(typeof AhaService.listCompetitors).toBe('function');
     });
+
+    // Relationship/Association methods
+    it('should have associateFeatureWithEpic method', () => {
+      expect(typeof AhaService.associateFeatureWithEpic).toBe('function');
+    });
+
+    it('should have moveFeatureToRelease method', () => {
+      expect(typeof AhaService.moveFeatureToRelease).toBe('function');
+    });
+
+    it('should have associateFeatureWithGoals method', () => {
+      expect(typeof AhaService.associateFeatureWithGoals).toBe('function');
+    });
+
+    it('should have updateFeatureTags method', () => {
+      expect(typeof AhaService.updateFeatureTags).toBe('function');
+    });
+
+    it('should have createEpicInProduct method', () => {
+      expect(typeof AhaService.createEpicInProduct).toBe('function');
+    });
+
+    it('should have createEpicInRelease method', () => {
+      expect(typeof AhaService.createEpicInRelease).toBe('function');
+    });
+
+    it('should have createInitiativeInProduct method', () => {
+      expect(typeof AhaService.createInitiativeInProduct).toBe('function');
+    });
   });
 });

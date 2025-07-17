@@ -174,6 +174,15 @@ aha://release-phases              # List all release phases
 - `aha_get_requirement_comments`: Get comments for a specific requirement
 - `aha_get_todo_comments`: Get comments for a specific todo
 
+#### Relationship Management Tools
+- `aha_associate_feature_with_epic`: Associate a feature with an epic
+- `aha_move_feature_to_release`: Move a feature to a different release
+- `aha_associate_feature_with_goals`: Associate a feature with multiple goals
+- `aha_update_feature_tags`: Update tags for a feature
+- `aha_create_epic_in_product`: Create an epic within a specific product
+- `aha_create_epic_in_release`: Create an epic within a specific release
+- `aha_create_initiative_in_product`: Create an initiative within a specific product
+
 **Note**: All MCP resources provide comprehensive access to Aha.io entities with advanced filtering capabilities. Most functionality is exposed through the resource system rather than individual tools, allowing for more flexible queries through URI parameters.
 
 ### 🚀 Phase 7 Enhancements
@@ -192,11 +201,17 @@ The MCP server has been significantly enhanced with comprehensive Aha.io SDK cov
 - **Ideas by Product**: Enhanced with comprehensive filtering including `query`, `spam`, `workflowStatus`, `sort`, date filters, `tag`, and user filters
 - **Competitors**: New collection resource for listing competitors by product
 
+#### Relationship Management Tools
+- **Feature Association**: Tools to associate features with epics, releases, goals, and tags
+- **Entity Creation**: Tools to create epics and initiatives within products/releases
+- **Workflow Management**: Tools to move features between releases and associate with goals
+
 #### Comprehensive API Coverage
 - Added 5 new API classes: CompetitorsApi, RequirementsApi, ReleasePhasesApi, ReleasesApi, DefaultApi
-- Implemented 4 new individual entity getters
+- Implemented 4 new individual entity getters and 7 relationship management methods
 - Enhanced 3 existing list methods with advanced filtering
-- All 99 tests passing with full TypeScript type safety
+- Created 7 new MCP tools for relationship management
+- All 106 tests passing with full TypeScript type safety
 
 ## 🛠️ Adding Custom Tools and Resources
 
