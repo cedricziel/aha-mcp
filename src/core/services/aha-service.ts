@@ -3,7 +3,8 @@ import {
   FeaturesApi,
   IdeasApi,
   UsersApi,
-  EpicsApi
+  EpicsApi,
+  DefaultApi
 } from '@cedricziel/aha-js';
 
 /**
@@ -15,6 +16,7 @@ export class AhaService {
   private static ideasApi: IdeasApi | null = null;
   private static usersApi: UsersApi | null = null;
   private static epicsApi: EpicsApi | null = null;
+  private static defaultApi: DefaultApi | null = null;
 
   private static apiKey: string | null = process.env.AHA_TOKEN || null;
   private static subdomain: string | null = process.env.AHA_COMPANY || null;
@@ -56,6 +58,7 @@ export class AhaService {
       this.ideasApi = new IdeasApi(this.configuration);
       this.usersApi = new UsersApi(this.configuration);
       this.epicsApi = new EpicsApi(this.configuration);
+      this.defaultApi = new DefaultApi(this.configuration);
     } catch (error) {
       console.error('Error initializing Aha.io client:', error);
       throw new Error(`Failed to initialize Aha.io client: ${error instanceof Error ? error.message : String(error)}`);
@@ -107,6 +110,17 @@ export class AhaService {
   }
 
   /**
+   * Get the default API instance
+   * @returns DefaultApi instance
+   */
+  private static getDefaultApi(): DefaultApi {
+    if (!this.defaultApi) {
+      this.initializeClient();
+    }
+    return this.defaultApi!;
+  }
+
+  /**
    * List features from Aha.io
    * @param query Search query (optional)
    * @param updatedSince Filter by updated since date (optional)
@@ -144,26 +158,11 @@ export class AhaService {
    * @returns The feature details
    */
   public static async getFeature(featureId: string): Promise<any> {
-    const featuresApi = this.getFeaturesApi();
+    const defaultApi = this.getDefaultApi();
 
     try {
-      // Since there's no direct method to get a feature by ID in the API,
-      // we'll use a workaround by making a direct request
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/features/${featureId}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get feature: ${response.statusText}`);
-      }
-
-      return await response.json();
+      const response = await defaultApi.featuresIdGet({ id: featureId });
+      return response.data;
     } catch (error) {
       console.error(`Error getting feature ${featureId}:`, error);
       throw error;
@@ -237,24 +236,11 @@ export class AhaService {
    * @returns The idea details
    */
   public static async getIdea(ideaId: string): Promise<any> {
+    const ideasApi = this.getIdeasApi();
+
     try {
-      // Since there's no direct method to get an idea by ID in the API,
-      // we'll use a workaround by making a direct request
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/ideas/${ideaId}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get idea: ${response.statusText}`);
-      }
-
-      return await response.json();
+      const response = await ideasApi.ideasIdGet({ id: ideaId });
+      return response.data;
     } catch (error) {
       console.error(`Error getting idea ${ideaId}:`, error);
       throw error;
