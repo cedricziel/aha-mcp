@@ -15,6 +15,8 @@ describe('AhaService', () => {
     (AhaService as any).usersApi = null;
     (AhaService as any).epicsApi = null;
     (AhaService as any).defaultApi = null;
+    (AhaService as any).productsApi = null;
+    (AhaService as any).initiativesApi = null;
     (AhaService as any).configuration = null;
   });
 
@@ -89,6 +91,26 @@ describe('AhaService', () => {
 
     it('should have getEpic method', () => {
       expect(typeof AhaService.getEpic).toBe('function');
+    });
+
+    it('should have getProduct method', () => {
+      expect(typeof AhaService.getProduct).toBe('function');
+    });
+
+    it('should have listProducts method', () => {
+      expect(typeof AhaService.listProducts).toBe('function');
+    });
+
+    it('should have getInitiative method', () => {
+      expect(typeof AhaService.getInitiative).toBe('function');
+    });
+
+    it('should have listInitiatives method', () => {
+      expect(typeof AhaService.listInitiatives).toBe('function');
+    });
+
+    it('should have listIdeasByProduct method', () => {
+      expect(typeof AhaService.listIdeasByProduct).toBe('function');
     });
   });
 });

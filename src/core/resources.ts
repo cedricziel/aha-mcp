@@ -182,4 +182,122 @@ export function registerResources(server: McpServer) {
       }
     }
   );
+
+  // Aha product resource
+  server.resource(
+    "aha_product",
+    "aha://product/{id}",
+    async (uri: URL) => {
+      const id = uri.pathname.split('/').pop();
+      if (!id) {
+        throw new Error('Invalid product ID: ID is missing from URI');
+      }
+      try {
+        const product = await services.AhaService.getProduct(id);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(product, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving product ${id}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha products list resource
+  server.resource(
+    "aha_products",
+    "aha://products",
+    async (uri: URL) => {
+      try {
+        const products = await services.AhaService.listProducts();
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(products, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving products list:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha initiative resource
+  server.resource(
+    "aha_initiative",
+    "aha://initiative/{id}",
+    async (uri: URL) => {
+      const id = uri.pathname.split('/').pop();
+      if (!id) {
+        throw new Error('Invalid initiative ID: ID is missing from URI');
+      }
+      try {
+        const initiative = await services.AhaService.getInitiative(id);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(initiative, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving initiative ${id}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha initiatives list resource
+  server.resource(
+    "aha_initiatives",
+    "aha://initiatives",
+    async (uri: URL) => {
+      try {
+        const initiatives = await services.AhaService.listInitiatives();
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(initiatives, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving initiatives list:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha ideas by product resource
+  server.resource(
+    "aha_ideas_by_product",
+    "aha://ideas/{product_id}",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const productId = pathParts[pathParts.length - 1];
+      
+      if (!productId) {
+        throw new Error('Invalid product ID: Product ID is missing from URI');
+      }
+      
+      try {
+        const ideas = await services.AhaService.listIdeasByProduct(productId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(ideas, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving ideas list for product ${productId}:`, error);
+        throw error;
+      }
+    }
+  );
 }

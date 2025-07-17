@@ -67,7 +67,37 @@ You can set these environment variables in your MCP settings configuration file 
 
 ### Available Resources
 
-- `aha_idea`: Access ideas from Aha.io using the URI format `aha://idea/{id}`
+#### Individual Entity Resources
+- `aha_idea`: Access individual ideas using `aha://idea/{id}`
+- `aha_feature`: Access individual features using `aha://feature/{id}`
+- `aha_user`: Access individual users using `aha://user/{id}`
+- `aha_epic`: Access individual epics using `aha://epic/{id}`
+- `aha_product`: Access individual products using `aha://product/{id}`
+- `aha_initiative`: Access individual initiatives using `aha://initiative/{id}`
+
+#### Collection Resources
+- `aha_features`: List features with optional filtering using `aha://features?query=...&tag=...`
+- `aha_users`: List all users using `aha://users`
+- `aha_epics`: List epics for a product using `aha://epics/{product_id}`
+- `aha_products`: List all products using `aha://products`
+- `aha_initiatives`: List all initiatives using `aha://initiatives`
+- `aha_ideas_by_product`: List ideas for a product using `aha://ideas/{product_id}`
+
+#### Resource URI Examples
+```
+aha://idea/IDEA-123               # Get specific idea
+aha://feature/PROJ-456            # Get specific feature
+aha://user/USER-789               # Get specific user
+aha://epic/EPIC-101               # Get specific epic
+aha://product/PROD-001            # Get specific product
+aha://initiative/INIT-202         # Get specific initiative
+aha://features?query=auth&tag=api # Search features
+aha://users                       # List all users
+aha://epics/PROJ-001              # List epics for product
+aha://products                    # List all products
+aha://initiatives                 # List all initiatives
+aha://ideas/PROJ-001              # List ideas for product
+```
 
 ### Available Tools
 

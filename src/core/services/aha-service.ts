@@ -4,7 +4,9 @@ import {
   IdeasApi,
   UsersApi,
   EpicsApi,
-  DefaultApi
+  DefaultApi,
+  ProductsApi,
+  InitiativesApi
 } from '@cedricziel/aha-js';
 
 /**
@@ -17,6 +19,8 @@ export class AhaService {
   private static usersApi: UsersApi | null = null;
   private static epicsApi: EpicsApi | null = null;
   private static defaultApi: DefaultApi | null = null;
+  private static productsApi: ProductsApi | null = null;
+  private static initiativesApi: InitiativesApi | null = null;
 
   private static apiKey: string | null = process.env.AHA_TOKEN || null;
   private static subdomain: string | null = process.env.AHA_COMPANY || null;
@@ -59,6 +63,8 @@ export class AhaService {
       this.usersApi = new UsersApi(this.configuration);
       this.epicsApi = new EpicsApi(this.configuration);
       this.defaultApi = new DefaultApi(this.configuration);
+      this.productsApi = new ProductsApi(this.configuration);
+      this.initiativesApi = new InitiativesApi(this.configuration);
     } catch (error) {
       console.error('Error initializing Aha.io client:', error);
       throw new Error(`Failed to initialize Aha.io client: ${error instanceof Error ? error.message : String(error)}`);
@@ -118,6 +124,28 @@ export class AhaService {
       this.initializeClient();
     }
     return this.defaultApi!;
+  }
+
+  /**
+   * Get the products API instance
+   * @returns ProductsApi instance
+   */
+  private static getProductsApi(): ProductsApi {
+    if (!this.productsApi) {
+      this.initializeClient();
+    }
+    return this.productsApi!;
+  }
+
+  /**
+   * Get the initiatives API instance
+   * @returns InitiativesApi instance
+   */
+  private static getInitiativesApi(): InitiativesApi {
+    if (!this.initiativesApi) {
+      this.initializeClient();
+    }
+    return this.initiativesApi!;
   }
 
   /**
@@ -301,6 +329,101 @@ export class AhaService {
       return response.data;
     } catch (error) {
       console.error(`Error getting idea ${ideaId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a specific product by ID
+   * @param productId The ID of the product
+   * @returns The product details
+   */
+  public static async getProduct(productId: string): Promise<any> {
+    try {
+      // Use direct API call since there's no specific method in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/products/${productId}`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get product: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Error getting product ${productId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * List products from Aha.io
+   * @returns A list of products
+   */
+  public static async listProducts(): Promise<any> {
+    const productsApi = this.getProductsApi();
+
+    try {
+      const response = await productsApi.productsGet();
+      return response.data;
+    } catch (error) {
+      console.error('Error listing products:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a specific initiative by ID
+   * @param initiativeId The ID of the initiative
+   * @returns The initiative details
+   */
+  public static async getInitiative(initiativeId: string): Promise<any> {
+    const initiativesApi = this.getInitiativesApi();
+
+    try {
+      const response = await initiativesApi.initiativesIdGet({ id: initiativeId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting initiative ${initiativeId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * List initiatives from Aha.io
+   * @returns A list of initiatives
+   */
+  public static async listInitiatives(): Promise<any> {
+    const initiativesApi = this.getInitiativesApi();
+
+    try {
+      const response = await initiativesApi.initiativesGet();
+      return response.data;
+    } catch (error) {
+      console.error('Error listing initiatives:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * List ideas for a specific product
+   * @param productId The ID of the product
+   * @returns A list of ideas for the product
+   */
+  public static async listIdeasByProduct(productId: string): Promise<any> {
+    const ideasApi = this.getIdeasApi();
+
+    try {
+      const response = await ideasApi.productsProductIdIdeasGet({ productId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error listing ideas for product ${productId}:`, error);
       throw error;
     }
   }

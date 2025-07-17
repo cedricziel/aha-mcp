@@ -9,9 +9,14 @@ const mockAhaService = {
   getFeature: mock(() => Promise.resolve({ id: 'FEAT-123', name: 'Test Feature' })),
   getUser: mock(() => Promise.resolve({ id: 'USER-123', name: 'Test User' })),
   getEpic: mock(() => Promise.resolve({ id: 'EPIC-123', name: 'Test Epic' })),
+  getProduct: mock(() => Promise.resolve({ id: 'PROD-123', name: 'Test Product' })),
+  getInitiative: mock(() => Promise.resolve({ id: 'INIT-123', name: 'Test Initiative' })),
   listFeatures: mock(() => Promise.resolve({ features: [{ id: 'FEAT-1' }, { id: 'FEAT-2' }] })),
   listUsers: mock(() => Promise.resolve({ users: [{ id: 'USER-1' }, { id: 'USER-2' }] })),
-  listEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1' }, { id: 'EPIC-2' }] }))
+  listEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1' }, { id: 'EPIC-2' }] })),
+  listProducts: mock(() => Promise.resolve({ products: [{ id: 'PROD-1' }, { id: 'PROD-2' }] })),
+  listInitiatives: mock(() => Promise.resolve({ initiatives: [{ id: 'INIT-1' }, { id: 'INIT-2' }] })),
+  listIdeasByProduct: mock(() => Promise.resolve({ ideas: [{ id: 'IDEA-1' }, { id: 'IDEA-2' }] }))
 };
 
 describe('Resources', () => {
@@ -26,9 +31,14 @@ describe('Resources', () => {
       getFeature: AhaService.getFeature,
       getUser: AhaService.getUser,
       getEpic: AhaService.getEpic,
+      getProduct: AhaService.getProduct,
+      getInitiative: AhaService.getInitiative,
       listFeatures: AhaService.listFeatures,
       listUsers: AhaService.listUsers,
-      listEpics: AhaService.listEpics
+      listEpics: AhaService.listEpics,
+      listProducts: AhaService.listProducts,
+      listInitiatives: AhaService.listInitiatives,
+      listIdeasByProduct: AhaService.listIdeasByProduct
     };
 
     // Reset mocks
@@ -39,9 +49,14 @@ describe('Resources', () => {
     (AhaService as any).getFeature = mockAhaService.getFeature;
     (AhaService as any).getUser = mockAhaService.getUser;
     (AhaService as any).getEpic = mockAhaService.getEpic;
+    (AhaService as any).getProduct = mockAhaService.getProduct;
+    (AhaService as any).getInitiative = mockAhaService.getInitiative;
     (AhaService as any).listFeatures = mockAhaService.listFeatures;
     (AhaService as any).listUsers = mockAhaService.listUsers;
     (AhaService as any).listEpics = mockAhaService.listEpics;
+    (AhaService as any).listProducts = mockAhaService.listProducts;
+    (AhaService as any).listInitiatives = mockAhaService.listInitiatives;
+    (AhaService as any).listIdeasByProduct = mockAhaService.listIdeasByProduct;
 
     // Create a mock server that captures resource registrations
     resourceHandlers = new Map();
@@ -61,9 +76,14 @@ describe('Resources', () => {
     (AhaService as any).getFeature = originalMethods.getFeature;
     (AhaService as any).getUser = originalMethods.getUser;
     (AhaService as any).getEpic = originalMethods.getEpic;
+    (AhaService as any).getProduct = originalMethods.getProduct;
+    (AhaService as any).getInitiative = originalMethods.getInitiative;
     (AhaService as any).listFeatures = originalMethods.listFeatures;
     (AhaService as any).listUsers = originalMethods.listUsers;
     (AhaService as any).listEpics = originalMethods.listEpics;
+    (AhaService as any).listProducts = originalMethods.listProducts;
+    (AhaService as any).listInitiatives = originalMethods.listInitiatives;
+    (AhaService as any).listIdeasByProduct = originalMethods.listIdeasByProduct;
   });
 
   describe('Individual Entity Resources', () => {
@@ -154,6 +174,50 @@ describe('Resources', () => {
         await expect(handler!(uri)).rejects.toThrow('Invalid epic ID: ID is missing from URI');
       });
     });
+
+    describe('aha_product resource', () => {
+      it('should retrieve product by ID', async () => {
+        const handler = resourceHandlers.get('aha_product');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://product/PROD-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getProduct).toHaveBeenCalledWith('PROD-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://product/PROD-123');
+        expect(result.contents[0].text).toContain('Test Product');
+      });
+
+      it('should throw error for missing ID', async () => {
+        const handler = resourceHandlers.get('aha_product');
+        const uri = new URL('aha://product/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid product ID: ID is missing from URI');
+      });
+    });
+
+    describe('aha_initiative resource', () => {
+      it('should retrieve initiative by ID', async () => {
+        const handler = resourceHandlers.get('aha_initiative');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://initiative/INIT-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getInitiative).toHaveBeenCalledWith('INIT-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://initiative/INIT-123');
+        expect(result.contents[0].text).toContain('Test Initiative');
+      });
+
+      it('should throw error for missing ID', async () => {
+        const handler = resourceHandlers.get('aha_initiative');
+        const uri = new URL('aha://initiative/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid initiative ID: ID is missing from URI');
+      });
+    });
   });
 
   describe('Collection Resources', () => {
@@ -241,6 +305,58 @@ describe('Resources', () => {
         await expect(handler!(uri)).rejects.toThrow('Invalid product ID: Product ID is missing from URI');
       });
     });
+
+    describe('aha_products resource', () => {
+      it('should list all products', async () => {
+        const handler = resourceHandlers.get('aha_products');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://products');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.listProducts).toHaveBeenCalledWith();
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://products');
+        expect(result.contents[0].text).toContain('PROD-1');
+      });
+    });
+
+    describe('aha_initiatives resource', () => {
+      it('should list all initiatives', async () => {
+        const handler = resourceHandlers.get('aha_initiatives');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://initiatives');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.listInitiatives).toHaveBeenCalledWith();
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://initiatives');
+        expect(result.contents[0].text).toContain('INIT-1');
+      });
+    });
+
+    describe('aha_ideas_by_product resource', () => {
+      it('should list ideas for a product', async () => {
+        const handler = resourceHandlers.get('aha_ideas_by_product');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://ideas/PROJ-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.listIdeasByProduct).toHaveBeenCalledWith('PROJ-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://ideas/PROJ-123');
+        expect(result.contents[0].text).toContain('IDEA-1');
+      });
+
+      it('should throw error for missing product ID', async () => {
+        const handler = resourceHandlers.get('aha_ideas_by_product');
+        const uri = new URL('aha://ideas/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid product ID: Product ID is missing from URI');
+      });
+    });
   });
 
   describe('Error Handling', () => {
@@ -271,9 +387,14 @@ describe('Resources', () => {
         'aha_feature',
         'aha_user',
         'aha_epic',
+        'aha_product',
+        'aha_initiative',
         'aha_features',
         'aha_users',
-        'aha_epics'
+        'aha_epics',
+        'aha_products',
+        'aha_initiatives',
+        'aha_ideas_by_product'
       ];
 
       expectedResources.forEach(resourceName => {
