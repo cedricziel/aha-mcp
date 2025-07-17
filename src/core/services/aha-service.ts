@@ -4,7 +4,7 @@ import {
   IdeasApi,
   UsersApi,
   EpicsApi
-} from 'aha-js';
+} from '@cedricziel/aha-js';
 
 /**
  * Service for interacting with the Aha.io API
