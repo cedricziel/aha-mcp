@@ -305,5 +305,14 @@ describe('AhaService', () => {
     it('should have getInitiativeEpics method', () => {
       expect(typeof AhaService.getInitiativeEpics).toBe('function');
     });
+
+    // Portal integration & advanced features (Phase 8C)
+    it('should have createIdeaByPortalUser method', () => {
+      expect(typeof AhaService.createIdeaByPortalUser).toBe('function');
+    });
+
+    it('should have createIdeaWithPortalSettings method', () => {
+      expect(typeof AhaService.createIdeaWithPortalSettings).toBe('function');
+    });
   });
 });

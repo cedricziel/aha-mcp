@@ -1142,4 +1142,96 @@ export function registerTools(server: McpServer) {
       }
     }
   );
+
+  // ============================
+  // PORTAL INTEGRATION & ADVANCED FEATURES (PHASE 8C)
+  // ============================
+
+  // Create idea by portal user tool
+  server.tool(
+    "aha_create_idea_by_portal_user",
+    "Create an idea by a portal user in Aha.io",
+    {
+      productId: z.string().describe("ID of the product"),
+      ideaData: z.object({
+        idea: z.object({
+          name: z.string().describe("Name of the idea"),
+          description: z.string().optional().describe("Description of the idea"),
+          submitted_idea_portal_id: z.string().optional().describe("ID of the ideas portal"),
+          skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)"),
+          created_by_portal_user: z.object({
+            id: z.number().describe("ID of the portal user"),
+            name: z.string().describe("Name of the portal user")
+          }).describe("Portal user information")
+        }).describe("Idea data object")
+      }).describe("Idea creation data by portal user")
+    },
+    async (params: { productId: string; ideaData: any }) => {
+      try {
+        const idea = await services.AhaService.createIdeaByPortalUser(params.productId, params.ideaData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Idea by portal user successfully created in product ${params.productId}:\n\n${JSON.stringify(idea, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error creating idea by portal user: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Create idea with portal settings tool
+  server.tool(
+    "aha_create_idea_with_portal_settings",
+    "Create an idea with enhanced portal settings in Aha.io",
+    {
+      productId: z.string().describe("ID of the product"),
+      ideaData: z.object({
+        idea: z.object({
+          name: z.string().describe("Name of the idea"),
+          description: z.string().optional().describe("Description of the idea"),
+          submitted_idea_portal_id: z.string().optional().describe("ID of the ideas portal"),
+          skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)"),
+          category: z.string().optional().describe("Category for the idea"),
+          score: z.number().optional().describe("Score for the idea")
+        }).describe("Idea data object")
+      }).describe("Idea creation data with portal settings")
+    },
+    async (params: { productId: string; ideaData: any }) => {
+      try {
+        const idea = await services.AhaService.createIdeaWithPortalSettings(params.productId, params.ideaData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Idea with portal settings successfully created in product ${params.productId}:\n\n${JSON.stringify(idea, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error creating idea with portal settings: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
 }

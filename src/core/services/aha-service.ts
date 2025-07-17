@@ -1602,4 +1602,48 @@ export class AhaService {
       throw error;
     }
   }
+
+  // PORTAL INTEGRATION & ADVANCED FEATURES (PHASE 8C)
+
+  /**
+   * Create an idea by a portal user
+   * @param productId The ID of the product
+   * @param ideaData The idea data with portal user information
+   * @returns The created idea response
+   */
+  public static async createIdeaByPortalUser(productId: string, ideaData: any): Promise<any> {
+    const ideasApi = this.getIdeasApi();
+
+    try {
+      const response = await ideasApi.productsProductIdIdeasPortalUserPost({
+        productId: productId,
+        ideaCreateByPortalUserRequest: ideaData
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error creating idea by portal user in product ${productId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create an idea with enhanced portal settings
+   * @param productId The ID of the product
+   * @param ideaData The idea data with portal configuration
+   * @returns The created idea response
+   */
+  public static async createIdeaWithPortalSettings(productId: string, ideaData: any): Promise<any> {
+    const ideasApi = this.getIdeasApi();
+
+    try {
+      const response = await ideasApi.productsProductIdIdeasPost({
+        productId: productId,
+        ideaCreateRequest: ideaData
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error creating idea with portal settings in product ${productId}:`, error);
+      throw error;
+    }
+  }
 }
