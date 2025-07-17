@@ -139,6 +139,22 @@ bun run build:http
 
 ### Publishing
 
+#### Automated Release Process (Recommended)
+
+This project uses [release-please](https://github.com/googleapis/release-please-action) for automated versioning and publishing:
+
+1. **Make changes** using [Conventional Commits](https://www.conventionalcommits.org/) format:
+   - `feat:` for new features (minor version bump)
+   - `fix:` for bug fixes (patch version bump)
+   - `feat!:` or `fix!:` for breaking changes (major version bump)
+
+2. **Push to main** - release-please will automatically:
+   - Create a release PR with updated version and changelog
+   - Once the release PR is merged, it will create a GitHub release
+   - The release will trigger automatic publication to npm
+
+#### Manual Publishing
+
 To publish the package manually:
 
 ```bash
@@ -152,7 +168,7 @@ bun run build
 npm publish --access public
 ```
 
-**Note**: The package is automatically published to npm when you create a GitHub release. Make sure to set the `NPM_TOKEN` secret in your repository settings.
+**Note**: Make sure to set the `NPM_TOKEN` secret in your repository settings for automated publishing.
 
 ## 📚 Documentation
 
