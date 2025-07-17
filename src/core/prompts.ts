@@ -1,5 +1,73 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import * as services from "./services/index.js";
+
+/**
+ * Helper function to fetch context from Aha.io resources
+ */
+async function fetchResourceContext(resourceId: string, resourceType: string): Promise<string> {
+  try {
+    let context = "";
+    
+    switch (resourceType) {
+      case "feature":
+        const feature = await services.AhaService.getFeature(resourceId);
+        context = `**Existing Feature Context:**
+- Name: ${feature.name || 'N/A'}
+- Description: ${feature.description || 'N/A'}
+- Status: ${feature.status || 'N/A'}
+- Priority: ${feature.priority || 'N/A'}
+- Release: ${feature.release?.name || 'N/A'}
+- Tags: ${feature.tags?.map(t => t.name).join(', ') || 'N/A'}
+`;
+        break;
+      case "epic":
+        const epic = await services.AhaService.getEpic(resourceId);
+        context = `**Existing Epic Context:**
+- Name: ${epic.name || 'N/A'}
+- Description: ${epic.description || 'N/A'}
+- Status: ${epic.status || 'N/A'}
+- Progress: ${epic.progress || 'N/A'}
+- Product: ${epic.product?.name || 'N/A'}
+`;
+        break;
+      case "idea":
+        const idea = await services.AhaService.getIdea(resourceId);
+        context = `**Existing Idea Context:**
+- Name: ${idea.name || 'N/A'}
+- Description: ${idea.description || 'N/A'}
+- Status: ${idea.status || 'N/A'}
+- Score: ${idea.score || 'N/A'}
+- Category: ${idea.category?.name || 'N/A'}
+`;
+        break;
+      case "initiative":
+        const initiative = await services.AhaService.getInitiative(resourceId);
+        context = `**Existing Initiative Context:**
+- Name: ${initiative.name || 'N/A'}
+- Description: ${initiative.description || 'N/A'}
+- Status: ${initiative.status || 'N/A'}
+- Progress: ${initiative.progress || 'N/A'}
+`;
+        break;
+      case "product":
+        const product = await services.AhaService.getProduct(resourceId);
+        context = `**Existing Product Context:**
+- Name: ${product.name || 'N/A'}
+- Description: ${product.description || 'N/A'}
+- Prefix: ${product.prefix || 'N/A'}
+`;
+        break;
+      default:
+        context = "";
+    }
+    
+    return context;
+  } catch (error) {
+    console.error(`Error fetching ${resourceType} context for ${resourceId}:`, error);
+    return "";
+  }
+}
 
 /**
  * Register all Aha.io domain-specific prompts with the MCP server
@@ -16,20 +84,30 @@ export function registerPrompts(server: McpServer) {
       feature_description: z.string().optional().describe("Description of the feature"),
       product_context: z.string().optional().describe("Product context and goals"),
       existing_features: z.string().optional().describe("Comma-separated list of related existing features"),
-      target_users: z.string().optional().describe("Target user segments")
+      target_users: z.string().optional().describe("Target user segments"),
+      feature_id: z.string().optional().describe("Existing feature ID from Aha.io for context (e.g., PROJ-123)")
     },
-    (params: { feature_name: string; feature_description?: string; product_context?: string; existing_features?: string; target_users?: string }) => ({
-      messages: [{
-        role: "user",
-        content: {
-          type: "text",
-          text: `Please analyze the following feature:
+    async (params: { feature_name: string; feature_description?: string; product_context?: string; existing_features?: string; target_users?: string; feature_id?: string }) => {
+      // Fetch existing feature context if feature_id is provided
+      let existingFeatureContext = "";
+      if (params.feature_id) {
+        existingFeatureContext = await fetchResourceContext(params.feature_id, "feature");
+      }
+      
+      return {
+        messages: [{
+          role: "user",
+          content: {
+            type: "text",
+            text: `Please analyze the following feature:
 
 **Feature Name**: ${params.feature_name}
 ${params.feature_description ? `**Description**: ${params.feature_description}` : ''}
 ${params.product_context ? `**Product Context**: ${params.product_context}` : ''}
 ${params.existing_features ? `**Related Features**: ${params.existing_features}` : ''}
 ${params.target_users ? `**Target Users**: ${params.target_users}` : ''}
+
+${existingFeatureContext}
 
 Please provide:
 1. **Requirements Analysis**: Break down the feature into core requirements
@@ -40,9 +118,10 @@ Please provide:
 6. **Timeline Estimation**: Provide rough timeline estimates
 
 Format your response with clear sections and actionable recommendations.`
-        }
-      }]
-    })
+          }
+        }]
+      };
+    }
   );
 
   // 2. Product Roadmap Prompt
@@ -55,14 +134,22 @@ Format your response with clear sections and actionable recommendations.`
       business_goals: z.string().describe("Business goals and objectives"),
       time_horizon: z.string().describe("Roadmap time horizon (quarter, half-year, year)"),
       key_features: z.string().optional().describe("Comma-separated list of key features to consider"),
-      market_constraints: z.string().optional().describe("Market constraints and competitive landscape")
+      market_constraints: z.string().optional().describe("Market constraints and competitive landscape"),
+      product_id: z.string().optional().describe("Existing product ID from Aha.io for context (e.g., PROJ)")
     },
-    (params: { product_name: string; current_version?: string; business_goals: string; time_horizon: string; key_features?: string; market_constraints?: string }) => ({
-      messages: [{
-        role: "user",
-        content: {
-          type: "text",
-          text: `Create a strategic product roadmap for:
+    async (params: { product_name: string; current_version?: string; business_goals: string; time_horizon: string; key_features?: string; market_constraints?: string; product_id?: string }) => {
+      // Fetch existing product context if product_id is provided
+      let existingProductContext = "";
+      if (params.product_id) {
+        existingProductContext = await fetchResourceContext(params.product_id, "product");
+      }
+      
+      return {
+        messages: [{
+          role: "user",
+          content: {
+            type: "text",
+            text: `Create a strategic product roadmap for:
 
 **Product**: ${params.product_name}
 ${params.current_version ? `**Current Version**: ${params.current_version}` : ''}
@@ -70,6 +157,8 @@ ${params.current_version ? `**Current Version**: ${params.current_version}` : ''
 **Time Horizon**: ${params.time_horizon}
 ${params.key_features ? `**Key Features**: ${params.key_features}` : ''}
 ${params.market_constraints ? `**Market Context**: ${params.market_constraints}` : ''}
+
+${existingProductContext}
 
 Please provide:
 1. **Strategic Themes**: 3-4 key themes for the roadmap period
@@ -80,9 +169,10 @@ Please provide:
 6. **Success Metrics**: KPIs and success measures for each phase
 
 Structure as a actionable roadmap with clear timelines and dependencies.`
-        }
-      }]
-    })
+          }
+        }]
+      };
+    }
   );
 
   // 3. Release Planning Prompt
@@ -255,14 +345,22 @@ Format as a actionable sprint plan with clear assignments and timelines.`
       business_value: z.string().describe("Business value and objectives"),
       user_types: z.string().describe("Comma-separated list of user types affected"),
       constraints: z.string().optional().describe("Technical or business constraints"),
-      timeline: z.string().optional().describe("Target timeline or deadline")
+      timeline: z.string().optional().describe("Target timeline or deadline"),
+      epic_id: z.string().optional().describe("Existing epic ID from Aha.io for context (e.g., PROJ-E-123)")
     },
-    (params: { epic_name: string; epic_description: string; business_value: string; user_types: string; constraints?: string; timeline?: string }) => ({
-      messages: [{
-        role: "user",
-        content: {
-          type: "text",
-          text: `Break down the following epic:
+    async (params: { epic_name: string; epic_description: string; business_value: string; user_types: string; constraints?: string; timeline?: string; epic_id?: string }) => {
+      // Fetch existing epic context if epic_id is provided
+      let existingEpicContext = "";
+      if (params.epic_id) {
+        existingEpicContext = await fetchResourceContext(params.epic_id, "epic");
+      }
+      
+      return {
+        messages: [{
+          role: "user",
+          content: {
+            type: "text",
+            text: `Break down the following epic:
 
 **Epic Name**: ${params.epic_name}
 **Description**: ${params.epic_description}
@@ -270,6 +368,8 @@ Format as a actionable sprint plan with clear assignments and timelines.`
 **User Types**: ${params.user_types}
 ${params.constraints ? `**Constraints**: ${params.constraints}` : ''}
 ${params.timeline ? `**Timeline**: ${params.timeline}` : ''}
+
+${existingEpicContext}
 
 Please provide:
 1. **Epic Decomposition**: Break into logical features and sub-epics
@@ -281,9 +381,10 @@ Please provide:
 7. **Delivery Strategy**: Recommended delivery approach and phasing
 
 Structure as a hierarchical breakdown with clear relationships and dependencies.`
-        }
-      }]
-    })
+          }
+        }]
+      };
+    }
   );
 
   // 8. Idea Prioritization Prompt
@@ -295,20 +396,34 @@ Structure as a hierarchical breakdown with clear relationships and dependencies.
       business_goals: z.string().describe("Current business goals and strategy"),
       evaluation_criteria: z.string().optional().describe("Comma-separated list of evaluation criteria"),
       constraints: z.string().optional().describe("Resource or timeline constraints"),
-      market_context: z.string().optional().describe("Market context and competitive landscape")
+      market_context: z.string().optional().describe("Market context and competitive landscape"),
+      idea_ids: z.string().optional().describe("Comma-separated list of Aha.io idea IDs for context (e.g., PROJ-I-123,PROJ-I-456)")
     },
-    (params: { ideas_list: string; business_goals: string; evaluation_criteria?: string; constraints?: string; market_context?: string }) => ({
-      messages: [{
-        role: "user",
-        content: {
-          type: "text",
-          text: `Prioritize the following ideas:
+    async (params: { ideas_list: string; business_goals: string; evaluation_criteria?: string; constraints?: string; market_context?: string; idea_ids?: string }) => {
+      // Fetch existing idea contexts if idea_ids is provided
+      let existingIdeasContext = "";
+      if (params.idea_ids) {
+        const ideaIds = params.idea_ids.split(',').map(id => id.trim());
+        const contexts = await Promise.all(
+          ideaIds.map(id => fetchResourceContext(id, "idea"))
+        );
+        existingIdeasContext = contexts.filter(c => c).join('\n');
+      }
+      
+      return {
+        messages: [{
+          role: "user",
+          content: {
+            type: "text",
+            text: `Prioritize the following ideas:
 
 **Ideas**: ${params.ideas_list}
 **Business Goals**: ${params.business_goals}
 ${params.evaluation_criteria ? `**Evaluation Criteria**: ${params.evaluation_criteria}` : ''}
 ${params.constraints ? `**Constraints**: ${params.constraints}` : ''}
 ${params.market_context ? `**Market Context**: ${params.market_context}` : ''}
+
+${existingIdeasContext}
 
 Please provide:
 1. **Prioritization Matrix**: Score each idea against key criteria
@@ -320,9 +435,10 @@ Please provide:
 7. **Implementation Roadmap**: Suggested sequence and timing
 
 Use a structured scoring approach with clear rationale for each decision.`
-        }
-      }]
-    })
+          }
+        }]
+      };
+    }
   );
 
   // 9. Stakeholder Communication Prompt
