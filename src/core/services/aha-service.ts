@@ -7,7 +7,8 @@ import {
   DefaultApi,
   ProductsApi,
   InitiativesApi,
-  CommentsApi
+  CommentsApi,
+  GoalsApi
 } from '@cedricziel/aha-js';
 
 /**
@@ -23,6 +24,7 @@ export class AhaService {
   private static productsApi: ProductsApi | null = null;
   private static initiativesApi: InitiativesApi | null = null;
   private static commentsApi: CommentsApi | null = null;
+  private static goalsApi: GoalsApi | null = null;
 
   private static apiKey: string | null = process.env.AHA_TOKEN || null;
   private static subdomain: string | null = process.env.AHA_COMPANY || null;
@@ -68,6 +70,7 @@ export class AhaService {
       this.productsApi = new ProductsApi(this.configuration);
       this.initiativesApi = new InitiativesApi(this.configuration);
       this.commentsApi = new CommentsApi(this.configuration);
+      this.goalsApi = new GoalsApi(this.configuration);
     } catch (error) {
       console.error('Error initializing Aha.io client:', error);
       throw new Error(`Failed to initialize Aha.io client: ${error instanceof Error ? error.message : String(error)}`);
@@ -160,6 +163,17 @@ export class AhaService {
       this.initializeClient();
     }
     return this.commentsApi!;
+  }
+
+  /**
+   * Get the goals API instance
+   * @returns GoalsApi instance
+   */
+  private static getGoalsApi(): GoalsApi {
+    if (!this.goalsApi) {
+      this.initializeClient();
+    }
+    return this.goalsApi!;
   }
 
   /**
@@ -591,6 +605,80 @@ export class AhaService {
       return response.data;
     } catch (error) {
       console.error(`Error getting comments for todo ${todoId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a specific goal by ID
+   * @param goalId The ID of the goal
+   * @returns The goal details
+   */
+  public static async getGoal(goalId: string): Promise<any> {
+    try {
+      // Use direct API call since there's no specific method in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/goals/${goalId}`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get goal: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Error getting goal ${goalId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * List goals from Aha.io
+   * @returns A list of goals
+   */
+  public static async listGoals(): Promise<any> {
+    try {
+      // Use direct API call since there's no specific method in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/goals`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to list goals: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error listing goals:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get epics associated with a specific goal
+   * @param goalId The ID of the goal
+   * @returns A list of epics associated with the goal
+   */
+  public static async getGoalEpics(goalId: string): Promise<any> {
+    const goalsApi = this.getGoalsApi();
+
+    try {
+      const response = await goalsApi.goalsGoalIdEpicsGet({ goalId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting epics for goal ${goalId}:`, error);
       throw error;
     }
   }

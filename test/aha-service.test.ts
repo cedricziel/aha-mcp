@@ -18,6 +18,7 @@ describe('AhaService', () => {
     (AhaService as any).productsApi = null;
     (AhaService as any).initiativesApi = null;
     (AhaService as any).commentsApi = null;
+    (AhaService as any).goalsApi = null;
     (AhaService as any).configuration = null;
   });
 
@@ -148,6 +149,18 @@ describe('AhaService', () => {
 
     it('should have getTodoComments method', () => {
       expect(typeof AhaService.getTodoComments).toBe('function');
+    });
+
+    it('should have getGoal method', () => {
+      expect(typeof AhaService.getGoal).toBe('function');
+    });
+
+    it('should have listGoals method', () => {
+      expect(typeof AhaService.listGoals).toBe('function');
+    });
+
+    it('should have getGoalEpics method', () => {
+      expect(typeof AhaService.getGoalEpics).toBe('function');
     });
   });
 });

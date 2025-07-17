@@ -552,4 +552,77 @@ export function registerResources(server: McpServer) {
       }
     }
   );
+
+  // Aha goal resource
+  server.resource(
+    "aha_goal",
+    "aha://goal/{id}",
+    async (uri: URL) => {
+      const id = uri.pathname.split('/').pop();
+      if (!id) {
+        throw new Error('Invalid goal ID: ID is missing from URI');
+      }
+      try {
+        const goal = await services.AhaService.getGoal(id);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(goal, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving goal ${id}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha goals list resource
+  server.resource(
+    "aha_goals",
+    "aha://goals",
+    async (uri: URL) => {
+      try {
+        const goals = await services.AhaService.listGoals();
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(goals, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving goals list:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha goal epics resource
+  server.resource(
+    "aha_goal_epics",
+    "aha://goal/{goal_id}/epics",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const goalId = pathParts[pathParts.length - 2]; // goal_id is before /epics
+      
+      if (!goalId) {
+        throw new Error('Invalid goal ID: Goal ID is missing from URI');
+      }
+      
+      try {
+        const epics = await services.AhaService.getGoalEpics(goalId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(epics, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving epics for goal ${goalId}:`, error);
+        throw error;
+      }
+    }
+  );
 }

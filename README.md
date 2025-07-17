@@ -94,6 +94,11 @@ You can set these environment variables in your MCP settings configuration file 
 - `aha_requirement_comments`: Access comments for a requirement using `aha://comments/requirement/{requirement_id}`
 - `aha_todo_comments`: Access comments for a todo using `aha://comments/todo/{todo_id}`
 
+#### Goal Resources
+- `aha_goal`: Access individual goals using `aha://goal/{goal_id}`
+- `aha_goals`: List all goals using `aha://goals`
+- `aha_goal_epics`: Access epics associated with a goal using `aha://goal/{goal_id}/epics`
+
 #### Resource URI Examples
 ```
 aha://idea/IDEA-123               # Get specific idea
@@ -117,6 +122,9 @@ aha://comments/release/REL-333    # Get comments for release
 aha://comments/release-phase/RP-444 # Get comments for release phase
 aha://comments/requirement/REQ-666 # Get comments for requirement
 aha://comments/todo/TODO-777      # Get comments for todo
+aha://goal/GOAL-123               # Get specific goal
+aha://goals                       # List all goals
+aha://goal/GOAL-456/epics         # Get epics for goal
 ```
 
 ### Available Tools

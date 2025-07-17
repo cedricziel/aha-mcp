@@ -25,7 +25,10 @@ const mockAhaService = {
   getReleaseComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-6', body: 'Test release comment' }] })),
   getReleasePhaseComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-7', body: 'Test release phase comment' }] })),
   getRequirementComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-8', body: 'Test requirement comment' }] })),
-  getTodoComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-9', body: 'Test todo comment' }] }))
+  getTodoComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-9', body: 'Test todo comment' }] })),
+  getGoal: mock(() => Promise.resolve({ id: 'GOAL-123', name: 'Test Goal' })),
+  listGoals: mock(() => Promise.resolve({ goals: [{ id: 'GOAL-1' }, { id: 'GOAL-2' }] })),
+  getGoalEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1' }, { id: 'EPIC-2' }] }))
 };
 
 describe('Resources', () => {
@@ -56,7 +59,10 @@ describe('Resources', () => {
       getReleaseComments: AhaService.getReleaseComments,
       getReleasePhaseComments: AhaService.getReleasePhaseComments,
       getRequirementComments: AhaService.getRequirementComments,
-      getTodoComments: AhaService.getTodoComments
+      getTodoComments: AhaService.getTodoComments,
+      getGoal: AhaService.getGoal,
+      listGoals: AhaService.listGoals,
+      getGoalEpics: AhaService.getGoalEpics
     };
 
     // Reset mocks
@@ -84,6 +90,9 @@ describe('Resources', () => {
     (AhaService as any).getReleasePhaseComments = mockAhaService.getReleasePhaseComments;
     (AhaService as any).getRequirementComments = mockAhaService.getRequirementComments;
     (AhaService as any).getTodoComments = mockAhaService.getTodoComments;
+    (AhaService as any).getGoal = mockAhaService.getGoal;
+    (AhaService as any).listGoals = mockAhaService.listGoals;
+    (AhaService as any).getGoalEpics = mockAhaService.getGoalEpics;
 
     // Create a mock server that captures resource registrations
     resourceHandlers = new Map();
@@ -120,6 +129,9 @@ describe('Resources', () => {
     (AhaService as any).getReleasePhaseComments = originalMethods.getReleasePhaseComments;
     (AhaService as any).getRequirementComments = originalMethods.getRequirementComments;
     (AhaService as any).getTodoComments = originalMethods.getTodoComments;
+    (AhaService as any).getGoal = originalMethods.getGoal;
+    (AhaService as any).listGoals = originalMethods.listGoals;
+    (AhaService as any).getGoalEpics = originalMethods.getGoalEpics;
   });
 
   describe('Individual Entity Resources', () => {
@@ -595,6 +607,67 @@ describe('Resources', () => {
     });
   });
 
+  describe('Goals Resources', () => {
+    describe('aha_goal resource', () => {
+      it('should retrieve goal by ID', async () => {
+        const handler = resourceHandlers.get('aha_goal');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://goal/GOAL-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getGoal).toHaveBeenCalledWith('GOAL-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://goal/GOAL-123');
+        expect(result.contents[0].text).toContain('Test Goal');
+      });
+
+      it('should throw error for missing goal ID', async () => {
+        const handler = resourceHandlers.get('aha_goal');
+        const uri = new URL('aha://goal/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid goal ID: ID is missing from URI');
+      });
+    });
+
+    describe('aha_goals resource', () => {
+      it('should list all goals', async () => {
+        const handler = resourceHandlers.get('aha_goals');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://goals');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.listGoals).toHaveBeenCalledWith();
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://goals');
+        expect(result.contents[0].text).toContain('GOAL-1');
+      });
+    });
+
+    describe('aha_goal_epics resource', () => {
+      it('should retrieve epics for goal', async () => {
+        const handler = resourceHandlers.get('aha_goal_epics');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://goal/GOAL-123/epics');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getGoalEpics).toHaveBeenCalledWith('GOAL-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://goal/GOAL-123/epics');
+        expect(result.contents[0].text).toContain('EPIC-1');
+      });
+
+      it('should throw error for missing goal ID', async () => {
+        const handler = resourceHandlers.get('aha_goal_epics');
+        const uri = new URL('aha://goal//epics');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid goal ID: Goal ID is missing from URI');
+      });
+    });
+  });
+
   describe('Error Handling', () => {
     it('should handle service errors gracefully', async () => {
       const errorMessage = 'API Error';
@@ -639,7 +712,10 @@ describe('Resources', () => {
         'aha_release_comments',
         'aha_release_phase_comments',
         'aha_requirement_comments',
-        'aha_todo_comments'
+        'aha_todo_comments',
+        'aha_goal',
+        'aha_goals',
+        'aha_goal_epics'
       ];
 
       expectedResources.forEach(resourceName => {
