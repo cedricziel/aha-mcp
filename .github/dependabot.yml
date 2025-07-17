@@ -3,6 +3,7 @@
 # See https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
 version: 2
+enable-beta-ecosystems: true
 updates:
   # Enable version updates for npm
   - package-ecosystem: "npm"
@@ -12,6 +13,16 @@ updates:
     schedule:
       interval: "daily"
     # Assign pull requests to the repository owner
+    assignees:
+      - "cedricziel"
+
+  # Enable version updates for Bun
+  - package-ecosystem: "bun"
+    # Look for bun.lock file in the root directory
+    directory: "/"
+    # Check for updates once a week
+    schedule:
+      interval: "daily"
     assignees:
       - "cedricziel"
 

@@ -31,10 +31,10 @@ export AHA_COMPANY="your-company"  # Your Aha.io subdomain
 export AHA_TOKEN="your-api-token"   # Your Aha.io API token
 
 # Run in stdio mode (default)
-docker run --rm -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TOKEN" cedricziel/aha-mcp
+docker run --rm -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TOKEN" ghcr.io/cedricziel/aha-mcp
 
 # Run in SSE mode
-docker run --rm -p 3001:3001 -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TOKEN" cedricziel/aha-mcp --mode sse
+docker run --rm -p 3001:3001 -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TOKEN" ghcr.io/cedricziel/aha-mcp --mode sse
 ```
 
 ### Development Setup
@@ -409,9 +409,8 @@ When adding custom tools, resources, or prompts to your MCP server:
 
 ### Docker Images
 
-The Aha MCP server is available as Docker images on both Docker Hub and GitHub Container Registry:
+The Aha MCP server is available as Docker images on GitHub Container Registry:
 
-- **Docker Hub**: `cedricziel/aha-mcp`
 - **GitHub Container Registry**: `ghcr.io/cedricziel/aha-mcp`
 
 ### Running with Docker
@@ -423,14 +422,14 @@ The Aha MCP server is available as Docker images on both Docker Hub and GitHub C
 docker run --rm \
   -e AHA_COMPANY="your-company" \
   -e AHA_TOKEN="your-api-token" \
-  cedricziel/aha-mcp
+  ghcr.io/cedricziel/aha-mcp
 
 # Run in SSE mode
 docker run --rm \
   -p 3001:3001 \
   -e AHA_COMPANY="your-company" \
   -e AHA_TOKEN="your-api-token" \
-  cedricziel/aha-mcp --mode sse
+  ghcr.io/cedricziel/aha-mcp --mode sse
 ```
 
 #### Persistent Configuration
@@ -446,7 +445,7 @@ docker run --rm \
   -v aha-mcp-config:/home/mcp/.config \
   -e AHA_COMPANY="your-company" \
   -e AHA_TOKEN="your-api-token" \
-  cedricziel/aha-mcp
+  ghcr.io/cedricziel/aha-mcp
 ```
 
 #### Using Docker Compose

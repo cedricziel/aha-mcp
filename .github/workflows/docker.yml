@@ -9,7 +9,6 @@ on:
 
 env:
   REGISTRY_GHCR: ghcr.io
-  REGISTRY_DOCKER_HUB: docker.io
   IMAGE_NAME: cedricziel/aha-mcp
 
 jobs:
@@ -26,14 +25,6 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Log in to Docker Hub
-      if: github.event_name != 'pull_request'
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY_DOCKER_HUB }}
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_TOKEN }}
-
     - name: Log in to GitHub Container Registry
       if: github.event_name != 'pull_request'
       uses: docker/login-action@v3
@@ -47,7 +38,6 @@ jobs:
       uses: docker/metadata-action@v5
       with:
         images: |
-          ${{ env.REGISTRY_DOCKER_HUB }}/${{ env.IMAGE_NAME }}
           ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}
         tags: |
           type=ref,event=branch
@@ -90,19 +80,3 @@ jobs:
         # Cleanup
         docker stop aha-mcp-test
 
-    - name: Generate release notes
-      if: startsWith(github.ref, 'refs/tags/')
-      id: release_notes
-      run: |
-        echo "Docker images available at:" >> $GITHUB_STEP_SUMMARY
-        echo "- Docker Hub: \`docker pull ${{ env.REGISTRY_DOCKER_HUB }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
-        echo "- GitHub Container Registry: \`docker pull ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Usage examples:" >> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-        echo "# Run in stdio mode" >> $GITHUB_STEP_SUMMARY
-        echo "docker run -e AHA_COMPANY=mycompany -e AHA_TOKEN=mytoken ${{ env.REGISTRY_DOCKER_HUB }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "# Run in SSE mode" >> $GITHUB_STEP_SUMMARY
-        echo "docker run -p 3001:3001 -e AHA_COMPANY=mycompany -e AHA_TOKEN=mytoken ${{ env.REGISTRY_DOCKER_HUB }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} --mode sse" >> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

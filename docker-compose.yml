@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   aha-mcp-stdio:
-    image: cedricziel/aha-mcp:latest
+    image: ghcr.io/cedricziel/aha-mcp:latest
     container_name: aha-mcp-stdio
     environment:
       - AHA_COMPANY=${AHA_COMPANY}
@@ -17,7 +17,7 @@ services:
       - stdio
 
   aha-mcp-sse:
-    image: cedricziel/aha-mcp:latest
+    image: ghcr.io/cedricziel/aha-mcp:latest
     container_name: aha-mcp-sse
     environment:
       - AHA_COMPANY=${AHA_COMPANY}
