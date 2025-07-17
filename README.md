@@ -8,6 +8,21 @@ A Model Context Protocol (MCP) server that provides seamless integration with Ah
 
 ## 🚀 Getting Started
 
+### Quick Start with npx
+
+You can run the MCP server directly using npx without installing it globally:
+
+```bash
+# Set environment variables
+export AHA_COMPANY="your-company"  # Your Aha.io subdomain
+export AHA_TOKEN="your-api-token"   # Your Aha.io API token
+
+# Run the server
+npx @cedricziel/aha-mcp
+```
+
+### Development Setup
+
 1. Install dependencies:
    ```bash
    bun install
@@ -98,15 +113,46 @@ When adding custom tools, resources, or prompts to your MCP server:
 
 ## 🏗️ Development
 
+### Testing
+
+Run the test suite:
+
+```bash
+# Run all tests
+bun test
+
+# Run tests in watch mode
+bun run test:watch
+```
+
+### Building
+
 To build for production:
 
 ```bash
 # Build stdio server
-bun build
+bun run build
 
 # Build HTTP server
 bun run build:http
 ```
+
+### Publishing
+
+To publish the package manually:
+
+```bash
+# 1. Ensure you're logged in to npm
+npm login
+
+# 2. Build the package
+bun run build
+
+# 3. Publish to npm
+npm publish --access public
+```
+
+**Note**: The package is automatically published to npm when you create a GitHub release. Make sure to set the `NPM_TOKEN` secret in your repository settings.
 
 ## 📚 Documentation
 

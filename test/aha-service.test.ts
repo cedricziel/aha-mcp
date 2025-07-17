@@ -1,0 +1,71 @@
+import { describe, it, expect, beforeEach } from 'bun:test';
+import { AhaService } from '../src/core/services/aha-service';
+
+describe('AhaService', () => {
+  beforeEach(() => {
+    // Reset environment variables
+    delete process.env.AHA_TOKEN;
+    delete process.env.AHA_COMPANY;
+  });
+
+  describe('initialize', () => {
+    it('should initialize with provided credentials', () => {
+      expect(() => {
+        AhaService.initialize('test-token', 'test-company');
+      }).not.toThrow();
+    });
+
+    it('should throw error when attempting to use service without credentials', async () => {
+      try {
+        await AhaService.listFeatures();
+        expect.unreachable('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain('Aha API client not initialized');
+      }
+    });
+  });
+
+  describe('with environment variables', () => {
+    beforeEach(() => {
+      process.env.AHA_TOKEN = 'test-token';
+      process.env.AHA_COMPANY = 'test-company';
+    });
+
+    it('should initialize from environment variables', () => {
+      expect(() => {
+        AhaService.initialize();
+      }).not.toThrow();
+    });
+  });
+
+  describe('API methods', () => {
+    beforeEach(() => {
+      AhaService.initialize('test-token', 'test-company');
+    });
+
+    it('should have listFeatures method', () => {
+      expect(typeof AhaService.listFeatures).toBe('function');
+    });
+
+    it('should have getFeature method', () => {
+      expect(typeof AhaService.getFeature).toBe('function');
+    });
+
+    it('should have listUsers method', () => {
+      expect(typeof AhaService.listUsers).toBe('function');
+    });
+
+    it('should have listEpics method', () => {
+      expect(typeof AhaService.listEpics).toBe('function');
+    });
+
+    it('should have createFeatureComment method', () => {
+      expect(typeof AhaService.createFeatureComment).toBe('function');
+    });
+
+    it('should have getIdea method', () => {
+      expect(typeof AhaService.getIdea).toBe('function');
+    });
+  });
+});

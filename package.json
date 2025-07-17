@@ -1,17 +1,48 @@
 {
-  "name": "aha-mcp",
+  "name": "@cedricziel/aha-mcp",
   "module": "src/index.ts",
   "type": "module",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Model Context Protocol (MCP) Server for Aha",
-  "private": true,
+  "private": false,
+  "main": "./build/index.js",
+  "bin": {
+    "aha-mcp": "./build/index.js"
+  },
+  "files": [
+    "build/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "aha",
+    "aha-io",
+    "product-management",
+    "ai",
+    "claude"
+  ],
+  "author": "Cedric Ziel <cedric@cedric-ziel.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cedricziel/aha-mcp.git"
+  },
+  "homepage": "https://github.com/cedricziel/aha-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/cedricziel/aha-mcp/issues"
+  },
   "scripts": {
     "start": "bun run src/index.ts",
     "build": "bun build src/index.ts --outdir build --target node",
     "build:http": "bun build src/server/http-server.ts --outdir build --target node",
     "dev": "bun --watch src/index.ts",
     "start:http": "bun run src/server/http-server.ts",
-    "dev:http": "bun --watch src/server/http-server.ts"
+    "dev:http": "bun --watch src/server/http-server.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "prepublishOnly": "bun run build"
   },
   "devDependencies": {
     "@types/bun": "latest",
