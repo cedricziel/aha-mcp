@@ -44,10 +44,10 @@
     "test:watch": "bun test --watch",
     "prepublishOnly": "bun run build",
     "prepare": "husky",
-    "docker:build": "docker build -t cedricziel/aha-mcp .",
-    "docker:run": "docker run --rm -e AHA_COMPANY=${AHA_COMPANY} -e AHA_TOKEN=${AHA_TOKEN} cedricziel/aha-mcp",
-    "docker:run:sse": "docker run --rm -p 3001:3001 -e AHA_COMPANY=${AHA_COMPANY} -e AHA_TOKEN=${AHA_TOKEN} cedricziel/aha-mcp --mode sse",
-    "docker:test": "docker run --rm cedricziel/aha-mcp --help"
+    "docker:build": "docker build -t ghcr.io/cedricziel/aha-mcp .",
+    "docker:run": "docker run --rm -e AHA_COMPANY=${AHA_COMPANY} -e AHA_TOKEN=${AHA_TOKEN} ghcr.io/cedricziel/aha-mcp",
+    "docker:run:sse": "docker run --rm -p 3001:3001 -e AHA_COMPANY=${AHA_COMPANY} -e AHA_TOKEN=${AHA_TOKEN} ghcr.io/cedricziel/aha-mcp --mode sse",
+    "docker:test": "docker run --rm ghcr.io/cedricziel/aha-mcp --help"
   },
   "devDependencies": {
     "@types/bun": "latest",

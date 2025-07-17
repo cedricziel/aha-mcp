@@ -39,18 +39,23 @@ docker run --rm -p 3001:3001 -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TO
 
 ### Development Setup
 
-1. Install dependencies:
+1. Install [Bun](https://bun.sh/) if you haven't already:
+   ```bash
+   curl -fsSL https://bun.sh/install | bash
+   ```
+
+2. Install dependencies:
    ```bash
    bun install
    ```
 
-2. Configure environment variables:
+3. Configure environment variables:
    ```bash
    export AHA_COMPANY="your-company"  # Your Aha.io subdomain
    export AHA_TOKEN="your-api-token"   # Your Aha.io API token
    ```
 
-3. Start the server:
+4. Start the server:
    ```bash
    # Start the stdio server (for MCP clients)
    bun start
@@ -59,7 +64,7 @@ docker run --rm -p 3001:3001 -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TO
    bun run start:http
    ```
 
-4. For development with auto-reload:
+5. For development with auto-reload:
    ```bash
    # Development mode with stdio
    bun run dev
