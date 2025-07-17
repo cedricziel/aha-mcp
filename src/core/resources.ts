@@ -625,4 +625,150 @@ export function registerResources(server: McpServer) {
       }
     }
   );
+
+  // Aha release resource
+  server.resource(
+    "aha_release",
+    "aha://release/{id}",
+    async (uri: URL) => {
+      const id = uri.pathname.split('/').pop();
+      if (!id) {
+        throw new Error('Invalid release ID: ID is missing from URI');
+      }
+      try {
+        const release = await services.AhaService.getRelease(id);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(release, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving release ${id}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha releases list resource
+  server.resource(
+    "aha_releases",
+    "aha://releases",
+    async (uri: URL) => {
+      try {
+        const releases = await services.AhaService.listReleases();
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(releases, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving releases list:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha release features resource
+  server.resource(
+    "aha_release_features",
+    "aha://release/{release_id}/features",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const releaseId = pathParts[pathParts.length - 2]; // release_id is before /features
+      
+      if (!releaseId) {
+        throw new Error('Invalid release ID: Release ID is missing from URI');
+      }
+      
+      try {
+        const features = await services.AhaService.getReleaseFeatures(releaseId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(features, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving features for release ${releaseId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha release epics resource
+  server.resource(
+    "aha_release_epics",
+    "aha://release/{release_id}/epics",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const releaseId = pathParts[pathParts.length - 2]; // release_id is before /epics
+      
+      if (!releaseId) {
+        throw new Error('Invalid release ID: Release ID is missing from URI');
+      }
+      
+      try {
+        const epics = await services.AhaService.getReleaseEpics(releaseId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(epics, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving epics for release ${releaseId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha release phase resource
+  server.resource(
+    "aha_release_phase",
+    "aha://release-phase/{id}",
+    async (uri: URL) => {
+      const id = uri.pathname.split('/').pop();
+      if (!id) {
+        throw new Error('Invalid release phase ID: ID is missing from URI');
+      }
+      try {
+        const releasePhase = await services.AhaService.getReleasePhase(id);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(releasePhase, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving release phase ${id}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha release phases list resource
+  server.resource(
+    "aha_release_phases",
+    "aha://release-phases",
+    async (uri: URL) => {
+      try {
+        const releasePhases = await services.AhaService.listReleasePhases();
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(releasePhases, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving release phases list:`, error);
+        throw error;
+      }
+    }
+  );
 }

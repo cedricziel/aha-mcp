@@ -8,7 +8,8 @@ import {
   ProductsApi,
   InitiativesApi,
   CommentsApi,
-  GoalsApi
+  GoalsApi,
+  ReleasesApi
 } from '@cedricziel/aha-js';
 
 /**
@@ -25,6 +26,7 @@ export class AhaService {
   private static initiativesApi: InitiativesApi | null = null;
   private static commentsApi: CommentsApi | null = null;
   private static goalsApi: GoalsApi | null = null;
+  private static releasesApi: ReleasesApi | null = null;
 
   private static apiKey: string | null = process.env.AHA_TOKEN || null;
   private static subdomain: string | null = process.env.AHA_COMPANY || null;
@@ -71,6 +73,7 @@ export class AhaService {
       this.initiativesApi = new InitiativesApi(this.configuration);
       this.commentsApi = new CommentsApi(this.configuration);
       this.goalsApi = new GoalsApi(this.configuration);
+      this.releasesApi = new ReleasesApi(this.configuration);
     } catch (error) {
       console.error('Error initializing Aha.io client:', error);
       throw new Error(`Failed to initialize Aha.io client: ${error instanceof Error ? error.message : String(error)}`);
@@ -174,6 +177,17 @@ export class AhaService {
       this.initializeClient();
     }
     return this.goalsApi!;
+  }
+
+  /**
+   * Get the releases API instance
+   * @returns ReleasesApi instance
+   */
+  private static getReleasesApi(): ReleasesApi {
+    if (!this.releasesApi) {
+      this.initializeClient();
+    }
+    return this.releasesApi!;
   }
 
   /**
@@ -679,6 +693,154 @@ export class AhaService {
       return response.data;
     } catch (error) {
       console.error(`Error getting epics for goal ${goalId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a specific release by ID
+   * @param releaseId The ID of the release
+   * @returns The release details
+   */
+  public static async getRelease(releaseId: string): Promise<any> {
+    try {
+      // Use direct API call since there's no specific method in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/releases/${releaseId}`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get release: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Error getting release ${releaseId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * List releases from Aha.io
+   * @returns A list of releases
+   */
+  public static async listReleases(): Promise<any> {
+    try {
+      // Use direct API call since there's no specific method in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/releases`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to list releases: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error listing releases:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get features associated with a specific release
+   * @param releaseId The ID of the release
+   * @returns A list of features associated with the release
+   */
+  public static async getReleaseFeatures(releaseId: string): Promise<any> {
+    const defaultApi = this.getDefaultApi();
+
+    try {
+      const response = await defaultApi.releasesReleaseIdFeaturesGet({ releaseId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting features for release ${releaseId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get epics associated with a specific release
+   * @param releaseId The ID of the release
+   * @returns A list of epics associated with the release
+   */
+  public static async getReleaseEpics(releaseId: string): Promise<any> {
+    const epicsApi = this.getEpicsApi();
+
+    try {
+      const response = await epicsApi.releasesReleaseIdEpicsGet({ releaseId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting epics for release ${releaseId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a specific release phase by ID
+   * @param releasePhaseId The ID of the release phase
+   * @returns The release phase details
+   */
+  public static async getReleasePhase(releasePhaseId: string): Promise<any> {
+    try {
+      // Use direct API call since there's no specific method in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/release_phases/${releasePhaseId}`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get release phase: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Error getting release phase ${releasePhaseId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * List release phases from Aha.io
+   * @returns A list of release phases
+   */
+  public static async listReleasePhases(): Promise<any> {
+    try {
+      // Use direct API call since there's no specific method in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/release_phases`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to list release phases: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error listing release phases:', error);
       throw error;
     }
   }

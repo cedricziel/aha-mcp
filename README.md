@@ -99,6 +99,14 @@ You can set these environment variables in your MCP settings configuration file 
 - `aha_goals`: List all goals using `aha://goals`
 - `aha_goal_epics`: Access epics associated with a goal using `aha://goal/{goal_id}/epics`
 
+#### Release Resources
+- `aha_release`: Access individual releases using `aha://release/{release_id}`
+- `aha_releases`: List all releases using `aha://releases`
+- `aha_release_features`: Access features associated with a release using `aha://release/{release_id}/features`
+- `aha_release_epics`: Access epics associated with a release using `aha://release/{release_id}/epics`
+- `aha_release_phase`: Access individual release phases using `aha://release-phase/{release_phase_id}`
+- `aha_release_phases`: List all release phases using `aha://release-phases`
+
 #### Resource URI Examples
 ```
 aha://idea/IDEA-123               # Get specific idea
@@ -125,6 +133,12 @@ aha://comments/todo/TODO-777      # Get comments for todo
 aha://goal/GOAL-123               # Get specific goal
 aha://goals                       # List all goals
 aha://goal/GOAL-456/epics         # Get epics for goal
+aha://release/REL-123             # Get specific release
+aha://releases                    # List all releases
+aha://release/REL-456/features    # Get features for release
+aha://release/REL-456/epics       # Get epics for release
+aha://release-phase/RP-123        # Get specific release phase
+aha://release-phases              # List all release phases
 ```
 
 ### Available Tools

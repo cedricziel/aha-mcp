@@ -28,7 +28,13 @@ const mockAhaService = {
   getTodoComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-9', body: 'Test todo comment' }] })),
   getGoal: mock(() => Promise.resolve({ id: 'GOAL-123', name: 'Test Goal' })),
   listGoals: mock(() => Promise.resolve({ goals: [{ id: 'GOAL-1' }, { id: 'GOAL-2' }] })),
-  getGoalEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1' }, { id: 'EPIC-2' }] }))
+  getGoalEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1' }, { id: 'EPIC-2' }] })),
+  getRelease: mock(() => Promise.resolve({ id: 'REL-123', name: 'Test Release' })),
+  listReleases: mock(() => Promise.resolve({ releases: [{ id: 'REL-1' }, { id: 'REL-2' }] })),
+  getReleaseFeatures: mock(() => Promise.resolve({ features: [{ id: 'FEAT-1' }, { id: 'FEAT-2' }] })),
+  getReleaseEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1' }, { id: 'EPIC-2' }] })),
+  getReleasePhase: mock(() => Promise.resolve({ id: 'RP-123', name: 'Test Release Phase' })),
+  listReleasePhases: mock(() => Promise.resolve({ releasePhases: [{ id: 'RP-1' }, { id: 'RP-2' }] }))
 };
 
 describe('Resources', () => {
@@ -62,7 +68,13 @@ describe('Resources', () => {
       getTodoComments: AhaService.getTodoComments,
       getGoal: AhaService.getGoal,
       listGoals: AhaService.listGoals,
-      getGoalEpics: AhaService.getGoalEpics
+      getGoalEpics: AhaService.getGoalEpics,
+      getRelease: AhaService.getRelease,
+      listReleases: AhaService.listReleases,
+      getReleaseFeatures: AhaService.getReleaseFeatures,
+      getReleaseEpics: AhaService.getReleaseEpics,
+      getReleasePhase: AhaService.getReleasePhase,
+      listReleasePhases: AhaService.listReleasePhases
     };
 
     // Reset mocks
@@ -93,6 +105,12 @@ describe('Resources', () => {
     (AhaService as any).getGoal = mockAhaService.getGoal;
     (AhaService as any).listGoals = mockAhaService.listGoals;
     (AhaService as any).getGoalEpics = mockAhaService.getGoalEpics;
+    (AhaService as any).getRelease = mockAhaService.getRelease;
+    (AhaService as any).listReleases = mockAhaService.listReleases;
+    (AhaService as any).getReleaseFeatures = mockAhaService.getReleaseFeatures;
+    (AhaService as any).getReleaseEpics = mockAhaService.getReleaseEpics;
+    (AhaService as any).getReleasePhase = mockAhaService.getReleasePhase;
+    (AhaService as any).listReleasePhases = mockAhaService.listReleasePhases;
 
     // Create a mock server that captures resource registrations
     resourceHandlers = new Map();
@@ -132,6 +150,12 @@ describe('Resources', () => {
     (AhaService as any).getGoal = originalMethods.getGoal;
     (AhaService as any).listGoals = originalMethods.listGoals;
     (AhaService as any).getGoalEpics = originalMethods.getGoalEpics;
+    (AhaService as any).getRelease = originalMethods.getRelease;
+    (AhaService as any).listReleases = originalMethods.listReleases;
+    (AhaService as any).getReleaseFeatures = originalMethods.getReleaseFeatures;
+    (AhaService as any).getReleaseEpics = originalMethods.getReleaseEpics;
+    (AhaService as any).getReleasePhase = originalMethods.getReleasePhase;
+    (AhaService as any).listReleasePhases = originalMethods.listReleasePhases;
   });
 
   describe('Individual Entity Resources', () => {
@@ -715,11 +739,137 @@ describe('Resources', () => {
         'aha_todo_comments',
         'aha_goal',
         'aha_goals',
-        'aha_goal_epics'
+        'aha_goal_epics',
+        'aha_release',
+        'aha_releases',
+        'aha_release_features',
+        'aha_release_epics',
+        'aha_release_phase',
+        'aha_release_phases'
       ];
 
       expectedResources.forEach(resourceName => {
         expect(resourceHandlers.has(resourceName)).toBe(true);
+      });
+    });
+  });
+
+  describe('Release Resources', () => {
+    describe('aha_release resource', () => {
+      it('should retrieve release by ID', async () => {
+        const handler = resourceHandlers.get('aha_release');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://release/REL-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getRelease).toHaveBeenCalledWith('REL-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://release/REL-123');
+        expect(result.contents[0].text).toContain('Test Release');
+      });
+
+      it('should throw error for missing release ID', async () => {
+        const handler = resourceHandlers.get('aha_release');
+        const uri = new URL('aha://release/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid release ID: ID is missing from URI');
+      });
+    });
+
+    describe('aha_releases resource', () => {
+      it('should list all releases', async () => {
+        const handler = resourceHandlers.get('aha_releases');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://releases');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.listReleases).toHaveBeenCalledWith();
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://releases');
+        expect(result.contents[0].text).toContain('REL-1');
+      });
+    });
+
+    describe('aha_release_features resource', () => {
+      it('should retrieve features for release', async () => {
+        const handler = resourceHandlers.get('aha_release_features');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://release/REL-123/features');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getReleaseFeatures).toHaveBeenCalledWith('REL-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://release/REL-123/features');
+        expect(result.contents[0].text).toContain('FEAT-1');
+      });
+
+      it('should throw error for missing release ID', async () => {
+        const handler = resourceHandlers.get('aha_release_features');
+        const uri = new URL('aha://release//features');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid release ID: Release ID is missing from URI');
+      });
+    });
+
+    describe('aha_release_epics resource', () => {
+      it('should retrieve epics for release', async () => {
+        const handler = resourceHandlers.get('aha_release_epics');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://release/REL-123/epics');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getReleaseEpics).toHaveBeenCalledWith('REL-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://release/REL-123/epics');
+        expect(result.contents[0].text).toContain('EPIC-1');
+      });
+
+      it('should throw error for missing release ID', async () => {
+        const handler = resourceHandlers.get('aha_release_epics');
+        const uri = new URL('aha://release//epics');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid release ID: Release ID is missing from URI');
+      });
+    });
+
+    describe('aha_release_phase resource', () => {
+      it('should retrieve release phase by ID', async () => {
+        const handler = resourceHandlers.get('aha_release_phase');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://release-phase/RP-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getReleasePhase).toHaveBeenCalledWith('RP-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://release-phase/RP-123');
+        expect(result.contents[0].text).toContain('Test Release Phase');
+      });
+
+      it('should throw error for missing release phase ID', async () => {
+        const handler = resourceHandlers.get('aha_release_phase');
+        const uri = new URL('aha://release-phase/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid release phase ID: ID is missing from URI');
+      });
+    });
+
+    describe('aha_release_phases resource', () => {
+      it('should list all release phases', async () => {
+        const handler = resourceHandlers.get('aha_release_phases');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://release-phases');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.listReleasePhases).toHaveBeenCalledWith();
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://release-phases');
+        expect(result.contents[0].text).toContain('RP-1');
       });
     });
   });

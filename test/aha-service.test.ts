@@ -19,6 +19,7 @@ describe('AhaService', () => {
     (AhaService as any).initiativesApi = null;
     (AhaService as any).commentsApi = null;
     (AhaService as any).goalsApi = null;
+    (AhaService as any).releasesApi = null;
     (AhaService as any).configuration = null;
   });
 
@@ -161,6 +162,30 @@ describe('AhaService', () => {
 
     it('should have getGoalEpics method', () => {
       expect(typeof AhaService.getGoalEpics).toBe('function');
+    });
+
+    it('should have getRelease method', () => {
+      expect(typeof AhaService.getRelease).toBe('function');
+    });
+
+    it('should have listReleases method', () => {
+      expect(typeof AhaService.listReleases).toBe('function');
+    });
+
+    it('should have getReleaseFeatures method', () => {
+      expect(typeof AhaService.getReleaseFeatures).toBe('function');
+    });
+
+    it('should have getReleaseEpics method', () => {
+      expect(typeof AhaService.getReleaseEpics).toBe('function');
+    });
+
+    it('should have getReleasePhase method', () => {
+      expect(typeof AhaService.getReleasePhase).toBe('function');
+    });
+
+    it('should have listReleasePhases method', () => {
+      expect(typeof AhaService.listReleasePhases).toBe('function');
     });
   });
 });
