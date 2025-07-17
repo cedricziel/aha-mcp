@@ -6,6 +6,12 @@ describe('AhaService', () => {
     // Reset environment variables
     delete process.env.AHA_TOKEN;
     delete process.env.AHA_COMPANY;
+    
+    // Reset static state via reflection
+    (AhaService as any).apiKey = null;
+    (AhaService as any).subdomain = null;
+    (AhaService as any).featuresApi = null;
+    (AhaService as any).configuration = null;
   });
 
   describe('initialize', () => {
@@ -30,6 +36,11 @@ describe('AhaService', () => {
     beforeEach(() => {
       process.env.AHA_TOKEN = 'test-token';
       process.env.AHA_COMPANY = 'test-company';
+      // Reset static state but keep env vars
+      (AhaService as any).apiKey = process.env.AHA_TOKEN;
+      (AhaService as any).subdomain = process.env.AHA_COMPANY;
+      (AhaService as any).featuresApi = null;
+      (AhaService as any).configuration = null;
     });
 
     it('should initialize from environment variables', () => {
