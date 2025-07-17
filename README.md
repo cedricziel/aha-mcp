@@ -113,6 +113,41 @@ When adding custom tools, resources, or prompts to your MCP server:
 
 ## 🏗️ Development
 
+### Commit Guidelines
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) to ensure consistent commit messages and enable automated versioning.
+
+**Commit Message Format:**
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Types:**
+- `feat`: A new feature
+- `fix`: A bug fix
+- `docs`: Documentation only changes
+- `style`: Changes that do not affect the meaning of the code
+- `refactor`: A code change that neither fixes a bug nor adds a feature
+- `perf`: A code change that improves performance
+- `test`: Adding missing tests or correcting existing tests
+- `build`: Changes that affect the build system or external dependencies
+- `ci`: Changes to CI configuration files and scripts
+- `chore`: Other changes that don't modify src or test files
+
+**Examples:**
+```bash
+feat: add new MCP tool for listing projects
+fix: resolve authentication issue with API tokens
+docs: update README with installation instructions
+feat!: change API response format (breaking change)
+```
+
+Commit messages are validated using commitlint on every commit and in CI.
+
 ### Testing
 
 Run the test suite:

@@ -42,13 +42,17 @@
     "dev:http": "bun --watch src/server/http-server.ts",
     "test": "bun test",
     "test:watch": "bun test --watch",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
-    "@types/node": "^22.15.29"
+    "@types/node": "^22.15.29",
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "husky": "^9.0.0"
   },
   "peerDependencies": {
     "typescript": "^5.8.2"

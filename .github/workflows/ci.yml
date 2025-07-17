@@ -29,3 +29,9 @@ jobs:
 
       - name: Check build output
         run: ls -la build/
+
+      - name: Validate commit messages
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin main
+          npx commitlint --from origin/main --to HEAD --verbose
