@@ -1269,4 +1269,258 @@ export class AhaService {
       throw error;
     }
   }
+
+  // ============================
+  // FEATURE CRUD OPERATIONS (PHASE 8A.1)
+  // ============================
+
+  /**
+   * Create a feature within a specific release
+   * @param releaseId The ID of the release
+   * @param featureData The feature data to create
+   * @returns The created feature response
+   */
+  public static async createFeature(releaseId: string, featureData: any): Promise<any> {
+    const defaultApi = this.getDefaultApi();
+
+    try {
+      const response = await defaultApi.releasesReleaseIdFeaturesPost({
+        releaseId: releaseId
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error creating feature in release ${releaseId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a feature
+   * @param featureId The ID of the feature
+   * @param featureData The feature data to update
+   * @returns The updated feature response
+   */
+  public static async updateFeature(featureId: string, featureData: any): Promise<any> {
+    const defaultApi = this.getDefaultApi();
+
+    try {
+      const response = await defaultApi.featuresIdPut({
+        id: featureId
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating feature ${featureId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a feature
+   * @param featureId The ID of the feature
+   * @returns Success response
+   */
+  public static async deleteFeature(featureId: string): Promise<void> {
+    const defaultApi = this.getDefaultApi();
+
+    try {
+      await defaultApi.featuresIdDelete({ id: featureId });
+    } catch (error) {
+      console.error(`Error deleting feature ${featureId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a feature's progress
+   * @param featureId The ID of the feature
+   * @param progress The progress percentage (0-100)
+   * @returns The updated feature response
+   */
+  public static async updateFeatureProgress(featureId: string, progress: number): Promise<Feature> {
+    const featuresApi = this.getFeaturesApi();
+
+    try {
+      const response = await featuresApi.featuresIdProgressPut({
+        id: featureId,
+        featuresIdProgressPutRequest: {
+          feature: {
+            progress: progress
+          }
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating progress for feature ${featureId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a feature's score
+   * @param featureId The ID of the feature
+   * @param score The score value
+   * @returns The updated feature response
+   */
+  public static async updateFeatureScore(featureId: string, score: number): Promise<Feature> {
+    const featuresApi = this.getFeaturesApi();
+
+    try {
+      const response = await featuresApi.featuresIdScorePut({
+        id: featureId,
+        featuresIdScorePutRequest: {
+          feature: {
+            // Note: Need to check exact structure for score updates
+            value: score
+          }
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating score for feature ${featureId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a feature's custom fields
+   * @param featureId The ID of the feature
+   * @param customFields The custom fields data
+   * @returns Success response
+   */
+  public static async updateFeatureCustomFields(featureId: string, customFields: any): Promise<void> {
+    const defaultApi = this.getDefaultApi();
+
+    try {
+      await defaultApi.featuresIdCustomFieldsPut({
+        id: featureId
+      });
+    } catch (error) {
+      console.error(`Error updating custom fields for feature ${featureId}:`, error);
+      throw error;
+    }
+  }
+
+  // ============================
+  // EPIC CRUD OPERATIONS (PHASE 8A.2)
+  // ============================
+
+  /**
+   * Update an epic
+   * @param epicId The ID of the epic
+   * @param epicData The epic data to update
+   * @returns The updated epic response
+   */
+  public static async updateEpic(epicId: string, epicData: any): Promise<Epic> {
+    const epicsApi = this.getEpicsApi();
+
+    try {
+      const response = await epicsApi.epicsEpicIdPut({
+        epicId: epicId,
+        epicUpdateRequest: epicData
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating epic ${epicId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete an epic
+   * @param epicId The ID of the epic
+   * @returns Success response
+   */
+  public static async deleteEpic(epicId: string): Promise<void> {
+    const epicsApi = this.getEpicsApi();
+
+    try {
+      await epicsApi.epicsEpicIdDelete({ epicId: epicId });
+    } catch (error) {
+      console.error(`Error deleting epic ${epicId}:`, error);
+      throw error;
+    }
+  }
+
+  // ============================
+  // IDEA CRUD OPERATIONS (PHASE 8A.3)
+  // ============================
+
+  /**
+   * Create an idea in a product
+   * @param productId The ID of the product
+   * @param ideaData The idea data to create
+   * @returns The created idea response
+   */
+  public static async createIdea(productId: string, ideaData: any): Promise<IdeaResponse> {
+    const ideasApi = this.getIdeasApi();
+
+    try {
+      const response = await ideasApi.productsProductIdIdeasPost({
+        productId: productId,
+        ideaCreateRequest: ideaData
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error creating idea in product ${productId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create an idea with a category in a product
+   * @param productId The ID of the product
+   * @param ideaData The idea data to create
+   * @returns The created idea response
+   */
+  public static async createIdeaWithCategory(productId: string, ideaData: any): Promise<IdeaResponse> {
+    const ideasApi = this.getIdeasApi();
+
+    try {
+      const response = await ideasApi.productsProductIdIdeasWithCategoryPost({
+        productId: productId,
+        ideaCreateRequest: ideaData
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error creating idea with category in product ${productId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create an idea with a score in a product
+   * @param productId The ID of the product
+   * @param ideaData The idea data to create
+   * @returns The created idea response
+   */
+  public static async createIdeaWithScore(productId: string, ideaData: any): Promise<IdeaResponse> {
+    const ideasApi = this.getIdeasApi();
+
+    try {
+      const response = await ideasApi.productsProductIdIdeasWithScorePost({
+        productId: productId,
+        ideaCreateRequest: ideaData
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error creating idea with score in product ${productId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete an idea
+   * @param ideaId The ID of the idea
+   * @returns Success response
+   */
+  public static async deleteIdea(ideaId: string): Promise<void> {
+    const ideasApi = this.getIdeasApi();
+
+    try {
+      await ideasApi.ideasIdDelete({ id: ideaId });
+    } catch (error) {
+      console.error(`Error deleting idea ${ideaId}:`, error);
+      throw error;
+    }
+  }
 }

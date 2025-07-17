@@ -236,5 +236,56 @@ describe('AhaService', () => {
     it('should have createInitiativeInProduct method', () => {
       expect(typeof AhaService.createInitiativeInProduct).toBe('function');
     });
+
+    // Feature CRUD methods (Phase 8A.1)
+    it('should have createFeature method', () => {
+      expect(typeof AhaService.createFeature).toBe('function');
+    });
+
+    it('should have updateFeature method', () => {
+      expect(typeof AhaService.updateFeature).toBe('function');
+    });
+
+    it('should have deleteFeature method', () => {
+      expect(typeof AhaService.deleteFeature).toBe('function');
+    });
+
+    it('should have updateFeatureProgress method', () => {
+      expect(typeof AhaService.updateFeatureProgress).toBe('function');
+    });
+
+    it('should have updateFeatureScore method', () => {
+      expect(typeof AhaService.updateFeatureScore).toBe('function');
+    });
+
+    it('should have updateFeatureCustomFields method', () => {
+      expect(typeof AhaService.updateFeatureCustomFields).toBe('function');
+    });
+
+    // Epic CRUD methods (Phase 8A.2)
+    it('should have updateEpic method', () => {
+      expect(typeof AhaService.updateEpic).toBe('function');
+    });
+
+    it('should have deleteEpic method', () => {
+      expect(typeof AhaService.deleteEpic).toBe('function');
+    });
+
+    // Idea CRUD methods (Phase 8A.3)
+    it('should have createIdea method', () => {
+      expect(typeof AhaService.createIdea).toBe('function');
+    });
+
+    it('should have createIdeaWithCategory method', () => {
+      expect(typeof AhaService.createIdeaWithCategory).toBe('function');
+    });
+
+    it('should have createIdeaWithScore method', () => {
+      expect(typeof AhaService.createIdeaWithScore).toBe('function');
+    });
+
+    it('should have deleteIdea method', () => {
+      expect(typeof AhaService.deleteIdea).toBe('function');
+    });
   });
 });

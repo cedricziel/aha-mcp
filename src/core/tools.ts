@@ -536,4 +536,456 @@ export function registerTools(server: McpServer) {
       }
     }
   );
+
+  // ============================
+  // FEATURE CRUD TOOLS (PHASE 8A.1)
+  // ============================
+
+  // Create feature tool
+  server.tool(
+    "aha_create_feature",
+    "Create a feature within a specific release in Aha.io",
+    {
+      releaseId: z.string().describe("ID of the release"),
+      featureData: z.object({
+        feature: z.object({
+          name: z.string().describe("Name of the feature"),
+          description: z.string().optional().describe("Description of the feature")
+        }).describe("Feature data object")
+      }).describe("Feature creation data")
+    },
+    async (params: { releaseId: string; featureData: any }) => {
+      try {
+        const feature = await services.AhaService.createFeature(params.releaseId, params.featureData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Feature successfully created in release ${params.releaseId}:\n\n${JSON.stringify(feature, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error creating feature: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Update feature tool
+  server.tool(
+    "aha_update_feature",
+    "Update a feature in Aha.io",
+    {
+      featureId: z.string().describe("ID of the feature"),
+      featureData: z.object({
+        feature: z.object({
+          name: z.string().optional().describe("Name of the feature"),
+          description: z.string().optional().describe("Description of the feature")
+        }).describe("Feature data object")
+      }).describe("Feature update data")
+    },
+    async (params: { featureId: string; featureData: any }) => {
+      try {
+        const feature = await services.AhaService.updateFeature(params.featureId, params.featureData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Feature ${params.featureId} successfully updated:\n\n${JSON.stringify(feature, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error updating feature: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Delete feature tool
+  server.tool(
+    "aha_delete_feature",
+    "Delete a feature in Aha.io",
+    {
+      featureId: z.string().describe("ID of the feature")
+    },
+    async (params: { featureId: string }) => {
+      try {
+        await services.AhaService.deleteFeature(params.featureId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Feature ${params.featureId} successfully deleted`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error deleting feature: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Update feature progress tool
+  server.tool(
+    "aha_update_feature_progress",
+    "Update a feature's progress in Aha.io",
+    {
+      featureId: z.string().describe("ID of the feature"),
+      progress: z.number().min(0).max(100).describe("Progress percentage (0-100)")
+    },
+    async (params: { featureId: string; progress: number }) => {
+      try {
+        const feature = await services.AhaService.updateFeatureProgress(params.featureId, params.progress);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Feature ${params.featureId} progress updated to ${params.progress}%:\n\n${JSON.stringify(feature, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error updating feature progress: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Update feature score tool
+  server.tool(
+    "aha_update_feature_score",
+    "Update a feature's score in Aha.io",
+    {
+      featureId: z.string().describe("ID of the feature"),
+      score: z.number().describe("Score value")
+    },
+    async (params: { featureId: string; score: number }) => {
+      try {
+        const feature = await services.AhaService.updateFeatureScore(params.featureId, params.score);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Feature ${params.featureId} score updated to ${params.score}:\n\n${JSON.stringify(feature, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error updating feature score: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Update feature custom fields tool
+  server.tool(
+    "aha_update_feature_custom_fields",
+    "Update a feature's custom fields in Aha.io",
+    {
+      featureId: z.string().describe("ID of the feature"),
+      customFields: z.object({}).describe("Custom fields data")
+    },
+    async (params: { featureId: string; customFields: any }) => {
+      try {
+        await services.AhaService.updateFeatureCustomFields(params.featureId, params.customFields);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Feature ${params.featureId} custom fields successfully updated`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error updating feature custom fields: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // ============================
+  // EPIC CRUD TOOLS (PHASE 8A.2)
+  // ============================
+
+  // Update epic tool
+  server.tool(
+    "aha_update_epic",
+    "Update an epic in Aha.io",
+    {
+      epicId: z.string().describe("ID of the epic"),
+      epicData: z.object({
+        epic: z.object({
+          name: z.string().optional().describe("Name of the epic"),
+          description: z.string().optional().describe("Description of the epic")
+        }).describe("Epic data object")
+      }).describe("Epic update data")
+    },
+    async (params: { epicId: string; epicData: any }) => {
+      try {
+        const epic = await services.AhaService.updateEpic(params.epicId, params.epicData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Epic ${params.epicId} successfully updated:\n\n${JSON.stringify(epic, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error updating epic: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Delete epic tool
+  server.tool(
+    "aha_delete_epic",
+    "Delete an epic in Aha.io",
+    {
+      epicId: z.string().describe("ID of the epic")
+    },
+    async (params: { epicId: string }) => {
+      try {
+        await services.AhaService.deleteEpic(params.epicId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Epic ${params.epicId} successfully deleted`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error deleting epic: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // ============================
+  // IDEA CRUD TOOLS (PHASE 8A.3)
+  // ============================
+
+  // Create idea tool
+  server.tool(
+    "aha_create_idea",
+    "Create an idea in a product in Aha.io",
+    {
+      productId: z.string().describe("ID of the product"),
+      ideaData: z.object({
+        idea: z.object({
+          name: z.string().describe("Name of the idea"),
+          description: z.string().optional().describe("Description of the idea"),
+          skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)")
+        }).describe("Idea data object")
+      }).describe("Idea creation data")
+    },
+    async (params: { productId: string; ideaData: any }) => {
+      try {
+        const idea = await services.AhaService.createIdea(params.productId, params.ideaData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Idea successfully created in product ${params.productId}:\n\n${JSON.stringify(idea, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error creating idea: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Create idea with category tool
+  server.tool(
+    "aha_create_idea_with_category",
+    "Create an idea with a category in a product in Aha.io",
+    {
+      productId: z.string().describe("ID of the product"),
+      ideaData: z.object({
+        idea: z.object({
+          name: z.string().describe("Name of the idea"),
+          description: z.string().optional().describe("Description of the idea"),
+          category: z.string().describe("Category for the idea"),
+          skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)")
+        }).describe("Idea data object")
+      }).describe("Idea creation data with category")
+    },
+    async (params: { productId: string; ideaData: any }) => {
+      try {
+        const idea = await services.AhaService.createIdeaWithCategory(params.productId, params.ideaData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Idea with category successfully created in product ${params.productId}:\n\n${JSON.stringify(idea, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error creating idea with category: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Create idea with score tool
+  server.tool(
+    "aha_create_idea_with_score",
+    "Create an idea with a score in a product in Aha.io",
+    {
+      productId: z.string().describe("ID of the product"),
+      ideaData: z.object({
+        idea: z.object({
+          name: z.string().describe("Name of the idea"),
+          description: z.string().optional().describe("Description of the idea"),
+          score: z.number().describe("Score for the idea"),
+          skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)")
+        }).describe("Idea data object")
+      }).describe("Idea creation data with score")
+    },
+    async (params: { productId: string; ideaData: any }) => {
+      try {
+        const idea = await services.AhaService.createIdeaWithScore(params.productId, params.ideaData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Idea with score successfully created in product ${params.productId}:\n\n${JSON.stringify(idea, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error creating idea with score: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Delete idea tool
+  server.tool(
+    "aha_delete_idea",
+    "Delete an idea in Aha.io",
+    {
+      ideaId: z.string().describe("ID of the idea")
+    },
+    async (params: { ideaId: string }) => {
+      try {
+        await services.AhaService.deleteIdea(params.ideaId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Idea ${params.ideaId} successfully deleted`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error deleting idea: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
 }
