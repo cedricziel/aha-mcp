@@ -83,6 +83,17 @@ You can set these environment variables in your MCP settings configuration file 
 - `aha_initiatives`: List all initiatives using `aha://initiatives`
 - `aha_ideas_by_product`: List ideas for a product using `aha://ideas/{product_id}`
 
+#### Comment Resources
+- `aha_epic_comments`: Access comments for an epic using `aha://comments/epic/{epic_id}`
+- `aha_idea_comments`: Access comments for an idea using `aha://comments/idea/{idea_id}`
+- `aha_initiative_comments`: Access comments for an initiative using `aha://comments/initiative/{initiative_id}`
+- `aha_product_comments`: Access comments for a product using `aha://comments/product/{product_id}`
+- `aha_goal_comments`: Access comments for a goal using `aha://comments/goal/{goal_id}`
+- `aha_release_comments`: Access comments for a release using `aha://comments/release/{release_id}`
+- `aha_release_phase_comments`: Access comments for a release phase using `aha://comments/release-phase/{release_phase_id}`
+- `aha_requirement_comments`: Access comments for a requirement using `aha://comments/requirement/{requirement_id}`
+- `aha_todo_comments`: Access comments for a todo using `aha://comments/todo/{todo_id}`
+
 #### Resource URI Examples
 ```
 aha://idea/IDEA-123               # Get specific idea
@@ -97,6 +108,15 @@ aha://epics/PROJ-001              # List epics for product
 aha://products                    # List all products
 aha://initiatives                 # List all initiatives
 aha://ideas/PROJ-001              # List ideas for product
+aha://comments/epic/EPIC-123      # Get comments for epic
+aha://comments/idea/IDEA-456      # Get comments for idea
+aha://comments/initiative/INIT-789 # Get comments for initiative
+aha://comments/product/PROD-001   # Get comments for product
+aha://comments/goal/GOAL-555      # Get comments for goal
+aha://comments/release/REL-333    # Get comments for release
+aha://comments/release-phase/RP-444 # Get comments for release phase
+aha://comments/requirement/REQ-666 # Get comments for requirement
+aha://comments/todo/TODO-777      # Get comments for todo
 ```
 
 ### Available Tools

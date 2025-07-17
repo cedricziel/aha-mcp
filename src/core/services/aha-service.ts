@@ -6,7 +6,8 @@ import {
   EpicsApi,
   DefaultApi,
   ProductsApi,
-  InitiativesApi
+  InitiativesApi,
+  CommentsApi
 } from '@cedricziel/aha-js';
 
 /**
@@ -21,6 +22,7 @@ export class AhaService {
   private static defaultApi: DefaultApi | null = null;
   private static productsApi: ProductsApi | null = null;
   private static initiativesApi: InitiativesApi | null = null;
+  private static commentsApi: CommentsApi | null = null;
 
   private static apiKey: string | null = process.env.AHA_TOKEN || null;
   private static subdomain: string | null = process.env.AHA_COMPANY || null;
@@ -65,6 +67,7 @@ export class AhaService {
       this.defaultApi = new DefaultApi(this.configuration);
       this.productsApi = new ProductsApi(this.configuration);
       this.initiativesApi = new InitiativesApi(this.configuration);
+      this.commentsApi = new CommentsApi(this.configuration);
     } catch (error) {
       console.error('Error initializing Aha.io client:', error);
       throw new Error(`Failed to initialize Aha.io client: ${error instanceof Error ? error.message : String(error)}`);
@@ -146,6 +149,17 @@ export class AhaService {
       this.initializeClient();
     }
     return this.initiativesApi!;
+  }
+
+  /**
+   * Get the comments API instance
+   * @returns CommentsApi instance
+   */
+  private static getCommentsApi(): CommentsApi {
+    if (!this.commentsApi) {
+      this.initializeClient();
+    }
+    return this.commentsApi!;
   }
 
   /**
@@ -424,6 +438,159 @@ export class AhaService {
       return response.data;
     } catch (error) {
       console.error(`Error listing ideas for product ${productId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get comments for a specific epic
+   * @param epicId The ID of the epic
+   * @returns A list of comments for the epic
+   */
+  public static async getEpicComments(epicId: string): Promise<any> {
+    const commentsApi = this.getCommentsApi();
+
+    try {
+      const response = await commentsApi.epicsEpicIdCommentsGet({ epicId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting comments for epic ${epicId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get comments for a specific idea
+   * @param ideaId The ID of the idea
+   * @returns A list of comments for the idea
+   */
+  public static async getIdeaComments(ideaId: string): Promise<any> {
+    const commentsApi = this.getCommentsApi();
+
+    try {
+      const response = await commentsApi.ideasIdeaIdCommentsGet({ ideaId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting comments for idea ${ideaId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get comments for a specific initiative
+   * @param initiativeId The ID of the initiative
+   * @returns A list of comments for the initiative
+   */
+  public static async getInitiativeComments(initiativeId: string): Promise<any> {
+    const commentsApi = this.getCommentsApi();
+
+    try {
+      const response = await commentsApi.initiativesInitiativeIdCommentsGet({ initiativeId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting comments for initiative ${initiativeId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get comments for a specific product
+   * @param productId The ID of the product
+   * @returns A list of comments for the product
+   */
+  public static async getProductComments(productId: string): Promise<any> {
+    const commentsApi = this.getCommentsApi();
+
+    try {
+      const response = await commentsApi.productsProductIdCommentsGet({ productId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting comments for product ${productId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get comments for a specific goal
+   * @param goalId The ID of the goal
+   * @returns A list of comments for the goal
+   */
+  public static async getGoalComments(goalId: string): Promise<any> {
+    const commentsApi = this.getCommentsApi();
+
+    try {
+      const response = await commentsApi.goalsGoalIdCommentsGet({ goalId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting comments for goal ${goalId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get comments for a specific release
+   * @param releaseId The ID of the release
+   * @returns A list of comments for the release
+   */
+  public static async getReleaseComments(releaseId: string): Promise<any> {
+    const commentsApi = this.getCommentsApi();
+
+    try {
+      const response = await commentsApi.releasesReleaseIdCommentsGet({ releaseId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting comments for release ${releaseId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get comments for a specific release phase
+   * @param releasePhaseId The ID of the release phase
+   * @returns A list of comments for the release phase
+   */
+  public static async getReleasePhaseComments(releasePhaseId: string): Promise<any> {
+    const commentsApi = this.getCommentsApi();
+
+    try {
+      const response = await commentsApi.releasePhasesReleasePhaseIdCommentsGet({ releasePhaseId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting comments for release phase ${releasePhaseId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get comments for a specific requirement
+   * @param requirementId The ID of the requirement
+   * @returns A list of comments for the requirement
+   */
+  public static async getRequirementComments(requirementId: string): Promise<any> {
+    const commentsApi = this.getCommentsApi();
+
+    try {
+      const response = await commentsApi.requirementsRequirementIdCommentsGet({ requirementId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting comments for requirement ${requirementId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get comments for a specific todo
+   * @param todoId The ID of the todo
+   * @returns A list of comments for the todo
+   */
+  public static async getTodoComments(todoId: string): Promise<any> {
+    const commentsApi = this.getCommentsApi();
+
+    try {
+      const response = await commentsApi.todosTodoIdCommentsGet({ todoId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting comments for todo ${todoId}:`, error);
       throw error;
     }
   }

@@ -300,4 +300,256 @@ export function registerResources(server: McpServer) {
       }
     }
   );
+
+  // Aha epic comments resource
+  server.resource(
+    "aha_epic_comments",
+    "aha://comments/epic/{epic_id}",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const epicId = pathParts[pathParts.length - 1];
+      
+      if (!epicId) {
+        throw new Error('Invalid epic ID: Epic ID is missing from URI');
+      }
+      
+      try {
+        const comments = await services.AhaService.getEpicComments(epicId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(comments, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving comments for epic ${epicId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha idea comments resource
+  server.resource(
+    "aha_idea_comments",
+    "aha://comments/idea/{idea_id}",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const ideaId = pathParts[pathParts.length - 1];
+      
+      if (!ideaId) {
+        throw new Error('Invalid idea ID: Idea ID is missing from URI');
+      }
+      
+      try {
+        const comments = await services.AhaService.getIdeaComments(ideaId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(comments, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving comments for idea ${ideaId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha initiative comments resource
+  server.resource(
+    "aha_initiative_comments",
+    "aha://comments/initiative/{initiative_id}",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const initiativeId = pathParts[pathParts.length - 1];
+      
+      if (!initiativeId) {
+        throw new Error('Invalid initiative ID: Initiative ID is missing from URI');
+      }
+      
+      try {
+        const comments = await services.AhaService.getInitiativeComments(initiativeId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(comments, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving comments for initiative ${initiativeId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha product comments resource
+  server.resource(
+    "aha_product_comments",
+    "aha://comments/product/{product_id}",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const productId = pathParts[pathParts.length - 1];
+      
+      if (!productId) {
+        throw new Error('Invalid product ID: Product ID is missing from URI');
+      }
+      
+      try {
+        const comments = await services.AhaService.getProductComments(productId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(comments, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving comments for product ${productId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha goal comments resource
+  server.resource(
+    "aha_goal_comments",
+    "aha://comments/goal/{goal_id}",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const goalId = pathParts[pathParts.length - 1];
+      
+      if (!goalId) {
+        throw new Error('Invalid goal ID: Goal ID is missing from URI');
+      }
+      
+      try {
+        const comments = await services.AhaService.getGoalComments(goalId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(comments, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving comments for goal ${goalId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha release comments resource
+  server.resource(
+    "aha_release_comments",
+    "aha://comments/release/{release_id}",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const releaseId = pathParts[pathParts.length - 1];
+      
+      if (!releaseId) {
+        throw new Error('Invalid release ID: Release ID is missing from URI');
+      }
+      
+      try {
+        const comments = await services.AhaService.getReleaseComments(releaseId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(comments, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving comments for release ${releaseId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha release phase comments resource
+  server.resource(
+    "aha_release_phase_comments",
+    "aha://comments/release-phase/{release_phase_id}",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const releasePhaseId = pathParts[pathParts.length - 1];
+      
+      if (!releasePhaseId) {
+        throw new Error('Invalid release phase ID: Release phase ID is missing from URI');
+      }
+      
+      try {
+        const comments = await services.AhaService.getReleasePhaseComments(releasePhaseId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(comments, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving comments for release phase ${releasePhaseId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha requirement comments resource
+  server.resource(
+    "aha_requirement_comments",
+    "aha://comments/requirement/{requirement_id}",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const requirementId = pathParts[pathParts.length - 1];
+      
+      if (!requirementId) {
+        throw new Error('Invalid requirement ID: Requirement ID is missing from URI');
+      }
+      
+      try {
+        const comments = await services.AhaService.getRequirementComments(requirementId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(comments, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving comments for requirement ${requirementId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha todo comments resource
+  server.resource(
+    "aha_todo_comments",
+    "aha://comments/todo/{todo_id}",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const todoId = pathParts[pathParts.length - 1];
+      
+      if (!todoId) {
+        throw new Error('Invalid todo ID: Todo ID is missing from URI');
+      }
+      
+      try {
+        const comments = await services.AhaService.getTodoComments(todoId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(comments, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving comments for todo ${todoId}:`, error);
+        throw error;
+      }
+    }
+  );
 }

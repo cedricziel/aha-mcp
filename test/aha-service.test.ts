@@ -17,6 +17,7 @@ describe('AhaService', () => {
     (AhaService as any).defaultApi = null;
     (AhaService as any).productsApi = null;
     (AhaService as any).initiativesApi = null;
+    (AhaService as any).commentsApi = null;
     (AhaService as any).configuration = null;
   });
 
@@ -111,6 +112,42 @@ describe('AhaService', () => {
 
     it('should have listIdeasByProduct method', () => {
       expect(typeof AhaService.listIdeasByProduct).toBe('function');
+    });
+
+    it('should have getEpicComments method', () => {
+      expect(typeof AhaService.getEpicComments).toBe('function');
+    });
+
+    it('should have getIdeaComments method', () => {
+      expect(typeof AhaService.getIdeaComments).toBe('function');
+    });
+
+    it('should have getInitiativeComments method', () => {
+      expect(typeof AhaService.getInitiativeComments).toBe('function');
+    });
+
+    it('should have getProductComments method', () => {
+      expect(typeof AhaService.getProductComments).toBe('function');
+    });
+
+    it('should have getGoalComments method', () => {
+      expect(typeof AhaService.getGoalComments).toBe('function');
+    });
+
+    it('should have getReleaseComments method', () => {
+      expect(typeof AhaService.getReleaseComments).toBe('function');
+    });
+
+    it('should have getReleasePhaseComments method', () => {
+      expect(typeof AhaService.getReleasePhaseComments).toBe('function');
+    });
+
+    it('should have getRequirementComments method', () => {
+      expect(typeof AhaService.getRequirementComments).toBe('function');
+    });
+
+    it('should have getTodoComments method', () => {
+      expect(typeof AhaService.getTodoComments).toBe('function');
     });
   });
 });

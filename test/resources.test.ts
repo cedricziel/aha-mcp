@@ -16,7 +16,16 @@ const mockAhaService = {
   listEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1' }, { id: 'EPIC-2' }] })),
   listProducts: mock(() => Promise.resolve({ products: [{ id: 'PROD-1' }, { id: 'PROD-2' }] })),
   listInitiatives: mock(() => Promise.resolve({ initiatives: [{ id: 'INIT-1' }, { id: 'INIT-2' }] })),
-  listIdeasByProduct: mock(() => Promise.resolve({ ideas: [{ id: 'IDEA-1' }, { id: 'IDEA-2' }] }))
+  listIdeasByProduct: mock(() => Promise.resolve({ ideas: [{ id: 'IDEA-1' }, { id: 'IDEA-2' }] })),
+  getEpicComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-1', body: 'Test epic comment' }] })),
+  getIdeaComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-2', body: 'Test idea comment' }] })),
+  getInitiativeComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-3', body: 'Test initiative comment' }] })),
+  getProductComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-4', body: 'Test product comment' }] })),
+  getGoalComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-5', body: 'Test goal comment' }] })),
+  getReleaseComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-6', body: 'Test release comment' }] })),
+  getReleasePhaseComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-7', body: 'Test release phase comment' }] })),
+  getRequirementComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-8', body: 'Test requirement comment' }] })),
+  getTodoComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-9', body: 'Test todo comment' }] }))
 };
 
 describe('Resources', () => {
@@ -38,7 +47,16 @@ describe('Resources', () => {
       listEpics: AhaService.listEpics,
       listProducts: AhaService.listProducts,
       listInitiatives: AhaService.listInitiatives,
-      listIdeasByProduct: AhaService.listIdeasByProduct
+      listIdeasByProduct: AhaService.listIdeasByProduct,
+      getEpicComments: AhaService.getEpicComments,
+      getIdeaComments: AhaService.getIdeaComments,
+      getInitiativeComments: AhaService.getInitiativeComments,
+      getProductComments: AhaService.getProductComments,
+      getGoalComments: AhaService.getGoalComments,
+      getReleaseComments: AhaService.getReleaseComments,
+      getReleasePhaseComments: AhaService.getReleasePhaseComments,
+      getRequirementComments: AhaService.getRequirementComments,
+      getTodoComments: AhaService.getTodoComments
     };
 
     // Reset mocks
@@ -57,6 +75,15 @@ describe('Resources', () => {
     (AhaService as any).listProducts = mockAhaService.listProducts;
     (AhaService as any).listInitiatives = mockAhaService.listInitiatives;
     (AhaService as any).listIdeasByProduct = mockAhaService.listIdeasByProduct;
+    (AhaService as any).getEpicComments = mockAhaService.getEpicComments;
+    (AhaService as any).getIdeaComments = mockAhaService.getIdeaComments;
+    (AhaService as any).getInitiativeComments = mockAhaService.getInitiativeComments;
+    (AhaService as any).getProductComments = mockAhaService.getProductComments;
+    (AhaService as any).getGoalComments = mockAhaService.getGoalComments;
+    (AhaService as any).getReleaseComments = mockAhaService.getReleaseComments;
+    (AhaService as any).getReleasePhaseComments = mockAhaService.getReleasePhaseComments;
+    (AhaService as any).getRequirementComments = mockAhaService.getRequirementComments;
+    (AhaService as any).getTodoComments = mockAhaService.getTodoComments;
 
     // Create a mock server that captures resource registrations
     resourceHandlers = new Map();
@@ -84,6 +111,15 @@ describe('Resources', () => {
     (AhaService as any).listProducts = originalMethods.listProducts;
     (AhaService as any).listInitiatives = originalMethods.listInitiatives;
     (AhaService as any).listIdeasByProduct = originalMethods.listIdeasByProduct;
+    (AhaService as any).getEpicComments = originalMethods.getEpicComments;
+    (AhaService as any).getIdeaComments = originalMethods.getIdeaComments;
+    (AhaService as any).getInitiativeComments = originalMethods.getInitiativeComments;
+    (AhaService as any).getProductComments = originalMethods.getProductComments;
+    (AhaService as any).getGoalComments = originalMethods.getGoalComments;
+    (AhaService as any).getReleaseComments = originalMethods.getReleaseComments;
+    (AhaService as any).getReleasePhaseComments = originalMethods.getReleasePhaseComments;
+    (AhaService as any).getRequirementComments = originalMethods.getRequirementComments;
+    (AhaService as any).getTodoComments = originalMethods.getTodoComments;
   });
 
   describe('Individual Entity Resources', () => {
@@ -359,6 +395,206 @@ describe('Resources', () => {
     });
   });
 
+  describe('Comment Resources', () => {
+    describe('aha_epic_comments resource', () => {
+      it('should retrieve comments for epic', async () => {
+        const handler = resourceHandlers.get('aha_epic_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://comments/epic/EPIC-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getEpicComments).toHaveBeenCalledWith('EPIC-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://comments/epic/EPIC-123');
+        expect(result.contents[0].text).toContain('Test epic comment');
+      });
+
+      it('should throw error for missing epic ID', async () => {
+        const handler = resourceHandlers.get('aha_epic_comments');
+        const uri = new URL('aha://comments/epic/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid epic ID: Epic ID is missing from URI');
+      });
+    });
+
+    describe('aha_idea_comments resource', () => {
+      it('should retrieve comments for idea', async () => {
+        const handler = resourceHandlers.get('aha_idea_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://comments/idea/IDEA-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getIdeaComments).toHaveBeenCalledWith('IDEA-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://comments/idea/IDEA-123');
+        expect(result.contents[0].text).toContain('Test idea comment');
+      });
+
+      it('should throw error for missing idea ID', async () => {
+        const handler = resourceHandlers.get('aha_idea_comments');
+        const uri = new URL('aha://comments/idea/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid idea ID: Idea ID is missing from URI');
+      });
+    });
+
+    describe('aha_initiative_comments resource', () => {
+      it('should retrieve comments for initiative', async () => {
+        const handler = resourceHandlers.get('aha_initiative_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://comments/initiative/INIT-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getInitiativeComments).toHaveBeenCalledWith('INIT-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://comments/initiative/INIT-123');
+        expect(result.contents[0].text).toContain('Test initiative comment');
+      });
+
+      it('should throw error for missing initiative ID', async () => {
+        const handler = resourceHandlers.get('aha_initiative_comments');
+        const uri = new URL('aha://comments/initiative/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid initiative ID: Initiative ID is missing from URI');
+      });
+    });
+
+    describe('aha_product_comments resource', () => {
+      it('should retrieve comments for product', async () => {
+        const handler = resourceHandlers.get('aha_product_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://comments/product/PROD-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getProductComments).toHaveBeenCalledWith('PROD-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://comments/product/PROD-123');
+        expect(result.contents[0].text).toContain('Test product comment');
+      });
+
+      it('should throw error for missing product ID', async () => {
+        const handler = resourceHandlers.get('aha_product_comments');
+        const uri = new URL('aha://comments/product/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid product ID: Product ID is missing from URI');
+      });
+    });
+
+    describe('aha_goal_comments resource', () => {
+      it('should retrieve comments for goal', async () => {
+        const handler = resourceHandlers.get('aha_goal_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://comments/goal/GOAL-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getGoalComments).toHaveBeenCalledWith('GOAL-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://comments/goal/GOAL-123');
+        expect(result.contents[0].text).toContain('Test goal comment');
+      });
+
+      it('should throw error for missing goal ID', async () => {
+        const handler = resourceHandlers.get('aha_goal_comments');
+        const uri = new URL('aha://comments/goal/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid goal ID: Goal ID is missing from URI');
+      });
+    });
+
+    describe('aha_release_comments resource', () => {
+      it('should retrieve comments for release', async () => {
+        const handler = resourceHandlers.get('aha_release_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://comments/release/REL-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getReleaseComments).toHaveBeenCalledWith('REL-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://comments/release/REL-123');
+        expect(result.contents[0].text).toContain('Test release comment');
+      });
+
+      it('should throw error for missing release ID', async () => {
+        const handler = resourceHandlers.get('aha_release_comments');
+        const uri = new URL('aha://comments/release/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid release ID: Release ID is missing from URI');
+      });
+    });
+
+    describe('aha_release_phase_comments resource', () => {
+      it('should retrieve comments for release phase', async () => {
+        const handler = resourceHandlers.get('aha_release_phase_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://comments/release-phase/RP-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getReleasePhaseComments).toHaveBeenCalledWith('RP-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://comments/release-phase/RP-123');
+        expect(result.contents[0].text).toContain('Test release phase comment');
+      });
+
+      it('should throw error for missing release phase ID', async () => {
+        const handler = resourceHandlers.get('aha_release_phase_comments');
+        const uri = new URL('aha://comments/release-phase/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid release phase ID: Release phase ID is missing from URI');
+      });
+    });
+
+    describe('aha_requirement_comments resource', () => {
+      it('should retrieve comments for requirement', async () => {
+        const handler = resourceHandlers.get('aha_requirement_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://comments/requirement/REQ-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getRequirementComments).toHaveBeenCalledWith('REQ-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://comments/requirement/REQ-123');
+        expect(result.contents[0].text).toContain('Test requirement comment');
+      });
+
+      it('should throw error for missing requirement ID', async () => {
+        const handler = resourceHandlers.get('aha_requirement_comments');
+        const uri = new URL('aha://comments/requirement/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid requirement ID: Requirement ID is missing from URI');
+      });
+    });
+
+    describe('aha_todo_comments resource', () => {
+      it('should retrieve comments for todo', async () => {
+        const handler = resourceHandlers.get('aha_todo_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://comments/todo/TODO-123');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getTodoComments).toHaveBeenCalledWith('TODO-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://comments/todo/TODO-123');
+        expect(result.contents[0].text).toContain('Test todo comment');
+      });
+
+      it('should throw error for missing todo ID', async () => {
+        const handler = resourceHandlers.get('aha_todo_comments');
+        const uri = new URL('aha://comments/todo/');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid todo ID: Todo ID is missing from URI');
+      });
+    });
+  });
+
   describe('Error Handling', () => {
     it('should handle service errors gracefully', async () => {
       const errorMessage = 'API Error';
@@ -394,7 +630,16 @@ describe('Resources', () => {
         'aha_epics',
         'aha_products',
         'aha_initiatives',
-        'aha_ideas_by_product'
+        'aha_ideas_by_product',
+        'aha_epic_comments',
+        'aha_idea_comments',
+        'aha_initiative_comments',
+        'aha_product_comments',
+        'aha_goal_comments',
+        'aha_release_comments',
+        'aha_release_phase_comments',
+        'aha_requirement_comments',
+        'aha_todo_comments'
       ];
 
       expectedResources.forEach(resourceName => {
