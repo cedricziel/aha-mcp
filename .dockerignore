@@ -1,0 +1,76 @@
+# Node.js
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build artifacts
+build/
+dist/
+
+# Development
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# CI/CD
+.github
+.husky
+
+# Testing
+coverage/
+test/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Documentation
+docs/
+README.md
+CONTRIBUTING.md
+CHANGELOG.md
+
+# Config files
+.eslintrc.*
+.prettierrc.*
+.commitlintrc.*
+.editorconfig
+.nvmrc
+jest.config.*
+# tsconfig.json is needed for build
+
+# Other
+*.log
+*.tar.gz
+*.zip
+tmp/
+temp/
+.tmp/
+.temp/
+
+# Bun
+.bun
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml

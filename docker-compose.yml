@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  aha-mcp-stdio:
+    image: cedricziel/aha-mcp:latest
+    container_name: aha-mcp-stdio
+    environment:
+      - AHA_COMPANY=${AHA_COMPANY}
+      - AHA_TOKEN=${AHA_TOKEN}
+      - MCP_TRANSPORT_MODE=stdio
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    volumes:
+      - mcp-config:/home/mcp/.config
+    profiles:
+      - stdio
+
+  aha-mcp-sse:
+    image: cedricziel/aha-mcp:latest
+    container_name: aha-mcp-sse
+    environment:
+      - AHA_COMPANY=${AHA_COMPANY}
+      - AHA_TOKEN=${AHA_TOKEN}
+      - MCP_TRANSPORT_MODE=sse
+      - MCP_PORT=3001
+      - MCP_HOST=0.0.0.0
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    volumes:
+      - mcp-config:/home/mcp/.config
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - sse
+
+volumes:
+  mcp-config:
+    name: aha-mcp-config
+    driver: local

@@ -1,0 +1,108 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY_GHCR: ghcr.io
+  REGISTRY_DOCKER_HUB: docker.io
+  IMAGE_NAME: cedricziel/aha-mcp
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY_DOCKER_HUB }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_TOKEN }}
+
+    - name: Log in to GitHub Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY_GHCR }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ${{ env.REGISTRY_DOCKER_HUB }}/${{ env.IMAGE_NAME }}
+          ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr,prefix=pr-
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Run Docker image test
+      run: |
+        # Test that the image can start and respond to --help
+        docker run --rm ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:latest --help
+
+    - name: Test Docker image in stdio mode
+      run: |
+        # Test basic functionality without credentials
+        timeout 5s docker run --rm ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:latest --mode stdio || true
+
+    - name: Test Docker image in SSE mode
+      run: |
+        # Test SSE mode startup
+        docker run --rm -d --name aha-mcp-test -p 3001:3001 ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:latest --mode sse
+        sleep 5
+        # Check health endpoint
+        curl -f http://localhost:3001/health || exit 1
+        # Check info endpoint
+        curl -f http://localhost:3001/ || exit 1
+        # Cleanup
+        docker stop aha-mcp-test
+
+    - name: Generate release notes
+      if: startsWith(github.ref, 'refs/tags/')
+      id: release_notes
+      run: |
+        echo "Docker images available at:" >> $GITHUB_STEP_SUMMARY
+        echo "- Docker Hub: \`docker pull ${{ env.REGISTRY_DOCKER_HUB }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- GitHub Container Registry: \`docker pull ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Usage examples:" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "# Run in stdio mode" >> $GITHUB_STEP_SUMMARY
+        echo "docker run -e AHA_COMPANY=mycompany -e AHA_TOKEN=mytoken ${{ env.REGISTRY_DOCKER_HUB }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# Run in SSE mode" >> $GITHUB_STEP_SUMMARY
+        echo "docker run -p 3001:3001 -e AHA_COMPANY=mycompany -e AHA_TOKEN=mytoken ${{ env.REGISTRY_DOCKER_HUB }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} --mode sse" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

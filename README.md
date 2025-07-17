@@ -21,6 +21,22 @@ export AHA_TOKEN="your-api-token"   # Your Aha.io API token
 npx @cedricziel/aha-mcp
 ```
 
+### Quick Start with Docker
+
+You can also run the MCP server using Docker:
+
+```bash
+# Set environment variables
+export AHA_COMPANY="your-company"  # Your Aha.io subdomain
+export AHA_TOKEN="your-api-token"   # Your Aha.io API token
+
+# Run in stdio mode (default)
+docker run --rm -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TOKEN" cedricziel/aha-mcp
+
+# Run in SSE mode
+docker run --rm -p 3001:3001 -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TOKEN" cedricziel/aha-mcp --mode sse
+```
+
 ### Development Setup
 
 1. Install dependencies:
@@ -388,6 +404,140 @@ When adding custom tools, resources, or prompts to your MCP server:
    ```
 
 2. This naming convention ensures compatibility with Cursor and other AI tools that interact with your MCP server
+
+## 🐳 Docker Usage
+
+### Docker Images
+
+The Aha MCP server is available as Docker images on both Docker Hub and GitHub Container Registry:
+
+- **Docker Hub**: `cedricziel/aha-mcp`
+- **GitHub Container Registry**: `ghcr.io/cedricziel/aha-mcp`
+
+### Running with Docker
+
+#### Basic Usage
+
+```bash
+# Run in stdio mode (default)
+docker run --rm \
+  -e AHA_COMPANY="your-company" \
+  -e AHA_TOKEN="your-api-token" \
+  cedricziel/aha-mcp
+
+# Run in SSE mode
+docker run --rm \
+  -p 3001:3001 \
+  -e AHA_COMPANY="your-company" \
+  -e AHA_TOKEN="your-api-token" \
+  cedricziel/aha-mcp --mode sse
+```
+
+#### Persistent Configuration
+
+To persist configuration between runs:
+
+```bash
+# Create a named volume for configuration
+docker volume create aha-mcp-config
+
+# Run with persistent configuration
+docker run --rm \
+  -v aha-mcp-config:/home/mcp/.config \
+  -e AHA_COMPANY="your-company" \
+  -e AHA_TOKEN="your-api-token" \
+  cedricziel/aha-mcp
+```
+
+#### Using Docker Compose
+
+The repository includes a `docker-compose.yml` file for easy setup:
+
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Edit .env with your credentials
+AHA_COMPANY=your-company
+AHA_TOKEN=your-api-token
+
+# Run in stdio mode
+docker-compose --profile stdio up
+
+# Run in SSE mode
+docker-compose --profile sse up
+
+# Run in detached mode
+docker-compose --profile sse up -d
+```
+
+Example `.env` file:
+```env
+AHA_COMPANY=mycompany
+AHA_TOKEN=your-api-token-here
+```
+
+### Docker Environment Variables
+
+The Docker image supports all the same environment variables as the npm package:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `AHA_COMPANY` | Aha.io company subdomain | - |
+| `AHA_TOKEN` | Aha.io API token | - |
+| `MCP_TRANSPORT_MODE` | Transport mode (`stdio` or `sse`) | `stdio` |
+| `MCP_PORT` | Port for SSE mode | `3001` |
+| `MCP_HOST` | Host for SSE mode | `0.0.0.0` |
+| `MCP_CONFIG_DIR` | Configuration directory | `/home/mcp/.config` |
+
+### Health Checks
+
+The Docker image includes health checks for SSE mode:
+
+```bash
+# Check if the SSE server is healthy
+curl http://localhost:3001/health
+
+# Get detailed server status
+curl http://localhost:3001/status
+```
+
+### Building from Source
+
+To build the Docker image locally:
+
+```bash
+# Build the image
+npm run docker:build
+
+# Test the image
+npm run docker:test
+
+# Run the image
+npm run docker:run
+
+# Run in SSE mode
+npm run docker:run:sse
+```
+
+### Multi-Architecture Support
+
+The Docker images are built for multiple architectures:
+
+- `linux/amd64` (x86_64)
+- `linux/arm64` (Apple Silicon, ARM64)
+
+Docker will automatically pull the correct image for your platform.
+
+### Docker Security
+
+The Docker image follows security best practices:
+
+- Runs as non-root user (`mcp`)
+- Uses minimal Alpine Linux base image
+- Includes tini for proper signal handling
+- Configuration directory has proper permissions
+- Uses multi-stage builds to reduce attack surface
 
 ## 🏗️ Development
 
