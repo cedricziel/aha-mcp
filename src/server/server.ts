@@ -21,12 +21,12 @@ let serverStatus = {
   startTime: new Date(),
   uptime: 0,
   connections: 0,
-  lastHealthCheck: null,
+  lastHealthCheck: null as Date | null,
   version: packageJson.version,
   environment: process.env.NODE_ENV || "development",
   ahaConnection: {
     status: "unknown",
-    lastChecked: null,
+    lastChecked: null as Date | null,
     company: process.env.AHA_COMPANY || "not-configured",
     tokenConfigured: !!process.env.AHA_TOKEN
   }
@@ -51,23 +51,24 @@ async function performHealthCheck() {
   const memoryUsageMB = Math.round(memoryUsage.heapUsed / 1024 / 1024);
   
   if (memoryUsageMB > 500) {
-    healthCheck.checks.memory = { status: "warning", message: `High memory usage: ${memoryUsageMB}MB` };
+    healthCheck.checks.memory = { status: "warning", message: `High memory usage: ${memoryUsageMB}MB` } as any;
   } else {
-    healthCheck.checks.memory = { status: "healthy", message: `Memory usage: ${memoryUsageMB}MB` };
+    healthCheck.checks.memory = { status: "healthy", message: `Memory usage: ${memoryUsageMB}MB` } as any;
   }
 
   // Check Aha.io connection
   try {
     if (services.AhaService.isInitialized()) {
       await services.AhaService.getMe();
-      healthCheck.checks.aha = { status: "healthy", message: "Aha.io connection verified" };
+      healthCheck.checks.aha = { status: "healthy", message: "Aha.io connection verified" } as any;
       serverStatus.ahaConnection.status = "healthy";
     } else {
-      healthCheck.checks.aha = { status: "warning", message: "Aha.io not initialized" };
+      healthCheck.checks.aha = { status: "warning", message: "Aha.io not initialized" } as any;
       serverStatus.ahaConnection.status = "not-initialized";
     }
   } catch (error) {
-    healthCheck.checks.aha = { status: "error", message: `Aha.io connection failed: ${error.message}` };
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    healthCheck.checks.aha = { status: "error", message: `Aha.io connection failed: ${errorMessage}` } as any;
     serverStatus.ahaConnection.status = "error";
     healthCheck.status = "degraded";
   }
@@ -94,7 +95,7 @@ async function startServer() {
     
     // Initialize AhaService if we have complete configuration
     if (ConfigService.isConfigComplete(config)) {
-      services.AhaService.initialize(config.token, config.company);
+      services.AhaService.initialize(config.token || undefined, config.company || undefined);
     }
     
     // Create a new MCP server instance with enhanced metadata
@@ -180,7 +181,7 @@ async function startServer() {
           
           // Update AhaService with new credentials if provided
           if (params.company || params.token) {
-            services.AhaService.initialize(newConfig.token, newConfig.company);
+            services.AhaService.initialize(newConfig.token || undefined, newConfig.company || undefined);
           }
 
           return {
@@ -268,9 +269,9 @@ async function startServer() {
                 connection: {
                   status: "connected",
                   user: {
-                    name: user.name,
-                    email: user.email,
-                    role: user.role
+                    name: user.name || 'Unknown',
+                    email: user.email || 'Unknown',
+                    id: user.id || 'Unknown'
                   },
                   company: config.company
                 }
@@ -278,12 +279,13 @@ async function startServer() {
             }]
           };
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
           return {
             content: [{
               type: "text",
               text: JSON.stringify({
                 success: false,
-                error: error instanceof Error ? error.message : String(error),
+                error: errorMessage,
                 suggestion: "Check your company subdomain and API token"
               }, null, 2)
             }]
@@ -328,7 +330,8 @@ async function startServer() {
       await performHealthCheck();
       console.error("✅ Initial health check completed successfully");
     } catch (error) {
-      console.error("⚠️  Initial health check encountered issues:", error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("⚠️  Initial health check encountered issues:", errorMessage);
     }
     
     return server;
