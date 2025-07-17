@@ -173,45 +173,104 @@ aha://release-phases              # List all release phases
 - `aha_create_feature_comment`: Create a comment on a feature
 - `aha_get_requirement_comments`: Get comments for a specific requirement
 - `aha_get_todo_comments`: Get comments for a specific todo
+- `aha_get_initiative_comments`: Get comments for a specific initiative
+
+#### Initiative Management Tools
+- `aha_list_initiatives`: List initiatives with filtering options
+- `aha_get_initiative`: Get a specific initiative by ID
+- `aha_get_initiative_comments`: Get comments for a specific initiative
+- `aha_get_initiative_epics`: Get epics associated with an initiative
+- `aha_create_initiative_in_product`: Create an initiative within a specific product
+
+#### Feature CRUD Tools
+- `aha_create_feature`: Create a feature within a specific release
+- `aha_update_feature`: Update a feature
+- `aha_delete_feature`: Delete a feature
+- `aha_update_feature_progress`: Update a feature's progress
+- `aha_update_feature_score`: Update a feature's score
+- `aha_update_feature_custom_fields`: Update a feature's custom fields
+
+#### Epic CRUD Tools
+- `aha_update_epic`: Update an epic
+- `aha_delete_epic`: Delete an epic
+- `aha_create_epic_in_product`: Create an epic within a specific product
+- `aha_create_epic_in_release`: Create an epic within a specific release
+
+#### Idea CRUD Tools
+- `aha_create_idea`: Create an idea in a product
+- `aha_create_idea_with_category`: Create an idea with a category
+- `aha_create_idea_with_score`: Create an idea with a score
+- `aha_delete_idea`: Delete an idea
+
+#### Competitor Management Tools
+- `aha_create_competitor`: Create a competitor in a product
+- `aha_update_competitor`: Update a competitor
+- `aha_delete_competitor`: Delete a competitor
+
+#### Portal Integration Tools
+- `aha_create_idea_by_portal_user`: Create an idea by a portal user
+- `aha_create_idea_with_portal_settings`: Create an idea with enhanced portal settings
 
 #### Relationship Management Tools
 - `aha_associate_feature_with_epic`: Associate a feature with an epic
 - `aha_move_feature_to_release`: Move a feature to a different release
 - `aha_associate_feature_with_goals`: Associate a feature with multiple goals
 - `aha_update_feature_tags`: Update tags for a feature
-- `aha_create_epic_in_product`: Create an epic within a specific product
-- `aha_create_epic_in_release`: Create an epic within a specific release
-- `aha_create_initiative_in_product`: Create an initiative within a specific product
 
 **Note**: All MCP resources provide comprehensive access to Aha.io entities with advanced filtering capabilities. Most functionality is exposed through the resource system rather than individual tools, allowing for more flexible queries through URI parameters.
 
-### 🚀 Phase 7 Enhancements
+### 🚀 Phase 8 - Complete CRUD Operations & Advanced Features
 
-The MCP server has been significantly enhanced with comprehensive Aha.io SDK coverage:
+The MCP server now provides comprehensive lifecycle management for Aha.io entities with complete CRUD operations, portal integration, and advanced workflow features:
 
-#### New Individual Entity Resources
-- **Requirements**: Access individual requirements via `aha://requirement/{id}`
-- **Competitors**: Access individual competitors via `aha://competitor/{id}` 
-- **Todos**: Access individual todos via `aha://todo/{id}`
+#### Phase 8A - Core CRUD Operations (18 Tools)
+**Feature Management (6 Tools)**
+- `aha_create_feature`: Create features within releases
+- `aha_update_feature`: Update existing features
+- `aha_delete_feature`: Delete features
+- `aha_update_feature_progress`: Update feature progress (0-100%)
+- `aha_update_feature_score`: Update feature scores
+- `aha_update_feature_custom_fields`: Update feature custom fields
 
-#### Enhanced Collection Resources with Advanced Filtering
-- **Features**: Enhanced with `query`, `updatedSince`, `tag`, `assignedToUser` parameters
-- **Products**: Enhanced with `updatedSince` parameter
-- **Initiatives**: Enhanced with `query`, `updatedSince`, `assignedToUser`, `onlyActive` parameters
-- **Ideas by Product**: Enhanced with comprehensive filtering including `query`, `spam`, `workflowStatus`, `sort`, date filters, `tag`, and user filters
-- **Competitors**: New collection resource for listing competitors by product
+**Epic Management (2 Tools)**
+- `aha_update_epic`: Update existing epics
+- `aha_delete_epic`: Delete epics
 
-#### Relationship Management Tools
-- **Feature Association**: Tools to associate features with epics, releases, goals, and tags
-- **Entity Creation**: Tools to create epics and initiatives within products/releases
-- **Workflow Management**: Tools to move features between releases and associate with goals
+**Idea Management (4 Tools)**
+- `aha_create_idea`: Create ideas in products
+- `aha_create_idea_with_category`: Create ideas with categories
+- `aha_create_idea_with_score`: Create ideas with scores
+- `aha_delete_idea`: Delete ideas
 
-#### Comprehensive API Coverage
-- Added 5 new API classes: CompetitorsApi, RequirementsApi, ReleasePhasesApi, ReleasesApi, DefaultApi
-- Implemented 4 new individual entity getters and 7 relationship management methods
-- Enhanced 3 existing list methods with advanced filtering
-- Created 7 new MCP tools for relationship management
-- All 106 tests passing with full TypeScript type safety
+#### Phase 8B - Competitor & Initiative Management (7 Tools)
+**Competitor Management (3 Tools)**
+- `aha_create_competitor`: Create competitors in products
+- `aha_update_competitor`: Update existing competitors
+- `aha_delete_competitor`: Delete competitors
+
+**Initiative Management (4 Tools)**
+- `aha_list_initiatives`: List initiatives with filtering
+- `aha_get_initiative`: Get specific initiatives
+- `aha_get_initiative_comments`: Get initiative comments
+- `aha_get_initiative_epics`: Get epics associated with initiatives
+
+#### Phase 8C - Portal Integration & Advanced Features (2 Tools)
+**Portal Integration**
+- `aha_create_idea_by_portal_user`: Create ideas by portal users
+- `aha_create_idea_with_portal_settings`: Create ideas with portal settings
+
+#### Enhanced Filtering & Resources
+- **Initiative Filtering**: Enhanced with `query`, `updatedSince`, `assignedToUser`, `onlyActive` parameters
+- **Portal Configuration**: Support for `skip_portal` and `submitted_idea_portal_id` settings
+- **Comprehensive Entity Coverage**: Full CRUD operations for features, epics, ideas, and competitors
+
+#### Technical Achievements
+- **36 total MCP tools** (up from 12 in Phase 7)
+- **24 CRUD operation tools** for complete lifecycle management
+- **127 tests passing** with full TypeScript type safety
+- **Portal integration** for advanced workflow management
+- **Comprehensive error handling** with proper Zod schema validation
+- **Professional-grade implementation** following MCP best practices
 
 ## 🛠️ Adding Custom Tools and Resources
 

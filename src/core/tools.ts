@@ -1110,6 +1110,113 @@ export function registerTools(server: McpServer) {
   // INITIATIVE ENHANCEMENT TOOLS (PHASE 8B.2)
   // ============================
 
+  // List initiatives tool
+  server.tool(
+    "aha_list_initiatives",
+    "List initiatives from Aha.io with filtering options",
+    {
+      query: z.string().optional().describe("Search term to match against initiative name"),
+      updatedSince: z.string().optional().describe("UTC timestamp (ISO8601 format) to filter by updated date"),
+      assignedToUser: z.string().optional().describe("ID or email address of a user to filter by assignment"),
+      onlyActive: z.boolean().optional().describe("When true, returns only active initiatives")
+    },
+    async (params: { query?: string; updatedSince?: string; assignedToUser?: string; onlyActive?: boolean }) => {
+      try {
+        const initiatives = await services.AhaService.listInitiatives(
+          params.query,
+          params.updatedSince,
+          params.assignedToUser,
+          params.onlyActive
+        );
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Initiatives from Aha.io:\n\n${JSON.stringify(initiatives, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error listing initiatives: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Get initiative tool
+  server.tool(
+    "aha_get_initiative",
+    "Get a specific initiative by ID from Aha.io",
+    {
+      initiativeId: z.string().describe("ID of the initiative to retrieve")
+    },
+    async (params: { initiativeId: string }) => {
+      try {
+        const initiative = await services.AhaService.getInitiative(params.initiativeId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Initiative details:\n\n${JSON.stringify(initiative, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error getting initiative: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Get initiative comments tool
+  server.tool(
+    "aha_get_initiative_comments",
+    "Get comments for a specific initiative from Aha.io",
+    {
+      initiativeId: z.string().describe("ID of the initiative")
+    },
+    async (params: { initiativeId: string }) => {
+      try {
+        const comments = await services.AhaService.getInitiativeComments(params.initiativeId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Comments for initiative ${params.initiativeId}:\n\n${JSON.stringify(comments, null, 2)}`
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error getting initiative comments: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
   // Get initiative epics tool
   server.tool(
     "aha_get_initiative_epics",
