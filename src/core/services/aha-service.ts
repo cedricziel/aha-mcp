@@ -1808,4 +1808,69 @@ export class AhaService {
       throw error;
     }
   }
+
+  // Additional missing methods for new resources
+  /**
+   * List all ideas globally (not product-specific)
+   * @param query Search query (optional)
+   * @param updatedSince Filter by update date (optional)
+   * @param assignedToUser Filter by assigned user (optional)
+   * @param status Filter by status (optional)
+   * @param category Filter by category (optional)
+   * @returns The list of ideas
+   */
+  public static async listIdeas(
+    query?: string,
+    updatedSince?: string,
+    assignedToUser?: string,
+    status?: string,
+    category?: string
+  ): Promise<IdeasListResponse> {
+    const ideasApi = this.getIdeasApi();
+    try {
+      const response = await ideasApi.ideasList({
+        q: query,
+        updatedSince,
+        assignedToUser,
+        status,
+        category
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error listing ideas:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * List releases for a specific product
+   * @param productId The ID of the product
+   * @param query Search query (optional)
+   * @param updatedSince Filter by update date (optional)
+   * @param status Filter by status (optional)
+   * @param parkingLot Filter by parking lot (optional)
+   * @returns The list of releases for the product
+   */
+  public static async listReleasesByProduct(
+    productId: string,
+    query?: string,
+    updatedSince?: string,
+    status?: string,
+    parkingLot?: boolean
+  ): Promise<SdkReleasesListResponse> {
+    const releasesApi = this.getReleasesApi();
+    try {
+      const response = await releasesApi.productReleasesList({
+        productId,
+        q: query,
+        updatedSince,
+        status,
+        parkingLot
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error listing releases for product ${productId}:`, error);
+      throw error;
+    }
+  }
 }

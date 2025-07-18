@@ -1156,4 +1156,107 @@ export function registerResources(server: McpServer) {
       }
     }
   );
+
+  // Aha global ideas list resource
+  server.resource(
+    "aha_ideas",
+    "aha://ideas",
+    async (uri: URL) => {
+      try {
+        // Extract query parameters for advanced filtering
+        const query = uri.searchParams.get('query') || undefined;
+        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
+        const assignedToUser = uri.searchParams.get('assignedToUser') || undefined;
+        const status = uri.searchParams.get('status') || undefined;
+        const category = uri.searchParams.get('category') || undefined;
+
+        const ideas = await services.AhaService.listIdeas(
+          query,
+          updatedSince,
+          assignedToUser,
+          status,
+          category
+        );
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(ideas, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error('Error retrieving global ideas list:', error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha product releases resource
+  server.resource(
+    "aha_product_releases",
+    "aha://releases/{product_id}",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const productId = pathParts[pathParts.length - 1];
+      
+      if (!productId) {
+        throw new Error('Invalid product ID: Product ID is missing from URI');
+      }
+      
+      try {
+        // Extract query parameters for advanced filtering
+        const query = uri.searchParams.get('query') || undefined;
+        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
+        const status = uri.searchParams.get('status') || undefined;
+        const parkingLot = uri.searchParams.get('parkingLot') === 'true' ? true : 
+                          uri.searchParams.get('parkingLot') === 'false' ? false : undefined;
+
+        const releases = await services.AhaService.listReleasesByProduct(
+          productId,
+          query,
+          updatedSince,
+          status,
+          parkingLot
+        );
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(releases, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving releases list for product ${productId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha initiative epics resource
+  server.resource(
+    "aha_initiative_epics",
+    "aha://initiative/{initiative_id}/epics",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const initiativeId = pathParts[pathParts.length - 2]; // initiative_id is before /epics
+      
+      if (!initiativeId) {
+        throw new Error('Invalid initiative ID: Initiative ID is missing from URI');
+      }
+      
+      try {
+        const epics = await services.AhaService.getInitiativeEpics(initiativeId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(epics, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving epics for initiative ${initiativeId}:`, error);
+        throw error;
+      }
+    }
+  );
 }
