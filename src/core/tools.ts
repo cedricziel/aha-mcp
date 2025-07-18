@@ -12,48 +12,33 @@ export function registerTools(server: McpServer) {
   // Aha.io API initialization tool
   server.tool(
     "aha_initialize",
-    "Initialize the Aha.io API client with authentication (supports multiple auth methods)",
+    "Initialize the Aha.io API client with authentication (supports API token and OAuth)",
     {
       subdomain: z.string().describe("Aha.io subdomain (e.g., 'mycompany' for mycompany.aha.io)"),
       apiKey: z.string().optional().describe("Aha.io API key (for API token authentication)"),
-      accessToken: z.string().optional().describe("OAuth 2.0 access token (for OAuth authentication)"),
-      username: z.string().optional().describe("Username (for basic authentication, requires password)"),
-      password: z.string().optional().describe("Password (for basic authentication, requires username)")
+      accessToken: z.string().optional().describe("OAuth 2.0 access token (for OAuth authentication)")
     },
     async (params: { 
       subdomain: string; 
       apiKey?: string; 
       accessToken?: string; 
-      username?: string; 
-      password?: string; 
     }) => {
       try {
         // Validate authentication method
         const hasApiKey = !!params.apiKey;
         const hasAccessToken = !!params.accessToken;
-        const hasBasicAuth = !!(params.username && params.password);
         
-        if (!hasApiKey && !hasAccessToken && !hasBasicAuth) {
-          throw new Error('Authentication required. Provide either apiKey, accessToken, or username/password combination.');
-        }
-        
-        if (params.username && !params.password) {
-          throw new Error('Password is required when using username authentication.');
-        }
-        
-        if (params.password && !params.username) {
-          throw new Error('Username is required when using password authentication.');
+        if (!hasApiKey && !hasAccessToken) {
+          throw new Error('Authentication required. Provide either apiKey or accessToken.');
         }
 
         services.AhaService.initialize({
           subdomain: params.subdomain,
           apiKey: params.apiKey,
-          accessToken: params.accessToken,
-          username: params.username,
-          password: params.password
+          accessToken: params.accessToken
         });
 
-        const authMethod = hasApiKey ? 'API Key' : hasAccessToken ? 'OAuth Access Token' : 'Basic Authentication';
+        const authMethod = hasApiKey ? 'API Key' : 'OAuth Access Token';
         
         return {
           content: [

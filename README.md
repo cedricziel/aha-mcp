@@ -131,8 +131,6 @@ The Aha.io integration can be configured using multiple methods, with the follow
 - `AHA_COMPANY`: Your Aha.io subdomain (e.g., `mycompany` for `mycompany.aha.io`)
 - `AHA_TOKEN`: Your Aha.io API token (for API token authentication)
 - `AHA_ACCESS_TOKEN`: Your OAuth 2.0 access token (for OAuth authentication)
-- `AHA_USERNAME`: Your Aha.io username (for basic authentication, requires AHA_PASSWORD)
-- `AHA_PASSWORD`: Your Aha.io password (for basic authentication, requires AHA_USERNAME)
 - `MCP_TRANSPORT_MODE`: Transport mode (`stdio` or `sse`)
 - `MCP_PORT`: Port number for SSE mode (default: 3001)
 - `MCP_HOST`: Host address for SSE mode (default: 0.0.0.0)
@@ -140,7 +138,7 @@ The Aha.io integration can be configured using multiple methods, with the follow
 
 #### Authentication Methods
 
-The Aha MCP Server supports multiple authentication methods:
+The Aha MCP Server supports two authentication methods:
 
 1. **API Token Authentication** (Recommended for server-to-server integrations)
    - Set `AHA_TOKEN` environment variable
@@ -152,11 +150,6 @@ The Aha MCP Server supports multiple authentication methods:
    - Best for user-authorized applications
    - Requires OAuth flow implementation
 
-3. **Basic Authentication** (For development/testing)
-   - Set both `AHA_USERNAME` and `AHA_PASSWORD` environment variables
-   - Only use for development environments
-   - Not recommended for production
-
 **Configuration Examples:**
 
 ```bash
@@ -167,11 +160,6 @@ export AHA_TOKEN="your-api-token"
 # OAuth 2.0 Authentication
 export AHA_COMPANY="mycompany"
 export AHA_ACCESS_TOKEN="your-oauth-access-token"
-
-# Basic Authentication (Development only)
-export AHA_COMPANY="mycompany"
-export AHA_USERNAME="your-username"
-export AHA_PASSWORD="your-password"
 ```
 
 #### Runtime Configuration
@@ -432,7 +420,7 @@ aha://release-phases              # List all release phases
 ### Available Tools
 
 #### Core Tools
-- `aha_initialize`: Initialize the Aha.io API client with support for multiple authentication methods (API token, OAuth 2.0, basic auth)
+- `aha_initialize`: Initialize the Aha.io API client with support for multiple authentication methods (API token, OAuth 2.0)
 
 #### Feature & Product Tools
 - `aha_list_features`: List features from Aha.io with advanced filtering

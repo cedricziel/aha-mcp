@@ -88,8 +88,6 @@ export class AhaService {
 
   private static apiKey: string | null = process.env.AHA_TOKEN || null;
   private static accessToken: string | null = process.env.AHA_ACCESS_TOKEN || null;
-  private static username: string | null = process.env.AHA_USERNAME || null;
-  private static password: string | null = process.env.AHA_PASSWORD || null;
   private static subdomain: string | null = process.env.AHA_COMPANY || null;
 
   /**
@@ -102,8 +100,6 @@ export class AhaService {
     configOrApiKey?: string | {
       apiKey?: string;
       accessToken?: string;
-      username?: string;
-      password?: string;
       subdomain?: string;
     },
     subdomain?: string
@@ -116,8 +112,6 @@ export class AhaService {
       // Handle new config object signature
       if (configOrApiKey.apiKey) this.apiKey = configOrApiKey.apiKey;
       if (configOrApiKey.accessToken) this.accessToken = configOrApiKey.accessToken;
-      if (configOrApiKey.username) this.username = configOrApiKey.username;
-      if (configOrApiKey.password) this.password = configOrApiKey.password;
       if (configOrApiKey.subdomain) this.subdomain = configOrApiKey.subdomain;
     }
 
@@ -139,7 +133,7 @@ export class AhaService {
    * @returns true if the service is initialized, false otherwise
    */
   public static isInitialized(): boolean {
-    const hasAuth = this.apiKey || this.accessToken || (this.username && this.password);
+    const hasAuth = this.apiKey || this.accessToken;
     return !!(hasAuth && this.subdomain && this.configuration);
   }
 
@@ -169,9 +163,9 @@ export class AhaService {
     }
 
     // Check for valid authentication method
-    const hasAuth = this.apiKey || this.accessToken || (this.username && this.password);
+    const hasAuth = this.apiKey || this.accessToken;
     if (!hasAuth) {
-      throw new Error('Aha API client not initialized. Authentication is required. Set AHA_TOKEN, AHA_ACCESS_TOKEN, or AHA_USERNAME/AHA_PASSWORD environment variables, or call initialize().');
+      throw new Error('Aha API client not initialized. Authentication is required. Set AHA_TOKEN or AHA_ACCESS_TOKEN environment variables, or call initialize().');
     }
 
     try {
@@ -182,8 +176,6 @@ export class AhaService {
       this.configuration = new Configuration({
         apiKey: this.apiKey || undefined,
         accessToken: this.accessToken || undefined,
-        username: this.username || undefined,
-        password: this.password || undefined,
         basePath
       });
 
