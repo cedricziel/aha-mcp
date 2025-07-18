@@ -27,7 +27,14 @@ import {
   CommentsGetEpic200Response,
   EpicsList200Response,
   IdeasListResponse,
-  Comment
+  Comment,
+  // Additional SDK response types
+  GoalGetResponse,
+  GoalsListResponse as SdkGoalsListResponse,
+  ReleaseGetResponse,
+  ReleasesListResponse as SdkReleasesListResponse,
+  Competitor,
+  CompetitorsListProduct200Response
 } from '@cedricziel/aha-js';
 
 import {
@@ -37,7 +44,6 @@ import {
   Product,
   Requirement,
   Todo,
-  Competitor,
   ReleasesListResponse,
   ReleasesPhasesListResponse,
   GoalsListResponse,
@@ -399,23 +405,11 @@ export class AhaService {
    * @returns The user details
    */
   public static async getUser(userId: string): Promise<User> {
+    const usersApi = this.getUsersApi();
+
     try {
-      // Use direct API call since there's no specific method in the SDK
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/users/${userId}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get user: ${response.statusText}`);
-      }
-
-      return await response.json();
+      const response = await usersApi.usersGet({ id: userId });
+      return response.data;
     } catch (error) {
       console.error(`Error getting user ${userId}:`, error);
       throw error;
@@ -830,24 +824,12 @@ export class AhaService {
    * @param goalId The ID of the goal
    * @returns The goal details
    */
-  public static async getGoal(goalId: string): Promise<Goal> {
+  public static async getGoal(goalId: string): Promise<GoalGetResponse> {
+    const goalsApi = this.getGoalsApi();
+
     try {
-      // Use direct API call since there's no specific method in the SDK
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/goals/${goalId}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get goal: ${response.statusText}`);
-      }
-
-      return await response.json();
+      const response = await goalsApi.goalsGet({ id: goalId });
+      return response.data;
     } catch (error) {
       console.error(`Error getting goal ${goalId}:`, error);
       throw error;
@@ -858,24 +840,12 @@ export class AhaService {
    * List goals from Aha.io
    * @returns A list of goals
    */
-  public static async listGoals(): Promise<GoalsListResponse> {
+  public static async listGoals(): Promise<SdkGoalsListResponse> {
+    const goalsApi = this.getGoalsApi();
+
     try {
-      // Use direct API call since there's no specific method in the SDK
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/goals`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to list goals: ${response.statusText}`);
-      }
-
-      return await response.json();
+      const response = await goalsApi.goalsList();
+      return response.data;
     } catch (error) {
       console.error('Error listing goals:', error);
       throw error;
@@ -904,24 +874,12 @@ export class AhaService {
    * @param releaseId The ID of the release
    * @returns The release details
    */
-  public static async getRelease(releaseId: string): Promise<Release> {
+  public static async getRelease(releaseId: string): Promise<ReleaseGetResponse> {
+    const releasesApi = this.getReleasesApi();
+
     try {
-      // Use direct API call since there's no specific method in the SDK
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/releases/${releaseId}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get release: ${response.statusText}`);
-      }
-
-      return await response.json();
+      const response = await releasesApi.releasesGet({ id: releaseId });
+      return response.data;
     } catch (error) {
       console.error(`Error getting release ${releaseId}:`, error);
       throw error;
@@ -932,24 +890,12 @@ export class AhaService {
    * List releases from Aha.io
    * @returns A list of releases
    */
-  public static async listReleases(): Promise<ReleasesListResponse> {
+  public static async listReleases(): Promise<SdkReleasesListResponse> {
+    const releasesApi = this.getReleasesApi();
+
     try {
-      // Use direct API call since there's no specific method in the SDK
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/releases`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to list releases: ${response.statusText}`);
-      }
-
-      return await response.json();
+      const response = await releasesApi.releasesList();
+      return response.data;
     } catch (error) {
       console.error('Error listing releases:', error);
       throw error;
@@ -1328,7 +1274,7 @@ export class AhaService {
    * @param featureData The feature data to create
    * @returns The created feature response
    */
-  public static async createFeature(releaseId: string, _featureData: any): Promise<any> {
+  public static async createFeature(releaseId: string, _featureData: any): Promise<void> {
     const defaultApi = this.getDefaultApi();
 
     try {
@@ -1348,7 +1294,7 @@ export class AhaService {
    * @param featureData The feature data to update
    * @returns The updated feature response
    */
-  public static async updateFeature(featureId: string, _featureData: any): Promise<any> {
+  public static async updateFeature(featureId: string, _featureData: any): Promise<void> {
     const defaultApi = this.getDefaultApi();
 
     try {
@@ -1602,7 +1548,7 @@ export class AhaService {
    * @param competitorData The competitor data to create
    * @returns The created competitor
    */
-  public static async createCompetitor(productId: string, competitorData: any): Promise<any> {
+  public static async createCompetitor(productId: string, competitorData: any): Promise<Competitor> {
     const competitorsApi = this.getCompetitorsApi();
 
     try {
@@ -1623,7 +1569,7 @@ export class AhaService {
    * @param competitorData The competitor data to update
    * @returns The updated competitor
    */
-  public static async updateCompetitor(competitorId: string, competitorData: any): Promise<any> {
+  public static async updateCompetitor(competitorId: string, competitorData: any): Promise<Competitor> {
     const competitorsApi = this.getCompetitorsApi();
 
     try {
@@ -1661,7 +1607,7 @@ export class AhaService {
    * @param initiativeId The ID of the initiative
    * @returns A list of epics associated with the initiative
    */
-  public static async getInitiativeEpics(initiativeId: string): Promise<any> {
+  public static async getInitiativeEpics(initiativeId: string): Promise<EpicsList200Response> {
     const epicsApi = this.getEpicsApi();
 
     try {
@@ -1681,7 +1627,7 @@ export class AhaService {
    * @param ideaData The idea data with portal user information
    * @returns The created idea response
    */
-  public static async createIdeaByPortalUser(productId: string, ideaData: any): Promise<any> {
+  public static async createIdeaByPortalUser(productId: string, ideaData: any): Promise<IdeaResponse> {
     try {
       // Use direct API call since this specific method might not be available in the SDK
       const basePath = `https://${this.subdomain}.aha.io/api/v1`;
@@ -1713,7 +1659,7 @@ export class AhaService {
    * @param ideaData The idea data with portal configuration
    * @returns The created idea response
    */
-  public static async createIdeaWithPortalSettings(productId: string, ideaData: any): Promise<any> {
+  public static async createIdeaWithPortalSettings(productId: string, ideaData: any): Promise<IdeaResponse> {
     const ideasApi = this.getIdeasApi();
 
     try {
