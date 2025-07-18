@@ -34,24 +34,14 @@ import {
   ReleaseGetResponse,
   ReleasesListResponse as SdkReleasesListResponse,
   ReleasePhasesList200Response,
-  RequirementsGet200Response,
-  TodosList200Response,
-  TodosCreate201Response,
-  FeatureGetResponse,
-  Competitor,
-  CompetitorsListProduct200Response
+  ReleasePhase as SdkReleasePhase,
+  Competitor
 } from '@cedricziel/aha-js';
 
 import {
-  Release,
-  ReleasePhase,
-  Goal,
   Product,
   Requirement,
   Todo,
-  ReleasesListResponse,
-  ReleasesPhasesListResponse,
-  GoalsListResponse,
   ReleaseFeaturesResponse,
   GoalEpicsResponse,
   CompetitorsListResponse
@@ -916,7 +906,7 @@ export class AhaService {
    * @param releasePhaseId The ID of the release phase
    * @returns The release phase details
    */
-  public static async getReleasePhase(releasePhaseId: string): Promise<ReleasePhase> {
+  public static async getReleasePhase(releasePhaseId: string): Promise<SdkReleasePhase> {
     const releasePhasesApi = this.getReleasePhasesApi();
 
     try {
