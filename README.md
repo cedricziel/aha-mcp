@@ -310,8 +310,11 @@ These tools allow you to manage configuration without restarting the server, mak
 - `aha_epics`: List epics for a product using `aha://epics/{product_id}`
 - `aha_products`: List all products using `aha://products?updatedSince=...`
 - `aha_initiatives`: List all initiatives using `aha://initiatives?query=...&onlyActive=true`
+- `aha_ideas`: List all ideas globally using `aha://ideas?query=...&status=...&category=...`
 - `aha_ideas_by_product`: List ideas for a product using `aha://ideas/{product_id}?query=...&spam=false&sort=recent`
 - `aha_competitors`: List competitors for a product using `aha://competitors/{product_id}`
+- `aha_product_releases`: List releases for a product using `aha://releases/{product_id}?query=...&status=...`
+- `aha_initiative_epics`: List epics for an initiative using `aha://initiative/{initiative_id}/epics`
 
 #### Comment Resources
 - `aha_epic_comments`: Access comments for an epic using `aha://comments/epic/{epic_id}`
@@ -356,8 +359,11 @@ aha://users                       # List all users
 aha://epics/PROJ-001              # List epics for product
 aha://products?updatedSince=2024-01-01T00:00:00Z # List products with filter
 aha://initiatives?query=mobile&onlyActive=true&assignedToUser=user@example.com # Search initiatives
+aha://ideas?query=nodejs&status=new&category=enhancement # List ideas globally with filters
 aha://ideas/PROJ-001?query=search&spam=false&sort=recent&tag=enhancement # List ideas with filters
 aha://competitors/PROJ-001        # List competitors for product
+aha://releases/PROJ-001?query=mobile&status=shipped # List releases for product
+aha://initiative/INIT-123/epics   # List epics for initiative
 
 # Comment Resources
 aha://comments/epic/EPIC-123      # Get comments for epic
@@ -491,9 +497,11 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 - **Comprehensive Entity Coverage**: Full CRUD operations for features, epics, ideas, and competitors
 
 #### Technical Achievements
-- **36 total MCP tools** (up from 12 in Phase 7)
+- **41 total MCP tools** (comprehensive Aha.io integration)
+- **48 total MCP resources** (complete entity coverage)
+- **13 domain-specific prompts** (workflow automation)
 - **24 CRUD operation tools** for complete lifecycle management
-- **127 tests passing** with full TypeScript type safety
+- **133 tests passing** with full TypeScript type safety
 - **Portal integration** for advanced workflow management
 - **Comprehensive error handling** with proper Zod schema validation
 - **Professional-grade implementation** following MCP best practices
