@@ -129,11 +129,38 @@ The Aha.io integration can be configured using multiple methods, with the follow
 #### Environment Variables
 
 - `AHA_COMPANY`: Your Aha.io subdomain (e.g., `mycompany` for `mycompany.aha.io`)
-- `AHA_TOKEN`: Your Aha.io API token
+- `AHA_TOKEN`: Your Aha.io API token (for API token authentication)
+- `AHA_ACCESS_TOKEN`: Your OAuth 2.0 access token (for OAuth authentication)
 - `MCP_TRANSPORT_MODE`: Transport mode (`stdio` or `sse`)
 - `MCP_PORT`: Port number for SSE mode (default: 3001)
 - `MCP_HOST`: Host address for SSE mode (default: 0.0.0.0)
 - `MCP_AUTH_TOKEN`: Authentication token for SSE mode (optional)
+
+#### Authentication Methods
+
+The Aha MCP Server supports two authentication methods:
+
+1. **API Token Authentication** (Recommended for server-to-server integrations)
+   - Set `AHA_TOKEN` environment variable
+   - Most secure for automated applications
+   - Generate tokens at: Settings → Personal → API Access
+
+2. **OAuth 2.0 Authentication** (For web applications)
+   - Set `AHA_ACCESS_TOKEN` environment variable
+   - Best for user-authorized applications
+   - Requires OAuth flow implementation
+
+**Configuration Examples:**
+
+```bash
+# API Token Authentication (Recommended)
+export AHA_COMPANY="mycompany"
+export AHA_TOKEN="your-api-token"
+
+# OAuth 2.0 Authentication
+export AHA_COMPANY="mycompany"
+export AHA_ACCESS_TOKEN="your-oauth-access-token"
+```
 
 #### Runtime Configuration
 
@@ -393,7 +420,7 @@ aha://release-phases              # List all release phases
 ### Available Tools
 
 #### Core Tools
-- `aha_initialize`: Initialize the Aha.io API client (optional if environment variables are set)
+- `aha_initialize`: Initialize the Aha.io API client with support for multiple authentication methods (API token, OAuth 2.0)
 
 #### Feature & Product Tools
 - `aha_list_features`: List features from Aha.io with advanced filtering

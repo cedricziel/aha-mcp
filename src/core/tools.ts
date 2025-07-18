@@ -12,19 +12,39 @@ export function registerTools(server: McpServer) {
   // Aha.io API initialization tool
   server.tool(
     "aha_initialize",
-    "Initialize the Aha.io API client with authentication",
+    "Initialize the Aha.io API client with authentication (supports API token and OAuth)",
     {
-      apiKey: z.string().describe("Aha.io API key"),
-      subdomain: z.string().describe("Aha.io subdomain (e.g., 'mycompany' for mycompany.aha.io)")
+      subdomain: z.string().describe("Aha.io subdomain (e.g., 'mycompany' for mycompany.aha.io)"),
+      apiKey: z.string().optional().describe("Aha.io API key (for API token authentication)"),
+      accessToken: z.string().optional().describe("OAuth 2.0 access token (for OAuth authentication)")
     },
-    async (params: { apiKey: string; subdomain: string }) => {
+    async (params: { 
+      subdomain: string; 
+      apiKey?: string; 
+      accessToken?: string; 
+    }) => {
       try {
-        services.AhaService.initialize(params.apiKey, params.subdomain);
+        // Validate authentication method
+        const hasApiKey = !!params.apiKey;
+        const hasAccessToken = !!params.accessToken;
+        
+        if (!hasApiKey && !hasAccessToken) {
+          throw new Error('Authentication required. Provide either apiKey or accessToken.');
+        }
+
+        services.AhaService.initialize({
+          subdomain: params.subdomain,
+          apiKey: params.apiKey,
+          accessToken: params.accessToken
+        });
+
+        const authMethod = hasApiKey ? 'API Key' : 'OAuth Access Token';
+        
         return {
           content: [
             {
               type: "text",
-              text: `Successfully initialized Aha.io API client for ${params.subdomain}.aha.io`
+              text: `Successfully initialized Aha.io API client for ${params.subdomain}.aha.io using ${authMethod}`
             }
           ]
         };
