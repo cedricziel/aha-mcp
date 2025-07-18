@@ -14,6 +14,7 @@ import {
   ReleasePhasesApi,
   ReleasesApi,
   DefaultApi,
+  MeApi,
   // Types
   Feature,
   FeaturesListResponse,
@@ -23,8 +24,8 @@ import {
   InitiativeResponse,
   InitiativesListResponse,
   ProductsListResponse,
-  EpicsEpicIdCommentsGet200Response,
-  ProductsProductIdEpicsGet200Response,
+  CommentsGetEpic200Response,
+  EpicsList200Response,
   IdeasListResponse,
   Comment
 } from '@cedricziel/aha-js';
@@ -42,8 +43,6 @@ import {
   GoalsListResponse,
   ReleaseFeaturesResponse,
   GoalEpicsResponse,
-  RequirementsListResponse,
-  TodosListResponse,
   CompetitorsListResponse
 } from '../types/aha-types.js';
 
@@ -66,6 +65,7 @@ export class AhaService {
   private static releasePhasesApi: ReleasePhasesApi | null = null;
   private static releasesApi: ReleasesApi | null = null;
   private static defaultApi: DefaultApi | null = null;
+  private static meApi: MeApi | null = null;
 
   private static apiKey: string | null = process.env.AHA_TOKEN || null;
   private static subdomain: string | null = process.env.AHA_COMPANY || null;
@@ -96,23 +96,11 @@ export class AhaService {
    * @returns The current user information
    */
   public static async getMe(): Promise<User> {
+    const meApi = this.getMeApi();
+
     try {
-      // Use direct API call since there's no specific method in the SDK
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/users/current`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get current user: ${response.statusText}`);
-      }
-
-      return await response.json();
+      const response = await meApi.meGetProfile();
+      return response.data.user;
     } catch (error) {
       console.error('Error getting current user:', error);
       throw error;
@@ -153,6 +141,7 @@ export class AhaService {
       this.releasePhasesApi = new ReleasePhasesApi(this.configuration);
       this.releasesApi = new ReleasesApi(this.configuration);
       this.defaultApi = new DefaultApi(this.configuration);
+      this.meApi = new MeApi(this.configuration);
     } catch (error) {
       console.error('Error initializing Aha.io client:', error);
       throw new Error(`Failed to initialize Aha.io client: ${error instanceof Error ? error.message : String(error)}`);
@@ -314,6 +303,17 @@ export class AhaService {
     return this.defaultApi!;
   }
 
+  /**
+   * Get the me API instance
+   * @returns MeApi instance
+   */
+  private static getMeApi(): MeApi {
+    if (!this.meApi) {
+      this.initializeClient();
+    }
+    return this.meApi!;
+  }
+
 
   /**
    * List features from Aha.io
@@ -339,7 +339,7 @@ export class AhaService {
       if (assignedToUser) params.assigned_to_user = assignedToUser;
 
       // Use the appropriate method from the FeaturesApi
-      const response = await featuresApi.featuresGet(params);
+      const response = await featuresApi.featuresList(params);
       return response.data;
     } catch (error) {
       console.error('Error listing features:', error);
@@ -385,7 +385,7 @@ export class AhaService {
 
     try {
       // Use the appropriate method from the UsersApi
-      const response = await usersApi.usersGet();
+      const response = await usersApi.usersList();
       return { users: response.data };
     } catch (error) {
       console.error('Error listing users:', error);
@@ -427,12 +427,12 @@ export class AhaService {
    * @param productId The ID of the product
    * @returns A list of epics
    */
-  public static async listEpics(productId: string): Promise<ProductsProductIdEpicsGet200Response> {
+  public static async listEpics(productId: string): Promise<EpicsList200Response> {
     const epicsApi = this.getEpicsApi();
 
     try {
       // Use the appropriate method from the EpicsApi with the correct parameter format
-      const response = await epicsApi.productsProductIdEpicsGet({
+      const response = await epicsApi.epicsListInProduct({
         productId: productId
       });
       return response.data;
@@ -478,11 +478,11 @@ export class AhaService {
    * @returns The created comment
    */
   public static async createFeatureComment(featureId: string, body: string): Promise<Comment> {
-    const featuresApi = this.getFeaturesApi();
+    const commentsApi = this.getCommentsApi();
 
     try {
-      // Use the appropriate method from the FeaturesApi with the correct parameter format
-      const response = await featuresApi.featuresFeatureIdCommentsPost({
+      // Use the appropriate method from the CommentsApi with the correct parameter format
+      const response = await commentsApi.commentsCreateFeature({
         featureId: featureId,
         commentCreateRequest: {
           body: body
@@ -637,23 +637,35 @@ export class AhaService {
     userId?: string,
     ideaUserId?: string
   ): Promise<IdeasListResponse> {
-    const ideasApi = this.getIdeasApi();
-
     try {
-      const params: any = { productId };
-      if (query) params.q = query;
-      if (spam !== undefined) params.spam = spam;
-      if (workflowStatus) params.workflowStatus = workflowStatus;
-      if (sort) params.sort = sort;
-      if (createdBefore) params.createdBefore = createdBefore;
-      if (createdSince) params.createdSince = createdSince;
-      if (updatedSince) params.updatedSince = updatedSince;
-      if (tag) params.tag = tag;
-      if (userId) params.userId = userId;
-      if (ideaUserId) params.ideaUserId = ideaUserId;
+      // Use direct API call since there's no specific method in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/products/${productId}/ideas`;
 
-      const response = await ideasApi.productsProductIdIdeasGet(params);
-      return response.data;
+      const params = new URLSearchParams();
+      if (query) params.append('q', query);
+      if (spam !== undefined) params.append('spam', spam.toString());
+      if (workflowStatus) params.append('workflow_status', workflowStatus);
+      if (sort) params.append('sort', sort);
+      if (createdBefore) params.append('created_before', createdBefore);
+      if (createdSince) params.append('created_since', createdSince);
+      if (updatedSince) params.append('updated_since', updatedSince);
+      if (tag) params.append('tag', tag);
+      if (userId) params.append('user_id', userId);
+      if (ideaUserId) params.append('idea_user_id', ideaUserId);
+
+      const response = await fetch(`${url}?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to list ideas: ${response.statusText}`);
+      }
+
+      return await response.json();
     } catch (error) {
       console.error(`Error listing ideas for product ${productId}:`, error);
       throw error;
@@ -665,11 +677,11 @@ export class AhaService {
    * @param epicId The ID of the epic
    * @returns A list of comments for the epic
    */
-  public static async getEpicComments(epicId: string): Promise<EpicsEpicIdCommentsGet200Response> {
+  public static async getEpicComments(epicId: string): Promise<CommentsGetEpic200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.epicsEpicIdCommentsGet({ epicId });
+      const response = await commentsApi.commentsGetEpic({ epicId });
       return response.data;
     } catch (error) {
       console.error(`Error getting comments for epic ${epicId}:`, error);
@@ -682,11 +694,11 @@ export class AhaService {
    * @param ideaId The ID of the idea
    * @returns A list of comments for the idea
    */
-  public static async getIdeaComments(ideaId: string): Promise<EpicsEpicIdCommentsGet200Response> {
+  public static async getIdeaComments(ideaId: string): Promise<CommentsGetEpic200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.ideasIdeaIdCommentsGet({ ideaId });
+      const response = await commentsApi.commentsGetIdea({ ideaId });
       return response.data;
     } catch (error) {
       console.error(`Error getting comments for idea ${ideaId}:`, error);
@@ -699,11 +711,11 @@ export class AhaService {
    * @param initiativeId The ID of the initiative
    * @returns A list of comments for the initiative
    */
-  public static async getInitiativeComments(initiativeId: string): Promise<EpicsEpicIdCommentsGet200Response> {
+  public static async getInitiativeComments(initiativeId: string): Promise<CommentsGetEpic200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.initiativesInitiativeIdCommentsGet({ initiativeId });
+      const response = await commentsApi.commentsGetInitiative({ initiativeId });
       return response.data;
     } catch (error) {
       console.error(`Error getting comments for initiative ${initiativeId}:`, error);
@@ -716,11 +728,11 @@ export class AhaService {
    * @param productId The ID of the product
    * @returns A list of comments for the product
    */
-  public static async getProductComments(productId: string): Promise<EpicsEpicIdCommentsGet200Response> {
+  public static async getProductComments(productId: string): Promise<CommentsGetEpic200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.productsProductIdCommentsGet({ productId });
+      const response = await commentsApi.commentsGetProduct({ productId });
       return response.data;
     } catch (error) {
       console.error(`Error getting comments for product ${productId}:`, error);
@@ -733,11 +745,11 @@ export class AhaService {
    * @param goalId The ID of the goal
    * @returns A list of comments for the goal
    */
-  public static async getGoalComments(goalId: string): Promise<EpicsEpicIdCommentsGet200Response> {
+  public static async getGoalComments(goalId: string): Promise<CommentsGetEpic200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.goalsGoalIdCommentsGet({ goalId });
+      const response = await commentsApi.commentsGetGoal({ goalId });
       return response.data;
     } catch (error) {
       console.error(`Error getting comments for goal ${goalId}:`, error);
@@ -750,11 +762,11 @@ export class AhaService {
    * @param releaseId The ID of the release
    * @returns A list of comments for the release
    */
-  public static async getReleaseComments(releaseId: string): Promise<EpicsEpicIdCommentsGet200Response> {
+  public static async getReleaseComments(releaseId: string): Promise<CommentsGetEpic200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.releasesReleaseIdCommentsGet({ releaseId });
+      const response = await commentsApi.commentsGetRelease({ releaseId });
       return response.data;
     } catch (error) {
       console.error(`Error getting comments for release ${releaseId}:`, error);
@@ -767,11 +779,11 @@ export class AhaService {
    * @param releasePhaseId The ID of the release phase
    * @returns A list of comments for the release phase
    */
-  public static async getReleasePhaseComments(releasePhaseId: string): Promise<EpicsEpicIdCommentsGet200Response> {
+  public static async getReleasePhaseComments(releasePhaseId: string): Promise<CommentsGetEpic200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.releasePhasesReleasePhaseIdCommentsGet({ releasePhaseId });
+      const response = await commentsApi.commentsGetReleasePhase({ releasePhaseId });
       return response.data;
     } catch (error) {
       console.error(`Error getting comments for release phase ${releasePhaseId}:`, error);
@@ -784,11 +796,11 @@ export class AhaService {
    * @param requirementId The ID of the requirement
    * @returns A list of comments for the requirement
    */
-  public static async getRequirementComments(requirementId: string): Promise<EpicsEpicIdCommentsGet200Response> {
+  public static async getRequirementComments(requirementId: string): Promise<CommentsGetEpic200Response> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.requirementsRequirementIdCommentsGet({ requirementId });
+      const response = await commentsApi.commentsGetRequirement({ requirementId });
       return response.data;
     } catch (error) {
       console.error(`Error getting comments for requirement ${requirementId}:`, error);
@@ -801,11 +813,11 @@ export class AhaService {
    * @param todoId The ID of the todo
    * @returns A list of comments for the todo
    */
-  public static async getTodoComments(todoId: string): Promise<EpicsEpicIdCommentsGet200Response> {
-    const todosApi = this.getTodosApi();
+  public static async getTodoComments(todoId: string): Promise<CommentsGetEpic200Response> {
+    const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await todosApi.todosTodoIdCommentsGet({ todoId });
+      const response = await commentsApi.commentsGetTodo({ todoId });
       return response.data;
     } catch (error) {
       console.error(`Error getting comments for todo ${todoId}:`, error);
@@ -876,10 +888,10 @@ export class AhaService {
    * @returns A list of epics associated with the goal
    */
   public static async getGoalEpics(goalId: string): Promise<GoalEpicsResponse> {
-    const goalsApi = this.getGoalsApi();
+    const epicsApi = this.getEpicsApi();
 
     try {
-      const response = await goalsApi.goalsGoalIdEpicsGet({ goalId });
+      const response = await epicsApi.epicsListByGoal({ goalId });
       return response.data;
     } catch (error) {
       console.error(`Error getting epics for goal ${goalId}:`, error);
@@ -978,11 +990,11 @@ export class AhaService {
    * @param releaseId The ID of the release
    * @returns A list of epics associated with the release
    */
-  public static async getReleaseEpics(releaseId: string): Promise<ProductsProductIdEpicsGet200Response> {
+  public static async getReleaseEpics(releaseId: string): Promise<EpicsList200Response> {
     const epicsApi = this.getEpicsApi();
 
     try {
-      const response = await epicsApi.releasesReleaseIdEpicsGet({ releaseId });
+      const response = await epicsApi.epicsListInRelease({ releaseId });
       return response.data;
     } catch (error) {
       console.error(`Error getting epics for release ${releaseId}:`, error);
@@ -1085,7 +1097,7 @@ export class AhaService {
     const competitorsApi = this.getCompetitorsApi();
 
     try {
-      const response = await competitorsApi.competitorsCompetitorIdGet({ competitorId });
+      const response = await competitorsApi.competitorsGet({ competitorId });
       return response.data;
     } catch (error) {
       console.error(`Error getting competitor ${competitorId}:`, error);
@@ -1131,7 +1143,7 @@ export class AhaService {
     const competitorsApi = this.getCompetitorsApi();
 
     try {
-      const response = await competitorsApi.productsProductIdCompetitorsGet({ productId });
+      const response = await competitorsApi.competitorsListProduct({ productId });
       return response.data;
     } catch (error) {
       console.error(`Error listing competitors for product ${productId}:`, error);
@@ -1253,7 +1265,7 @@ export class AhaService {
     const epicsApi = this.getEpicsApi();
 
     try {
-      const response = await epicsApi.productsProductIdEpicsPost({
+      const response = await epicsApi.epicsCreateInProduct({
         productId: productId,
         epicCreateRequest: epicData
       });
@@ -1274,7 +1286,7 @@ export class AhaService {
     const epicsApi = this.getEpicsApi();
 
     try {
-      const response = await epicsApi.releasesReleaseIdEpicsPost({
+      const response = await epicsApi.epicsCreateInRelease({
         releaseId: releaseId,
         epicCreateRequest: epicData
       });
@@ -1316,7 +1328,7 @@ export class AhaService {
    * @param featureData The feature data to create
    * @returns The created feature response
    */
-  public static async createFeature(releaseId: string, featureData: any): Promise<any> {
+  public static async createFeature(releaseId: string, _featureData: any): Promise<any> {
     const defaultApi = this.getDefaultApi();
 
     try {
@@ -1336,7 +1348,7 @@ export class AhaService {
    * @param featureData The feature data to update
    * @returns The updated feature response
    */
-  public static async updateFeature(featureId: string, featureData: any): Promise<any> {
+  public static async updateFeature(featureId: string, _featureData: any): Promise<any> {
     const defaultApi = this.getDefaultApi();
 
     try {
@@ -1423,7 +1435,7 @@ export class AhaService {
    * @param customFields The custom fields data
    * @returns Success response
    */
-  public static async updateFeatureCustomFields(featureId: string, customFields: any): Promise<void> {
+  public static async updateFeatureCustomFields(featureId: string, _customFields: any): Promise<void> {
     const defaultApi = this.getDefaultApi();
 
     try {
@@ -1450,7 +1462,7 @@ export class AhaService {
     const epicsApi = this.getEpicsApi();
 
     try {
-      const response = await epicsApi.epicsEpicIdPut({
+      const response = await epicsApi.epicsUpdate({
         epicId: epicId,
         epicUpdateRequest: epicData
       });
@@ -1470,7 +1482,7 @@ export class AhaService {
     const epicsApi = this.getEpicsApi();
 
     try {
-      await epicsApi.epicsEpicIdDelete({ epicId: epicId });
+      await epicsApi.epicsDelete({ epicId: epicId });
     } catch (error) {
       console.error(`Error deleting epic ${epicId}:`, error);
       throw error;
@@ -1509,14 +1521,25 @@ export class AhaService {
    * @returns The created idea response
    */
   public static async createIdeaWithCategory(productId: string, ideaData: any): Promise<IdeaResponse> {
-    const ideasApi = this.getIdeasApi();
-
     try {
-      const response = await ideasApi.productsProductIdIdeasWithCategoryPost({
-        productId: productId,
-        ideaCreateRequest: ideaData
+      // Use direct API call since this specific method might not be available in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/products/${productId}/ideas`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(ideaData)
       });
-      return response.data;
+
+      if (!response.ok) {
+        throw new Error(`Failed to create idea with category: ${response.statusText}`);
+      }
+
+      return await response.json();
     } catch (error) {
       console.error(`Error creating idea with category in product ${productId}:`, error);
       throw error;
@@ -1530,14 +1553,25 @@ export class AhaService {
    * @returns The created idea response
    */
   public static async createIdeaWithScore(productId: string, ideaData: any): Promise<IdeaResponse> {
-    const ideasApi = this.getIdeasApi();
-
     try {
-      const response = await ideasApi.productsProductIdIdeasWithScorePost({
-        productId: productId,
-        ideaCreateRequest: ideaData
+      // Use direct API call since this specific method might not be available in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/products/${productId}/ideas`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(ideaData)
       });
-      return response.data;
+
+      if (!response.ok) {
+        throw new Error(`Failed to create idea with score: ${response.statusText}`);
+      }
+
+      return await response.json();
     } catch (error) {
       console.error(`Error creating idea with score in product ${productId}:`, error);
       throw error;
@@ -1572,7 +1606,7 @@ export class AhaService {
     const competitorsApi = this.getCompetitorsApi();
 
     try {
-      const response = await competitorsApi.productsProductIdCompetitorsPost({
+      const response = await competitorsApi.competitorsCreate({
         productId: productId,
         competitorCreateRequest: competitorData
       });
@@ -1593,7 +1627,7 @@ export class AhaService {
     const competitorsApi = this.getCompetitorsApi();
 
     try {
-      const response = await competitorsApi.competitorsCompetitorIdPut({
+      const response = await competitorsApi.competitorsUpdate({
         competitorId: competitorId,
         competitorUpdateRequest: competitorData
       });
@@ -1613,7 +1647,7 @@ export class AhaService {
     const competitorsApi = this.getCompetitorsApi();
 
     try {
-      await competitorsApi.competitorsCompetitorIdDelete({ competitorId: competitorId });
+      await competitorsApi.competitorsDelete({ competitorId: competitorId });
     } catch (error) {
       console.error(`Error deleting competitor ${competitorId}:`, error);
       throw error;
@@ -1628,10 +1662,10 @@ export class AhaService {
    * @returns A list of epics associated with the initiative
    */
   public static async getInitiativeEpics(initiativeId: string): Promise<any> {
-    const initiativesApi = this.getInitiativesApi();
+    const epicsApi = this.getEpicsApi();
 
     try {
-      const response = await initiativesApi.initiativesInitiativeIdEpicsGet({ initiativeId });
+      const response = await epicsApi.epicsListByInitiative({ initiativeId });
       return response.data;
     } catch (error) {
       console.error(`Error getting epics for initiative ${initiativeId}:`, error);
@@ -1648,14 +1682,25 @@ export class AhaService {
    * @returns The created idea response
    */
   public static async createIdeaByPortalUser(productId: string, ideaData: any): Promise<any> {
-    const ideasApi = this.getIdeasApi();
-
     try {
-      const response = await ideasApi.productsProductIdIdeasPortalUserPost({
-        productId: productId,
-        ideaCreateByPortalUserRequest: ideaData
+      // Use direct API call since this specific method might not be available in the SDK
+      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
+      const url = `${basePath}/products/${productId}/ideas`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(ideaData)
       });
-      return response.data;
+
+      if (!response.ok) {
+        throw new Error(`Failed to create idea by portal user: ${response.statusText}`);
+      }
+
+      return await response.json();
     } catch (error) {
       console.error(`Error creating idea by portal user in product ${productId}:`, error);
       throw error;
