@@ -33,6 +33,11 @@ import {
   GoalsListResponse as SdkGoalsListResponse,
   ReleaseGetResponse,
   ReleasesListResponse as SdkReleasesListResponse,
+  ReleasePhasesList200Response,
+  RequirementsGet200Response,
+  TodosList200Response,
+  TodosCreate201Response,
+  FeatureGetResponse,
   Competitor,
   CompetitorsListProduct200Response
 } from '@cedricziel/aha-js';
@@ -359,23 +364,14 @@ export class AhaService {
    * @returns The feature details
    */
   public static async getFeature(featureId: string): Promise<Feature> {
+    const featuresApi = this.getFeaturesApi();
+
     try {
-      // Use direct API call since SDK method returns void
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/features/${featureId}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get feature: ${response.statusText}`);
+      const response = await featuresApi.featuresGet({ id: featureId });
+      if (!response.data.feature) {
+        throw new Error(`Feature ${featureId} not found`);
       }
-
-      return await response.json();
+      return response.data.feature;
     } catch (error) {
       console.error(`Error getting feature ${featureId}:`, error);
       throw error;
@@ -442,23 +438,11 @@ export class AhaService {
    * @returns The epic details
    */
   public static async getEpic(epicId: string): Promise<Epic> {
+    const epicsApi = this.getEpicsApi();
+
     try {
-      // Use direct API call since there's no specific method in the SDK
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/epics/${epicId}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get epic: ${response.statusText}`);
-      }
-
-      return await response.json();
+      const response = await epicsApi.epicsGet({ epicId });
+      return response.data;
     } catch (error) {
       console.error(`Error getting epic ${epicId}:`, error);
       throw error;
@@ -512,23 +496,11 @@ export class AhaService {
    * @returns The product details
    */
   public static async getProduct(productId: string): Promise<Product> {
+    const productsApi = this.getProductsApi();
+
     try {
-      // Use direct API call since there's no specific method in the SDK
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/products/${productId}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get product: ${response.statusText}`);
-      }
-
-      return await response.json();
+      const response = await productsApi.productsGet({ id: productId });
+      return response.data.product;
     } catch (error) {
       console.error(`Error getting product ${productId}:`, error);
       throw error;
@@ -631,35 +603,26 @@ export class AhaService {
     userId?: string,
     ideaUserId?: string
   ): Promise<IdeasListResponse> {
+    const ideasApi = this.getIdeasApi();
+
     try {
-      // Use direct API call since there's no specific method in the SDK
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/products/${productId}/ideas`;
+      const params: any = {};
+      if (query) params.q = query;
+      if (spam !== undefined) params.spam = spam;
+      if (workflowStatus) params.workflowStatus = workflowStatus;
+      if (sort) params.sort = sort;
+      if (createdBefore) params.createdBefore = createdBefore;
+      if (createdSince) params.createdSince = createdSince;
+      if (updatedSince) params.updatedSince = updatedSince;
+      if (tag) params.tag = tag;
+      if (userId) params.userId = userId;
+      if (ideaUserId) params.ideaUserId = ideaUserId;
 
-      const params = new URLSearchParams();
-      if (query) params.append('q', query);
-      if (spam !== undefined) params.append('spam', spam.toString());
-      if (workflowStatus) params.append('workflow_status', workflowStatus);
-      if (sort) params.append('sort', sort);
-      if (createdBefore) params.append('created_before', createdBefore);
-      if (createdSince) params.append('created_since', createdSince);
-      if (updatedSince) params.append('updated_since', updatedSince);
-      if (tag) params.append('tag', tag);
-      if (userId) params.append('user_id', userId);
-      if (ideaUserId) params.append('idea_user_id', ideaUserId);
-
-      const response = await fetch(`${url}?${params.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await ideasApi.ideasListProduct({ 
+        productId: productId,
+        ...params 
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to list ideas: ${response.statusText}`);
-      }
-
-      return await response.json();
+      return response.data;
     } catch (error) {
       console.error(`Error listing ideas for product ${productId}:`, error);
       throw error;
@@ -954,23 +917,14 @@ export class AhaService {
    * @returns The release phase details
    */
   public static async getReleasePhase(releasePhaseId: string): Promise<ReleasePhase> {
+    const releasePhasesApi = this.getReleasePhasesApi();
+
     try {
-      // Use direct API call since there's no specific method in the SDK
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/release_phases/${releasePhaseId}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get release phase: ${response.statusText}`);
+      const response = await releasePhasesApi.releasePhasesGet({ id: releasePhaseId });
+      if (!response.data.release_phase) {
+        throw new Error(`Release phase ${releasePhaseId} not found`);
       }
-
-      return await response.json();
+      return response.data.release_phase;
     } catch (error) {
       console.error(`Error getting release phase ${releasePhaseId}:`, error);
       throw error;
@@ -981,24 +935,12 @@ export class AhaService {
    * List release phases from Aha.io
    * @returns A list of release phases
    */
-  public static async listReleasePhases(): Promise<ReleasesPhasesListResponse> {
+  public static async listReleasePhases(): Promise<ReleasePhasesList200Response> {
+    const releasePhasesApi = this.getReleasePhasesApi();
+
     try {
-      // Use direct API call since there's no specific method in the SDK
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/release_phases`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to list release phases: ${response.statusText}`);
-      }
-
-      return await response.json();
+      const response = await releasePhasesApi.releasePhasesList();
+      return response.data;
     } catch (error) {
       console.error('Error listing release phases:', error);
       throw error;
@@ -1011,23 +953,14 @@ export class AhaService {
    * @returns The requirement details
    */
   public static async getRequirement(requirementId: string): Promise<Requirement> {
+    const requirementsApi = this.getRequirementsApi();
+
     try {
-      // Use direct API call since there's no specific method in the SDK
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/requirements/${requirementId}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get requirement: ${response.statusText}`);
+      const response = await requirementsApi.requirementsGet({ id: requirementId });
+      if (!response.data.requirement) {
+        throw new Error(`Requirement ${requirementId} not found`);
       }
-
-      return await response.json();
+      return response.data.requirement as Requirement;
     } catch (error) {
       console.error(`Error getting requirement ${requirementId}:`, error);
       throw error;
@@ -1057,23 +990,14 @@ export class AhaService {
    * @returns The todo details
    */
   public static async getTodo(todoId: string): Promise<Todo> {
+    const todosApi = this.getTodosApi();
+
     try {
-      // Use direct API call since there's no specific method in the SDK
-      const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/todos/${todoId}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get todo: ${response.statusText}`);
+      const response = await todosApi.todosGet({ id: todoId });
+      if (!response.data.task) {
+        throw new Error(`Todo ${todoId} not found`);
       }
-
-      return await response.json();
+      return response.data.task as Todo;
     } catch (error) {
       console.error(`Error getting todo ${todoId}:`, error);
       throw error;
@@ -1294,14 +1218,15 @@ export class AhaService {
    * @param featureData The feature data to update
    * @returns The updated feature response
    */
-  public static async updateFeature(featureId: string, _featureData: any): Promise<void> {
-    const defaultApi = this.getDefaultApi();
+  public static async updateFeature(featureId: string, featureData: any): Promise<Feature> {
+    const featuresApi = this.getFeaturesApi();
 
     try {
-      const response = await defaultApi.featuresIdPut({
-        id: featureId
+      const response = await featuresApi.featuresUpdate({
+        id: featureId,
+        featureUpdateRequest: featureData
       });
-      return response.data;
+      return response.data.feature;
     } catch (error) {
       console.error(`Error updating feature ${featureId}:`, error);
       throw error;
@@ -1314,10 +1239,10 @@ export class AhaService {
    * @returns Success response
    */
   public static async deleteFeature(featureId: string): Promise<void> {
-    const defaultApi = this.getDefaultApi();
+    const featuresApi = this.getFeaturesApi();
 
     try {
-      await defaultApi.featuresIdDelete({ id: featureId });
+      await featuresApi.featuresDelete({ id: featureId });
     } catch (error) {
       console.error(`Error deleting feature ${featureId}:`, error);
       throw error;
