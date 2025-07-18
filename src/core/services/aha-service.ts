@@ -87,19 +87,51 @@ export class AhaService {
   private static ideaVotesApi: IdeaVotesApi | null = null;
 
   private static apiKey: string | null = process.env.AHA_TOKEN || null;
+  private static accessToken: string | null = process.env.AHA_ACCESS_TOKEN || null;
+  private static username: string | null = process.env.AHA_USERNAME || null;
+  private static password: string | null = process.env.AHA_PASSWORD || null;
   private static subdomain: string | null = process.env.AHA_COMPANY || null;
 
   /**
    * Initialize the Aha.io API client with authentication
-   * This method is optional if AHA_TOKEN and AHA_COMPANY environment variables are set
-   * @param apiKey The Aha.io API key
-   * @param subdomain The Aha.io subdomain
+   * This method is optional if environment variables are set
+   * @param configOrApiKey Authentication configuration object or API key (for backward compatibility)
+   * @param subdomain The Aha.io subdomain (when using backward compatibility)
    */
-  public static initialize(apiKey?: string, subdomain?: string): void {
-    if (apiKey) this.apiKey = apiKey;
-    if (subdomain) this.subdomain = subdomain;
+  public static initialize(
+    configOrApiKey?: string | {
+      apiKey?: string;
+      accessToken?: string;
+      username?: string;
+      password?: string;
+      subdomain?: string;
+    },
+    subdomain?: string
+  ): void {
+    // Handle backward compatibility with old (apiKey, subdomain) signature
+    if (typeof configOrApiKey === 'string') {
+      this.apiKey = configOrApiKey;
+      if (subdomain) this.subdomain = subdomain;
+    } else if (configOrApiKey) {
+      // Handle new config object signature
+      if (configOrApiKey.apiKey) this.apiKey = configOrApiKey.apiKey;
+      if (configOrApiKey.accessToken) this.accessToken = configOrApiKey.accessToken;
+      if (configOrApiKey.username) this.username = configOrApiKey.username;
+      if (configOrApiKey.password) this.password = configOrApiKey.password;
+      if (configOrApiKey.subdomain) this.subdomain = configOrApiKey.subdomain;
+    }
 
     this.initializeClient();
+  }
+
+  /**
+   * Initialize with API key (backward compatibility)
+   * @param apiKey The Aha.io API key
+   * @param subdomain The Aha.io subdomain
+   * @deprecated Use initialize({ apiKey, subdomain }) instead
+   */
+  public static initializeWithApiKey(apiKey?: string, subdomain?: string): void {
+    this.initialize({ apiKey, subdomain });
   }
 
   /**
@@ -107,7 +139,8 @@ export class AhaService {
    * @returns true if the service is initialized, false otherwise
    */
   public static isInitialized(): boolean {
-    return !!(this.apiKey && this.subdomain && this.configuration);
+    const hasAuth = this.apiKey || this.accessToken || (this.username && this.password);
+    return !!(hasAuth && this.subdomain && this.configuration);
   }
 
   /**
@@ -131,17 +164,26 @@ export class AhaService {
    * @private
    */
   private static initializeClient(): void {
-    if (!this.apiKey || !this.subdomain) {
-      throw new Error('Aha API client not initialized. Either call initialize() or set AHA_TOKEN and AHA_COMPANY environment variables.');
+    if (!this.subdomain) {
+      throw new Error('Aha API client not initialized. Subdomain is required. Set AHA_COMPANY environment variable or call initialize().');
+    }
+
+    // Check for valid authentication method
+    const hasAuth = this.apiKey || this.accessToken || (this.username && this.password);
+    if (!hasAuth) {
+      throw new Error('Aha API client not initialized. Authentication is required. Set AHA_TOKEN, AHA_ACCESS_TOKEN, or AHA_USERNAME/AHA_PASSWORD environment variables, or call initialize().');
     }
 
     try {
       // Create a base path with the subdomain
       const basePath = `https://${this.subdomain}.aha.io/api/v1`;
 
-      // Initialize the configuration with the API key
+      // Initialize the configuration with the appropriate authentication method
       this.configuration = new Configuration({
-        apiKey: this.apiKey,
+        apiKey: this.apiKey || undefined,
+        accessToken: this.accessToken || undefined,
+        username: this.username || undefined,
+        password: this.password || undefined,
         basePath
       });
 
