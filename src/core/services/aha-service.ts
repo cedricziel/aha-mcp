@@ -504,7 +504,7 @@ export class AhaService {
     const ideasApi = this.getIdeasApi();
 
     try {
-      const response = await ideasApi.ideasIdGet({ id: ideaId });
+      const response = await ideasApi.ideasGetById({ id: ideaId });
       return response.data;
     } catch (error) {
       console.error(`Error getting idea ${ideaId}:`, error);
@@ -553,7 +553,7 @@ export class AhaService {
       const params: any = {};
       if (updatedSince) params.updatedSince = updatedSince;
 
-      const response = await productsApi.productsGet(params);
+      const response = await productsApi.productsList(params);
       return response.data;
     } catch (error) {
       console.error('Error listing products:', error);
@@ -570,7 +570,7 @@ export class AhaService {
     const initiativesApi = this.getInitiativesApi();
 
     try {
-      const response = await initiativesApi.initiativesIdGet({ id: initiativeId });
+      const response = await initiativesApi.initiativesGet({ id: initiativeId });
       return response.data;
     } catch (error) {
       console.error(`Error getting initiative ${initiativeId}:`, error);
@@ -601,7 +601,7 @@ export class AhaService {
       if (assignedToUser) params.assignedToUser = assignedToUser;
       if (onlyActive !== undefined) params.onlyActive = onlyActive;
 
-      const response = await initiativesApi.initiativesGet(params);
+      const response = await initiativesApi.initiativesList(params);
       return response.data;
     } catch (error) {
       console.error('Error listing initiatives:', error);
@@ -1295,7 +1295,7 @@ export class AhaService {
     const initiativesApi = this.getInitiativesApi();
 
     try {
-      const response = await initiativesApi.productsProductIdInitiativesPost({
+      const response = await initiativesApi.initiativesCreate({
         productId: productId,
         initiativeCreateRequest: initiativeData
       });
@@ -1406,7 +1406,7 @@ export class AhaService {
         featuresIdScorePutRequest: {
           feature: {
             // Note: Need to check exact structure for score updates
-            value: score
+            score_facts: [{ value: score }]
           }
         }
       });
@@ -1491,7 +1491,7 @@ export class AhaService {
     const ideasApi = this.getIdeasApi();
 
     try {
-      const response = await ideasApi.productsProductIdIdeasPost({
+      const response = await ideasApi.ideasCreate({
         productId: productId,
         ideaCreateRequest: ideaData
       });
@@ -1553,7 +1553,7 @@ export class AhaService {
     const ideasApi = this.getIdeasApi();
 
     try {
-      await ideasApi.ideasIdDelete({ id: ideaId });
+      await ideasApi.ideasDelete({ id: ideaId });
     } catch (error) {
       console.error(`Error deleting idea ${ideaId}:`, error);
       throw error;
@@ -1672,7 +1672,7 @@ export class AhaService {
     const ideasApi = this.getIdeasApi();
 
     try {
-      const response = await ideasApi.productsProductIdIdeasPost({
+      const response = await ideasApi.ideasCreate({
         productId: productId,
         ideaCreateRequest: ideaData
       });
