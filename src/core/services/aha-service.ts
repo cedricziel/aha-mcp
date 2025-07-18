@@ -15,6 +15,9 @@ import {
   ReleasesApi,
   DefaultApi,
   MeApi,
+  StrategicModelsApi,
+  IdeaOrganizationsApi,
+  IdeaVotesApi,
   // Types
   Feature,
   FeaturesListResponse,
@@ -35,7 +38,19 @@ import {
   ReleasesListResponse as SdkReleasesListResponse,
   ReleasePhasesList200Response,
   ReleasePhase as SdkReleasePhase,
-  Competitor
+  Competitor,
+  StrategicModelGetResponse,
+  StrategicModelsListResponse,
+  StrategicModel,
+  IdeaOrganizationGetResponse,
+  IdeaOrganizationsListResponse,
+  IdeaOrganization,
+  TodosList200Response,
+  MeAssignedRecordsResponse,
+  MePendingTasksResponse,
+  IdeasGetEndorsements200Response,
+  IdeasGetVotes200Response,
+  IdeasGetWatchers200Response
 } from '@cedricziel/aha-js';
 
 import {
@@ -67,6 +82,9 @@ export class AhaService {
   private static releasesApi: ReleasesApi | null = null;
   private static defaultApi: DefaultApi | null = null;
   private static meApi: MeApi | null = null;
+  private static strategicModelsApi: StrategicModelsApi | null = null;
+  private static ideaOrganizationsApi: IdeaOrganizationsApi | null = null;
+  private static ideaVotesApi: IdeaVotesApi | null = null;
 
   private static apiKey: string | null = process.env.AHA_TOKEN || null;
   private static subdomain: string | null = process.env.AHA_COMPANY || null;
@@ -143,6 +161,9 @@ export class AhaService {
       this.releasesApi = new ReleasesApi(this.configuration);
       this.defaultApi = new DefaultApi(this.configuration);
       this.meApi = new MeApi(this.configuration);
+      this.strategicModelsApi = new StrategicModelsApi(this.configuration);
+      this.ideaOrganizationsApi = new IdeaOrganizationsApi(this.configuration);
+      this.ideaVotesApi = new IdeaVotesApi(this.configuration);
     } catch (error) {
       console.error('Error initializing Aha.io client:', error);
       throw new Error(`Failed to initialize Aha.io client: ${error instanceof Error ? error.message : String(error)}`);
@@ -313,6 +334,39 @@ export class AhaService {
       this.initializeClient();
     }
     return this.meApi!;
+  }
+
+  /**
+   * Get the strategic models API instance
+   * @returns StrategicModelsApi instance
+   */
+  private static getStrategicModelsApi(): StrategicModelsApi {
+    if (!this.strategicModelsApi) {
+      this.initializeClient();
+    }
+    return this.strategicModelsApi!;
+  }
+
+  /**
+   * Get the idea organizations API instance
+   * @returns IdeaOrganizationsApi instance
+   */
+  private static getIdeaOrganizationsApi(): IdeaOrganizationsApi {
+    if (!this.ideaOrganizationsApi) {
+      this.initializeClient();
+    }
+    return this.ideaOrganizationsApi!;
+  }
+
+  /**
+   * Get the idea votes API instance
+   * @returns IdeaVotesApi instance
+   */
+  private static getIdeaVotesApi(): IdeaVotesApi {
+    if (!this.ideaVotesApi) {
+      this.initializeClient();
+    }
+    return this.ideaVotesApi!;
   }
 
 
@@ -1585,6 +1639,172 @@ export class AhaService {
       return response.data;
     } catch (error) {
       console.error(`Error creating idea with portal settings in product ${productId}:`, error);
+      throw error;
+    }
+  }
+
+  // Strategic Models methods
+  /**
+   * Get a strategic model by ID
+   * @param strategicModelId The ID of the strategic model
+   * @returns The strategic model data
+   */
+  public static async getStrategicModel(strategicModelId: string): Promise<StrategicModel> {
+    const strategicModelsApi = this.getStrategicModelsApi();
+    try {
+      const response = await strategicModelsApi.strategicModelsGet({ id: strategicModelId });
+      if (!response.data.strategic_model) {
+        throw new Error(`Strategic model ${strategicModelId} not found`);
+      }
+      return response.data.strategic_model;
+    } catch (error) {
+      console.error(`Error getting strategic model ${strategicModelId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * List strategic models
+   * @returns The list of strategic models
+   */
+  public static async listStrategicModels(): Promise<StrategicModelsListResponse> {
+    const strategicModelsApi = this.getStrategicModelsApi();
+    try {
+      const response = await strategicModelsApi.strategicModelsList();
+      return response.data;
+    } catch (error) {
+      console.error('Error listing strategic models:', error);
+      throw error;
+    }
+  }
+
+  // To-dos list method
+  /**
+   * List to-dos
+   * @returns The list of to-dos
+   */
+  public static async listTodos(): Promise<TodosList200Response> {
+    const todosApi = this.getTodosApi();
+    try {
+      const response = await todosApi.todosList();
+      return response.data;
+    } catch (error) {
+      console.error('Error listing todos:', error);
+      throw error;
+    }
+  }
+
+  // Idea Organizations methods
+  /**
+   * Get an idea organization by ID
+   * @param ideaOrganizationId The ID of the idea organization
+   * @returns The idea organization data
+   */
+  public static async getIdeaOrganization(ideaOrganizationId: string): Promise<IdeaOrganization> {
+    const ideaOrganizationsApi = this.getIdeaOrganizationsApi();
+    try {
+      const response = await ideaOrganizationsApi.ideaOrganizationsGet({ id: ideaOrganizationId });
+      if (!response.data.idea_organization) {
+        throw new Error(`Idea organization ${ideaOrganizationId} not found`);
+      }
+      return response.data.idea_organization;
+    } catch (error) {
+      console.error(`Error getting idea organization ${ideaOrganizationId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * List idea organizations
+   * @returns The list of idea organizations
+   */
+  public static async listIdeaOrganizations(): Promise<IdeaOrganizationsListResponse> {
+    const ideaOrganizationsApi = this.getIdeaOrganizationsApi();
+    try {
+      const response = await ideaOrganizationsApi.ideaOrganizationsList();
+      return response.data;
+    } catch (error) {
+      console.error('Error listing idea organizations:', error);
+      throw error;
+    }
+  }
+
+  // Me/Current User methods
+  /**
+   * Get assigned records for the current user
+   * @returns The assigned records for the current user
+   */
+  public static async getAssignedRecords(): Promise<MeAssignedRecordsResponse> {
+    const meApi = this.getMeApi();
+    try {
+      const response = await meApi.meGetAssignedRecords();
+      return response.data;
+    } catch (error) {
+      console.error('Error getting assigned records:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get pending tasks for the current user
+   * @returns The pending tasks for the current user
+   */
+  public static async getPendingTasks(): Promise<MePendingTasksResponse> {
+    const meApi = this.getMeApi();
+    try {
+      const response = await meApi.meGetPendingTasks();
+      return response.data;
+    } catch (error) {
+      console.error('Error getting pending tasks:', error);
+      throw error;
+    }
+  }
+
+  // Idea Endorsements/Votes methods
+  /**
+   * Get endorsements for an idea
+   * @param ideaId The ID of the idea
+   * @returns The endorsements for the idea
+   */
+  public static async getIdeaEndorsements(ideaId: string): Promise<IdeasGetEndorsements200Response> {
+    const ideasApi = this.getIdeasApi();
+    try {
+      const response = await ideasApi.ideasGetEndorsements({ id: ideaId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting endorsements for idea ${ideaId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get votes for an idea
+   * @param ideaId The ID of the idea
+   * @returns The votes for the idea
+   */
+  public static async getIdeaVotes(ideaId: string): Promise<IdeasGetVotes200Response> {
+    const ideasApi = this.getIdeasApi();
+    try {
+      const response = await ideasApi.ideasGetVotes({ id: ideaId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting votes for idea ${ideaId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get watchers for an idea
+   * @param ideaId The ID of the idea
+   * @returns The watchers for the idea
+   */
+  public static async getIdeaWatchers(ideaId: string): Promise<IdeasGetWatchers200Response> {
+    const ideasApi = this.getIdeasApi();
+    try {
+      const response = await ideasApi.ideasGetWatchers({ id: ideaId });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting watchers for idea ${ideaId}:`, error);
       throw error;
     }
   }
