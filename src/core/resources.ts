@@ -907,4 +907,356 @@ export function registerResources(server: McpServer) {
       }
     }
   );
+
+  // Aha strategic model resource
+  server.resource(
+    "aha_strategic_model",
+    "aha://strategic-model/{id}",
+    async (uri: URL) => {
+      const id = uri.pathname.split('/').pop();
+      if (!id) {
+        throw new Error('Invalid strategic model ID: ID is missing from URI');
+      }
+      try {
+        const strategicModel = await services.AhaService.getStrategicModel(id);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(strategicModel, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving strategic model ${id}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha strategic models list resource
+  server.resource(
+    "aha_strategic_models",
+    "aha://strategic-models",
+    async (uri: URL) => {
+      try {
+        const strategicModels = await services.AhaService.listStrategicModels();
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(strategicModels, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error('Error retrieving strategic models list:', error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha todos list resource
+  server.resource(
+    "aha_todos",
+    "aha://todos",
+    async (uri: URL) => {
+      try {
+        const todos = await services.AhaService.listTodos();
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(todos, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error('Error retrieving todos list:', error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha idea organization resource
+  server.resource(
+    "aha_idea_organization",
+    "aha://idea-organization/{id}",
+    async (uri: URL) => {
+      const id = uri.pathname.split('/').pop();
+      if (!id) {
+        throw new Error('Invalid idea organization ID: ID is missing from URI');
+      }
+      try {
+        const ideaOrganization = await services.AhaService.getIdeaOrganization(id);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(ideaOrganization, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving idea organization ${id}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha idea organizations list resource
+  server.resource(
+    "aha_idea_organizations",
+    "aha://idea-organizations",
+    async (uri: URL) => {
+      try {
+        const ideaOrganizations = await services.AhaService.listIdeaOrganizations();
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(ideaOrganizations, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error('Error retrieving idea organizations list:', error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha me/current user profile resource
+  server.resource(
+    "aha_me_profile",
+    "aha://me/profile",
+    async (uri: URL) => {
+      try {
+        const profile = await services.AhaService.getMe();
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(profile, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error('Error retrieving user profile:', error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha me/current user assigned records resource
+  server.resource(
+    "aha_me_assigned_records",
+    "aha://me/assigned-records",
+    async (uri: URL) => {
+      try {
+        const assignedRecords = await services.AhaService.getAssignedRecords();
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(assignedRecords, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error('Error retrieving assigned records:', error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha me/current user pending tasks resource
+  server.resource(
+    "aha_me_pending_tasks",
+    "aha://me/pending-tasks",
+    async (uri: URL) => {
+      try {
+        const pendingTasks = await services.AhaService.getPendingTasks();
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(pendingTasks, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error('Error retrieving pending tasks:', error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha idea endorsements resource
+  server.resource(
+    "aha_idea_endorsements",
+    "aha://idea/{id}/endorsements",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const ideaId = pathParts[pathParts.length - 2]; // idea_id is before /endorsements
+      
+      if (!ideaId) {
+        throw new Error('Invalid idea ID: Idea ID is missing from URI');
+      }
+      
+      try {
+        const endorsements = await services.AhaService.getIdeaEndorsements(ideaId);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(endorsements, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving endorsements for idea ${ideaId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha idea votes resource
+  server.resource(
+    "aha_idea_votes",
+    "aha://idea/{id}/votes",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const ideaId = pathParts[pathParts.length - 2]; // idea_id is before /votes
+      
+      if (!ideaId) {
+        throw new Error('Invalid idea ID: Idea ID is missing from URI');
+      }
+      
+      try {
+        const votes = await services.AhaService.getIdeaVotes(ideaId);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(votes, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving votes for idea ${ideaId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha idea watchers resource
+  server.resource(
+    "aha_idea_watchers",
+    "aha://idea/{id}/watchers",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const ideaId = pathParts[pathParts.length - 2]; // idea_id is before /watchers
+      
+      if (!ideaId) {
+        throw new Error('Invalid idea ID: Idea ID is missing from URI');
+      }
+      
+      try {
+        const watchers = await services.AhaService.getIdeaWatchers(ideaId);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(watchers, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving watchers for idea ${ideaId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha global ideas list resource
+  server.resource(
+    "aha_ideas",
+    "aha://ideas",
+    async (uri: URL) => {
+      try {
+        // Extract query parameters for advanced filtering
+        const query = uri.searchParams.get('query') || undefined;
+        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
+        const assignedToUser = uri.searchParams.get('assignedToUser') || undefined;
+        const status = uri.searchParams.get('status') || undefined;
+        const category = uri.searchParams.get('category') || undefined;
+
+        const ideas = await services.AhaService.listIdeas(
+          query,
+          updatedSince,
+          assignedToUser,
+          status,
+          category
+        );
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(ideas, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error('Error retrieving global ideas list:', error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha product releases resource
+  server.resource(
+    "aha_product_releases",
+    "aha://releases/{product_id}",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const productId = pathParts[pathParts.length - 1];
+      
+      if (!productId) {
+        throw new Error('Invalid product ID: Product ID is missing from URI');
+      }
+      
+      try {
+        // Extract query parameters for advanced filtering
+        const query = uri.searchParams.get('query') || undefined;
+        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
+        const status = uri.searchParams.get('status') || undefined;
+        const parkingLot = uri.searchParams.get('parkingLot') === 'true' ? true : 
+                          uri.searchParams.get('parkingLot') === 'false' ? false : undefined;
+
+        const releases = await services.AhaService.listReleasesByProduct(
+          productId,
+          query,
+          updatedSince,
+          status,
+          parkingLot
+        );
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(releases, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving releases list for product ${productId}:`, error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha initiative epics resource
+  server.resource(
+    "aha_initiative_epics",
+    "aha://initiative/{initiative_id}/epics",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const initiativeId = pathParts[pathParts.length - 2]; // initiative_id is before /epics
+      
+      if (!initiativeId) {
+        throw new Error('Invalid initiative ID: Initiative ID is missing from URI');
+      }
+      
+      try {
+        const epics = await services.AhaService.getInitiativeEpics(initiativeId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(epics, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving epics for initiative ${initiativeId}:`, error);
+        throw error;
+      }
+    }
+  );
 }

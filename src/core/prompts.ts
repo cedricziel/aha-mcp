@@ -15,10 +15,10 @@ async function fetchResourceContext(resourceId: string, resourceType: string): P
         context = `**Existing Feature Context:**
 - Name: ${feature.name || 'N/A'}
 - Description: ${feature.description || 'N/A'}
-- Status: ${feature.status || 'N/A'}
-- Priority: ${feature.priority || 'N/A'}
-- Release: ${feature.release?.name || 'N/A'}
-- Tags: ${feature.tags?.map(t => t.name).join(', ') || 'N/A'}
+- Status: ${(feature as any).status || 'N/A'}
+- Priority: ${(feature as any).priority || 'N/A'}
+- Release: ${(feature as any).release?.name || 'N/A'}
+- Tags: ${feature.tags?.map(t => (t as any).name).join(', ') || 'N/A'}
 `;
         break;
       case "epic":
@@ -26,28 +26,28 @@ async function fetchResourceContext(resourceId: string, resourceType: string): P
         context = `**Existing Epic Context:**
 - Name: ${epic.name || 'N/A'}
 - Description: ${epic.description || 'N/A'}
-- Status: ${epic.status || 'N/A'}
-- Progress: ${epic.progress || 'N/A'}
-- Product: ${epic.product?.name || 'N/A'}
+- Status: ${(epic as any).status || 'N/A'}
+- Progress: ${(epic as any).progress || 'N/A'}
+- Product: ${(epic as any).product?.name || 'N/A'}
 `;
         break;
       case "idea":
         const idea = await services.AhaService.getIdea(resourceId);
         context = `**Existing Idea Context:**
-- Name: ${idea.name || 'N/A'}
-- Description: ${idea.description || 'N/A'}
-- Status: ${idea.status || 'N/A'}
-- Score: ${idea.score || 'N/A'}
-- Category: ${idea.category?.name || 'N/A'}
+- Name: ${(idea as any).name || 'N/A'}
+- Description: ${(idea as any).description || 'N/A'}
+- Status: ${(idea as any).status || 'N/A'}
+- Score: ${(idea as any).score || 'N/A'}
+- Category: ${(idea as any).category?.name || 'N/A'}
 `;
         break;
       case "initiative":
         const initiative = await services.AhaService.getInitiative(resourceId);
         context = `**Existing Initiative Context:**
-- Name: ${initiative.name || 'N/A'}
-- Description: ${initiative.description || 'N/A'}
-- Status: ${initiative.status || 'N/A'}
-- Progress: ${initiative.progress || 'N/A'}
+- Name: ${(initiative as any).name || 'N/A'}
+- Description: ${(initiative as any).description || 'N/A'}
+- Status: ${(initiative as any).status || 'N/A'}
+- Progress: ${(initiative as any).progress || 'N/A'}
 `;
         break;
       case "product":
@@ -55,7 +55,7 @@ async function fetchResourceContext(resourceId: string, resourceType: string): P
         context = `**Existing Product Context:**
 - Name: ${product.name || 'N/A'}
 - Description: ${product.description || 'N/A'}
-- Prefix: ${product.prefix || 'N/A'}
+- Prefix: ${(product as any).prefix || 'N/A'}
 `;
         break;
       default:
@@ -606,5 +606,77 @@ Focus on actionable, measurable metrics that align with business objectives.`
         }
       }]
     })
+  );
+
+  // 13. Product Idea Discovery Prompt
+  server.prompt(
+    "product_idea_discovery",
+    "Discover and analyze ideas within products/workspaces based on topics, themes, or keywords",
+    {
+      search_topic: z.string().describe("The topic, theme, or keyword to search for (e.g., 'Node.js', 'mobile', 'API')"),
+      product_name: z.string().optional().describe("Name of the product/workspace to search in (e.g., 'VoC', 'Platform')"),
+      product_id: z.string().optional().describe("Specific product ID to search in (e.g., 'VOC-1')"),
+      analysis_focus: z.string().optional().describe("What aspect to focus on (e.g., 'customer pain points', 'feature gaps', 'enhancement opportunities')"),
+      time_filter: z.string().optional().describe("Time filter for ideas (e.g., 'last 6 months', 'recent', 'all time')"),
+      include_status: z.string().optional().describe("Comma-separated list of idea statuses to include (e.g., 'new,under review,planned')")
+    },
+    async (params: { search_topic: string; product_name?: string; product_id?: string; analysis_focus?: string; time_filter?: string; include_status?: string }) => {
+      // Fetch product context if product_id is provided
+      let productContext = "";
+      if (params.product_id) {
+        productContext = await fetchResourceContext(params.product_id, "product");
+      }
+      
+      // Build search instructions based on available parameters
+      const searchInstructions = [];
+      
+      if (params.product_name || params.product_id) {
+        searchInstructions.push(`1. **Find Product**: ${params.product_name ? `Search for the "${params.product_name}" product/workspace` : `Use product ID "${params.product_id}"`}`);
+      } else {
+        searchInstructions.push(`1. **Find Products**: First list all products to identify relevant workspaces`);
+      }
+      
+      searchInstructions.push(`2. **Search Ideas**: Look for ideas related to "${params.search_topic}" using the appropriate resource`);
+      searchInstructions.push(`3. **Filter Results**: Apply any additional filters for status, timeframe, or relevance`);
+      
+      return {
+        messages: [{
+          role: "user",
+          content: {
+            type: "text",
+            text: `Discover and analyze ideas about "${params.search_topic}" in ${params.product_name || params.product_id || 'the relevant product/workspace'}:
+
+**Search Topic**: ${params.search_topic}
+${params.product_name ? `**Product/Workspace**: ${params.product_name}` : ''}
+${params.product_id ? `**Product ID**: ${params.product_id}` : ''}
+${params.analysis_focus ? `**Analysis Focus**: ${params.analysis_focus}` : ''}
+${params.time_filter ? `**Time Filter**: ${params.time_filter}` : ''}
+${params.include_status ? `**Status Filter**: ${params.include_status}` : ''}
+
+${productContext}
+
+**Search Process**:
+${searchInstructions.join('\n')}
+
+**Available Resources**:
+- \`aha://products\` - List all products/workspaces
+- \`aha://ideas/{product_id}?query={search_topic}\` - Search ideas in specific product
+- \`aha://ideas?query={search_topic}\` - Search ideas globally
+- \`aha://product/{product_id}\` - Get product details
+
+Please provide:
+1. **Search Strategy**: How to find the most relevant ideas for "${params.search_topic}"
+2. **Resource Queries**: Specific MCP resource URLs to use for discovery
+3. **Analysis Framework**: How to analyze and categorize the discovered ideas
+4. **Key Insights**: What patterns or themes to look for in the results
+5. **Prioritization Criteria**: How to rank and prioritize the discovered ideas
+6. **Actionable Recommendations**: Next steps based on the discovered ideas
+7. **Related Topics**: Suggested related topics to explore
+
+Focus on providing specific, actionable search queries and analysis approaches.`
+          }
+        }]
+      };
+    }
   );
 }
