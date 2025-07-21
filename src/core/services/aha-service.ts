@@ -87,7 +87,7 @@ export class AhaService {
   private static ideaVotesApi: IdeaVotesApi | null = null;
 
   private static apiKey: string | null = process.env.AHA_TOKEN || null;
-  private static accessToken: string | null = process.env.AHA_ACCESS_TOKEN || null;
+  private static accessToken: string | null = process.env.AHA_ACCESS_TOKEN || process.env.AHA_TOKEN || null;
   private static subdomain: string | null = process.env.AHA_COMPANY || null;
 
   /**
@@ -107,10 +107,14 @@ export class AhaService {
     // Handle backward compatibility with old (apiKey, subdomain) signature
     if (typeof configOrApiKey === 'string') {
       this.apiKey = configOrApiKey;
+      this.accessToken = configOrApiKey; // Use API key as Bearer token
       if (subdomain) this.subdomain = subdomain;
     } else if (configOrApiKey) {
       // Handle new config object signature
-      if (configOrApiKey.apiKey) this.apiKey = configOrApiKey.apiKey;
+      if (configOrApiKey.apiKey) {
+        this.apiKey = configOrApiKey.apiKey;
+        this.accessToken = configOrApiKey.apiKey; // Use API key as Bearer token
+      }
       if (configOrApiKey.accessToken) this.accessToken = configOrApiKey.accessToken;
       if (configOrApiKey.subdomain) this.subdomain = configOrApiKey.subdomain;
     }
@@ -133,7 +137,7 @@ export class AhaService {
    * @returns true if the service is initialized, false otherwise
    */
   public static isInitialized(): boolean {
-    const hasAuth = this.apiKey || this.accessToken;
+    const hasAuth = this.accessToken;
     return !!(hasAuth && this.subdomain && this.configuration);
   }
 
@@ -163,7 +167,7 @@ export class AhaService {
     }
 
     // Check for valid authentication method
-    const hasAuth = this.apiKey || this.accessToken;
+    const hasAuth = this.accessToken;
     if (!hasAuth) {
       throw new Error('Aha API client not initialized. Authentication is required. Set AHA_TOKEN or AHA_ACCESS_TOKEN environment variables, or call initialize().');
     }
@@ -173,8 +177,8 @@ export class AhaService {
       const basePath = `https://${this.subdomain}.aha.io/api/v1`;
 
       // Initialize the configuration with the appropriate authentication method
+      // Always use accessToken (Bearer) for Aha.io API tokens
       this.configuration = new Configuration({
-        apiKey: this.apiKey || undefined,
         accessToken: this.accessToken || undefined,
         basePath
       });
