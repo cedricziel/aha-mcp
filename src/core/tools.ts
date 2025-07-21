@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as services from "./services/index.js";
+import { databaseService } from './database/database.js';
 import { registerSyncTools } from "./tools/sync-tools.js";
 import { registerEmbeddingTools } from "./tools/embedding-tools.js";
 
@@ -67,27 +68,73 @@ export function registerTools(server: McpServer) {
   // List features tool
   server.tool(
     "aha_list_features",
-    "List features from Aha.io",
+    "List features from Aha.io (hybrid: checks local database first, then live API)",
     {
       query: z.string().optional().describe("Search query"),
       updatedSince: z.string().optional().describe("Filter by updated since date (ISO format)"),
       tag: z.string().optional().describe("Filter by tag"),
-      assignedToUser: z.string().optional().describe("Filter by assigned user")
+      assignedToUser: z.string().optional().describe("Filter by assigned user"),
+      forceOnline: z.boolean().optional().describe("Force live API call instead of using local database")
     },
-    async (params: { query?: string; updatedSince?: string; tag?: string; assignedToUser?: string }) => {
+    async (params: { query?: string; updatedSince?: string; tag?: string; assignedToUser?: string; forceOnline?: boolean }) => {
       try {
-        const features = await services.AhaService.listFeatures(
-          params.query,
-          params.updatedSince,
-          params.tag,
-          params.assignedToUser
-        );
+        let features;
+        let dataSource = "offline";
+
+        // Try local database first unless forced online
+        if (!params.forceOnline) {
+          try {
+            await databaseService.initialize();
+            const filters: any = {};
+            
+            // Apply basic filters that we can handle locally
+            if (params.assignedToUser) {
+              filters.assigned_to_user = params.assignedToUser;
+            }
+            
+            const localFeatures = await databaseService.getEntities('features', filters, 100);
+            
+            if (localFeatures.length > 0 || Object.keys(filters).length > 0) {
+              // Filter by query locally if provided
+              features = localFeatures;
+              if (params.query) {
+                const query = params.query.toLowerCase();
+                features = features.filter(feature => 
+                  feature.name?.toLowerCase().includes(query) || 
+                  feature.description?.toLowerCase().includes(query)
+                );
+              }
+              
+              // Filter by date if provided
+              if (params.updatedSince) {
+                const sinceDate = new Date(params.updatedSince);
+                features = features.filter(feature => 
+                  feature.updated_at && new Date(feature.updated_at) >= sinceDate
+                );
+              }
+            }
+          } catch (dbError) {
+            console.warn('Database query failed, falling back to API:', dbError);
+            features = null;
+          }
+        }
+
+        // Fall back to live API if no local data or forced online
+        if (!features || features.length === 0 || params.forceOnline) {
+          features = await services.AhaService.listFeatures(
+            params.query,
+            params.updatedSince,
+            params.tag,
+            params.assignedToUser
+          );
+          dataSource = "online";
+        }
 
         return {
           content: [
             {
               type: "text",
-              text: `Features from Aha.io:\n\n${JSON.stringify(features, null, 2)}`
+              text: `Features from Aha.io (${dataSource}):\n\n${JSON.stringify(features, null, 2)}`
             }
           ]
         };
@@ -108,19 +155,41 @@ export function registerTools(server: McpServer) {
   // Get feature tool
   server.tool(
     "aha_get_feature",
-    "Get a specific feature from Aha.io by ID",
+    "Get a specific feature from Aha.io by ID (hybrid: checks local database first, then live API)",
     {
-      featureId: z.string().describe("ID of the feature to retrieve")
+      featureId: z.string().describe("ID of the feature to retrieve"),
+      forceOnline: z.boolean().optional().describe("Force live API call instead of using local database")
     },
-    async (params: { featureId: string }) => {
+    async (params: { featureId: string; forceOnline?: boolean }) => {
       try {
-        const feature = await services.AhaService.getFeature(params.featureId);
+        let feature;
+        let dataSource = "offline";
+
+        // Try local database first unless forced online
+        if (!params.forceOnline) {
+          try {
+            await databaseService.initialize();
+            const localFeature = await databaseService.getEntity('features', params.featureId);
+            
+            if (localFeature) {
+              feature = localFeature;
+            }
+          } catch (dbError) {
+            console.warn('Database query failed, falling back to API:', dbError);
+          }
+        }
+
+        // Fall back to live API if no local data or forced online
+        if (!feature || params.forceOnline) {
+          feature = await services.AhaService.getFeature(params.featureId);
+          dataSource = "online";
+        }
 
         return {
           content: [
             {
               type: "text",
-              text: `Feature details:\n\n${JSON.stringify(feature, null, 2)}`
+              text: `Feature details (${dataSource}):\n\n${JSON.stringify(feature, null, 2)}`
             }
           ]
         };
@@ -141,17 +210,40 @@ export function registerTools(server: McpServer) {
   // List users tool
   server.tool(
     "aha_list_users",
-    "List users from Aha.io",
-    {},
-    async () => {
+    "List users from Aha.io (hybrid: checks local database first, then live API)",
+    {
+      forceOnline: z.boolean().optional().describe("Force live API call instead of using local database")
+    },
+    async (params: { forceOnline?: boolean } = {}) => {
       try {
-        const users = await services.AhaService.listUsers();
+        let users;
+        let dataSource = "offline";
+
+        // Try local database first unless forced online
+        if (!params.forceOnline) {
+          try {
+            await databaseService.initialize();
+            const localUsers = await databaseService.getEntities('users', {}, 100);
+            
+            if (localUsers.length > 0) {
+              users = localUsers;
+            }
+          } catch (dbError) {
+            console.warn('Database query failed, falling back to API:', dbError);
+          }
+        }
+
+        // Fall back to live API if no local data or forced online
+        if (!users || users.length === 0 || params.forceOnline) {
+          users = await services.AhaService.listUsers();
+          dataSource = "online";
+        }
 
         return {
           content: [
             {
               type: "text",
-              text: `Users from Aha.io:\n\n${JSON.stringify(users, null, 2)}`
+              text: `Users from Aha.io (${dataSource}):\n\n${JSON.stringify(users, null, 2)}`
             }
           ]
         };
@@ -172,19 +264,42 @@ export function registerTools(server: McpServer) {
   // List epics tool
   server.tool(
     "aha_list_epics",
-    "List epics in a product from Aha.io",
+    "List epics in a product from Aha.io (hybrid: checks local database first, then live API)",
     {
-      productId: z.string().describe("ID of the product")
+      productId: z.string().describe("ID of the product"),
+      forceOnline: z.boolean().optional().describe("Force live API call instead of using local database")
     },
-    async (params: { productId: string }) => {
+    async (params: { productId: string; forceOnline?: boolean }) => {
       try {
-        const epics = await services.AhaService.listEpics(params.productId);
+        let epics;
+        let dataSource = "offline";
+
+        // Try local database first unless forced online
+        if (!params.forceOnline) {
+          try {
+            await databaseService.initialize();
+            const filters = { product_id: params.productId };
+            const localEpics = await databaseService.getEntities('epics', filters, 100);
+            
+            if (localEpics.length > 0) {
+              epics = localEpics;
+            }
+          } catch (dbError) {
+            console.warn('Database query failed, falling back to API:', dbError);
+          }
+        }
+
+        // Fall back to live API if no local data or forced online
+        if (!epics || epics.length === 0 || params.forceOnline) {
+          epics = await services.AhaService.listEpics(params.productId);
+          dataSource = "online";
+        }
 
         return {
           content: [
             {
               type: "text",
-              text: `Epics for product ${params.productId}:\n\n${JSON.stringify(epics, null, 2)}`
+              text: `Epics for product ${params.productId} (${dataSource}):\n\n${JSON.stringify(epics, null, 2)}`
             }
           ]
         };
@@ -1135,27 +1250,80 @@ export function registerTools(server: McpServer) {
   // List initiatives tool
   server.tool(
     "aha_list_initiatives",
-    "List initiatives from Aha.io with filtering options",
+    "List initiatives from Aha.io with filtering options (hybrid: checks local database first, then live API)",
     {
       query: z.string().optional().describe("Search term to match against initiative name"),
       updatedSince: z.string().optional().describe("UTC timestamp (ISO8601 format) to filter by updated date"),
       assignedToUser: z.string().optional().describe("ID or email address of a user to filter by assignment"),
-      onlyActive: z.boolean().optional().describe("When true, returns only active initiatives")
+      onlyActive: z.boolean().optional().describe("When true, returns only active initiatives"),
+      forceOnline: z.boolean().optional().describe("Force live API call instead of using local database")
     },
-    async (params: { query?: string; updatedSince?: string; assignedToUser?: string; onlyActive?: boolean }) => {
+    async (params: { query?: string; updatedSince?: string; assignedToUser?: string; onlyActive?: boolean; forceOnline?: boolean }) => {
       try {
-        const initiatives = await services.AhaService.listInitiatives(
-          params.query,
-          params.updatedSince,
-          params.assignedToUser,
-          params.onlyActive
-        );
+        let initiatives;
+        let dataSource = "offline";
+
+        // Try local database first unless forced online
+        if (!params.forceOnline) {
+          try {
+            await databaseService.initialize();
+            const filters: any = {};
+            
+            // Apply basic filters that we can handle locally
+            if (params.assignedToUser) {
+              filters.assigned_to_user = params.assignedToUser;
+            }
+            
+            const localInitiatives = await databaseService.getEntities('initiatives', filters, 100);
+            
+            if (localInitiatives.length > 0 || Object.keys(filters).length > 0) {
+              // Filter by query locally if provided
+              initiatives = localInitiatives;
+              if (params.query) {
+                const query = params.query.toLowerCase();
+                initiatives = initiatives.filter(initiative => 
+                  initiative.name?.toLowerCase().includes(query) || 
+                  initiative.description?.toLowerCase().includes(query)
+                );
+              }
+              
+              // Filter by date if provided
+              if (params.updatedSince) {
+                const sinceDate = new Date(params.updatedSince);
+                initiatives = initiatives.filter(initiative => 
+                  initiative.updated_at && new Date(initiative.updated_at) >= sinceDate
+                );
+              }
+
+              // Filter by active status if requested
+              if (params.onlyActive) {
+                initiatives = initiatives.filter(initiative => 
+                  initiative.status === 'active' || initiative.workflow_status === 'active'
+                );
+              }
+            }
+          } catch (dbError) {
+            console.warn('Database query failed, falling back to API:', dbError);
+            initiatives = null;
+          }
+        }
+
+        // Fall back to live API if no local data or forced online
+        if (!initiatives || initiatives.length === 0 || params.forceOnline) {
+          initiatives = await services.AhaService.listInitiatives(
+            params.query,
+            params.updatedSince,
+            params.assignedToUser,
+            params.onlyActive
+          );
+          dataSource = "online";
+        }
 
         return {
           content: [
             {
               type: "text",
-              text: `Initiatives from Aha.io:\n\n${JSON.stringify(initiatives, null, 2)}`
+              text: `Initiatives from Aha.io (${dataSource}):\n\n${JSON.stringify(initiatives, null, 2)}`
             }
           ]
         };
