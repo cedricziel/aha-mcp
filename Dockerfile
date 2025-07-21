@@ -2,13 +2,25 @@
 # Stage 1: Build stage
 FROM oven/bun:1.2-alpine AS builder
 
+# Install build dependencies for native modules (sqlite-vec)
+RUN apk add --no-cache \
+    python3 \
+    python3-dev \
+    py3-setuptools \
+    make \
+    gcc \
+    g++ \
+    musl-dev \
+    sqlite-dev \
+    pkgconf
+
 # Set working directory
 WORKDIR /app
 
 # Copy package files
 COPY package.json bun.lock ./
 
-# Install dependencies
+# Install dependencies including native modules
 RUN bun install --frozen-lockfile
 
 # Copy source code
@@ -21,8 +33,20 @@ RUN bun run build
 # Stage 2: Production stage
 FROM oven/bun:1.2-alpine AS production
 
-# Install necessary packages for production
-RUN apk add --no-cache tini wget
+# Install runtime dependencies and build tools for native modules
+RUN apk add --no-cache \
+    tini \
+    wget \
+    sqlite \
+    sqlite-libs \
+    python3 \
+    py3-setuptools \
+    make \
+    gcc \
+    g++ \
+    musl-dev \
+    sqlite-dev \
+    pkgconf
 
 # Create non-root user
 RUN addgroup -g 1001 -S mcp && \
@@ -34,7 +58,7 @@ WORKDIR /app
 # Copy package files
 COPY package.json bun.lock ./
 
-# Install only production dependencies
+# Install only production dependencies in production stage
 RUN bun install --frozen-lockfile --production --ignore-scripts
 
 # Copy built application from builder stage

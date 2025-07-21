@@ -10,6 +10,7 @@
         "cors": "^2.8.5",
         "express": "^4.21.2",
         "sqlite": "^5.1.1",
+        "sqlite-vec": "^0.1.6",
         "sqlite3": "^5.1.7",
         "zod": "^3.23.8",
       },
@@ -590,6 +591,16 @@
     "sprintf-js": ["sprintf-js@1.1.3", "", {}, "sha512-Oo+0REFV59/rz3gfJNKQiBlwfHaSESl1pcGyABQsnnIfWOFt6JNj5gCog2U6MLZ//IGYD+nA8nI+mTShREReaA=="],
 
     "sqlite": ["sqlite@5.1.1", "", {}, "sha512-oBkezXa2hnkfuJwUo44Hl9hS3er+YFtueifoajrgidvqsJRQFpc5fKoAkAor1O5ZnLoa28GBScfHXs8j0K358Q=="],
+
+    "sqlite-vec": ["sqlite-vec@0.1.6", "", { "optionalDependencies": { "sqlite-vec-darwin-arm64": "0.1.6", "sqlite-vec-darwin-x64": "0.1.6", "sqlite-vec-linux-arm64": "0.1.6", "sqlite-vec-linux-x64": "0.1.6", "sqlite-vec-windows-x64": "0.1.6" } }, "sha512-hQZU700TU2vWPXZYDULODjKXeMio6rKX7UpPN7Tq9qjPW671IEgURGrcC5LDBMl0q9rBvAuzmcmJmImMqVibYQ=="],
+
+    "sqlite-vec-darwin-arm64": ["sqlite-vec-darwin-arm64@0.1.6", "", { "os": "darwin", "cpu": "arm64" }, "sha512-5duw/xhM3xE6BCQd//eAkyHgBp9FIwK6veldRhPG96dT6Zpjov3bG02RuE7JAQj0SVJYRW8bJwZ4LxqW0+Q7Dw=="],
+
+    "sqlite-vec-darwin-x64": ["sqlite-vec-darwin-x64@0.1.6", "", { "os": "darwin", "cpu": "x64" }, "sha512-MFkKjNfJ5pamFHhyTsrqdxALrjuvpSEZdu6Q/0vMxFa6sr5YlfabeT5xGqEbuH0iobsT1Hca5EZxLhLy0jHYkw=="],
+
+    "sqlite-vec-linux-x64": ["sqlite-vec-linux-x64@0.1.6", "", { "os": "linux", "cpu": "x64" }, "sha512-411tWPswywIzdkp+zsAUav4A03f0FjnNfpZFlOw8fBebFR74RSFkwM8Xryf18gLHiYAXUBI4mjY9+/xjwBjKpg=="],
+
+    "sqlite-vec-windows-x64": ["sqlite-vec-windows-x64@0.1.6", "", { "os": "win32", "cpu": "x64" }, "sha512-Dy9/KlKJDrjuQ/RRkBqGkMZuSh5bTJDMMOFZft9VJZaXzpYxb5alpgdvD4bbKegpDdfPi2BT4+PBivsNJSlMoQ=="],
 
     "sqlite3": ["sqlite3@5.1.7", "", { "dependencies": { "bindings": "^1.5.0", "node-addon-api": "^7.0.0", "prebuild-install": "^7.1.1", "tar": "^6.1.11" }, "optionalDependencies": { "node-gyp": "8.x" } }, "sha512-GGIyOiFaG+TUra3JIfkI/zGP8yZYLPQ0pl1bH+ODjiX57sPhrLU5sQJn1y9bDKZUFYkX1crlrPfSYt0BKKdkog=="],
 

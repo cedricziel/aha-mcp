@@ -1,5 +1,6 @@
 import sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
+import * as sqliteVec from 'sqlite-vec';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -58,6 +59,7 @@ export class DatabaseService {
   private db: Database<sqlite3.Database, sqlite3.Statement> | null = null;
   private dbPath: string;
   private isInitialized = false;
+  private vectorEnabled = false;
 
   constructor(dbPath?: string) {
     // Default to data directory in project root
@@ -92,36 +94,13 @@ export class DatabaseService {
       await this.db.exec('PRAGMA cache_size = 10000;');
       await this.db.exec('PRAGMA temp_store = memory;');
 
-      // Load sqlite-vec extension if available
+      // Load sqlite-vec extension
       try {
-        // Try to load sqlite-vec extension (path may vary)
-        const possiblePaths = [
-          'sqlite-vec',
-          './sqlite-vec',
-          '/usr/local/lib/sqlite-vec',
-          './node_modules/sqlite-vec/vec0'
-        ];
-        
-        let vectorLoaded = false;
-        for (const vecPath of possiblePaths) {
-          try {
-            await this.db.exec(`.load ${vecPath}`);
-            vectorLoaded = true;
-            console.log(`Loaded sqlite-vec extension from: ${vecPath}`);
-            break;
-          } catch (e) {
-            // Try next path
-            continue;
-          }
-        }
-        
-        if (!vectorLoaded) {
-          // Only show warning in non-test environments
-          if (!process.env.NODE_ENV?.includes('test') && !process.argv.some(arg => arg.includes('test'))) {
-            console.warn('sqlite-vec extension not found, vector operations will be disabled');
-          }
-        }
+        sqliteVec.load(this.db);
+        this.vectorEnabled = true;
+        console.log('sqlite-vec extension loaded successfully');
       } catch (error) {
+        this.vectorEnabled = false;
         // Only show warning in non-test environments
         if (!process.env.NODE_ENV?.includes('test') && !process.argv.some(arg => arg.includes('test'))) {
           console.warn('Could not load sqlite-vec extension:', error);
@@ -530,6 +509,330 @@ export class DatabaseService {
         totalTables: 0,
         syncJobsCount: 0
       };
+    }
+  }
+
+  /**
+   * Check if vector operations are available
+   */
+  isVectorEnabled(): boolean {
+    return this.vectorEnabled;
+  }
+
+  /**
+   * Store a vector embedding for an entity
+   */
+  async storeEmbedding(
+    entityType: string,
+    entityId: string,
+    embedding: number[],
+    text: string,
+    metadata?: any
+  ): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+    if (!this.vectorEnabled) {
+      console.warn('Vector operations disabled, skipping embedding storage');
+      return;
+    }
+
+    try {
+      // Store as JSON string for compatibility with current schema
+      const embeddingJson = JSON.stringify(embedding);
+      
+      await this.db.run(`
+        INSERT OR REPLACE INTO embeddings 
+        (entity_type, entity_id, embedding_vector, text, metadata, model, dimensions, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      `, [
+        entityType,
+        entityId,
+        embeddingJson,
+        text,
+        metadata ? JSON.stringify(metadata) : null,
+        'sqlite-vec',
+        embedding.length
+      ]);
+    } catch (error) {
+      console.error('Error storing embedding:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Perform vector similarity search
+   */
+  async vectorSimilaritySearch(
+    queryEmbedding: number[],
+    entityTypes?: string[],
+    limit: number = 10,
+    threshold: number = 0.7
+  ): Promise<Array<{
+    entity_type: string;
+    entity_id: string;
+    text_content: string;
+    similarity: number;
+    metadata?: any;
+  }>> {
+    if (!this.db) throw new Error('Database not initialized');
+    if (!this.vectorEnabled) {
+      console.warn('Vector operations disabled, returning empty results');
+      return [];
+    }
+
+    try {
+      // For now, use a simplified approach since schema stores vectors as TEXT
+      // TODO: Update to use vec0 virtual table in a future migration
+      let sql = `
+        SELECT 
+          entity_type,
+          entity_id,
+          text,
+          embedding_vector,
+          metadata
+        FROM embeddings
+      `;
+      
+      const params: any[] = [];
+      
+      if (entityTypes && entityTypes.length > 0) {
+        const placeholders = entityTypes.map(() => '?').join(',');
+        sql += ` WHERE entity_type IN (${placeholders})`;
+        params.push(...entityTypes);
+      }
+      
+      sql += ` LIMIT ?`;
+      params.push(limit);
+
+      const results = await this.db.all(sql, params);
+      
+      // Calculate similarity in JavaScript for now
+      // TODO: Use vec_distance_cosine when migrated to vec0 virtual table
+      const similarities = results.map((row: any) => {
+        let similarity = 0;
+        try {
+          const storedEmbedding = row.embedding_vector ? 
+            (typeof row.embedding_vector === 'string' ? 
+              JSON.parse(row.embedding_vector) : 
+              Array.from(new Float32Array(row.embedding_vector))) : [];
+          
+          similarity = this.calculateCosineSimilarity(queryEmbedding, storedEmbedding);
+        } catch (error) {
+          console.warn('Error calculating similarity:', error);
+        }
+        
+        return {
+          entity_type: row.entity_type,
+          entity_id: row.entity_id,
+          text_content: row.text,
+          similarity,
+          metadata: row.metadata ? JSON.parse(row.metadata) : undefined
+        };
+      });
+
+      return similarities
+        .filter(item => item.similarity >= threshold)
+        .sort((a, b) => b.similarity - a.similarity);
+    } catch (error) {
+      console.error('Error performing vector similarity search:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate cosine similarity between two vectors
+   */
+  private calculateCosineSimilarity(vecA: number[], vecB: number[]): number {
+    if (vecA.length !== vecB.length || vecA.length === 0) {
+      return 0;
+    }
+
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let i = 0; i < vecA.length; i++) {
+      dotProduct += vecA[i] * vecB[i];
+      normA += vecA[i] * vecA[i];
+      normB += vecB[i] * vecB[i];
+    }
+
+    if (normA === 0 || normB === 0) {
+      return 0;
+    }
+
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  }
+
+  /**
+   * Get embedding for a specific entity
+   */
+  async getEmbedding(entityType: string, entityId: string): Promise<number[] | null> {
+    if (!this.db) throw new Error('Database not initialized');
+    if (!this.vectorEnabled) return null;
+
+    try {
+      const result = await this.db.get(`
+        SELECT embedding_vector FROM embeddings 
+        WHERE entity_type = ? AND entity_id = ?
+      `, [entityType, entityId]);
+
+      if (!result?.embedding_vector) return null;
+
+      // Handle both BLOB and TEXT storage formats
+      if (typeof result.embedding_vector === 'string') {
+        return JSON.parse(result.embedding_vector);
+      } else {
+        // Convert buffer back to array
+        return Array.from(new Float32Array(result.embedding_vector));
+      }
+    } catch (error) {
+      console.error('Error retrieving embedding:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Delete embedding for an entity
+   */
+  async deleteEmbedding(entityType: string, entityId: string): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+    if (!this.vectorEnabled) return;
+
+    try {
+      await this.db.run(`
+        DELETE FROM embeddings 
+        WHERE entity_type = ? AND entity_id = ?
+      `, [entityType, entityId]);
+    } catch (error) {
+      console.error('Error deleting embedding:', error);
+      throw error;
+    }
+  }
+
+  // ===================================
+  // EMBEDDING JOB OPERATIONS
+  // ===================================
+
+  /**
+   * Create a new embedding job
+   */
+  async createEmbeddingJob(entities: string[], options?: any): Promise<string> {
+    const db = await this.getDb();
+    const jobId = `emb-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    await db.run(`
+      INSERT INTO embedding_jobs (
+        id, entities, status, progress, total, 
+        processed_count, error_count, options, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    `, [
+      jobId,
+      JSON.stringify(entities),
+      'pending',
+      0,
+      100, // Will be updated with actual count
+      0,
+      0,
+      options ? JSON.stringify(options) : null
+    ]);
+    
+    return jobId;
+  }
+
+  /**
+   * Get embedding job by ID
+   */
+  async getEmbeddingJob(jobId: string): Promise<any | null> {
+    const db = await this.getDb();
+    const row = await db.get('SELECT * FROM embedding_jobs WHERE id = ?', [jobId]);
+    
+    if (!row) return null;
+    
+    return {
+      id: row.id,
+      status: row.status,
+      entities: JSON.parse(row.entities || '[]'),
+      progress: row.progress,
+      total: row.total,
+      current_entity: row.current_entity,
+      processed_count: row.processed_count,
+      error_count: row.error_count,
+      last_error: row.last_error,
+      started_at: row.started_at ? new Date(row.started_at) : undefined,
+      updated_at: new Date(row.updated_at),
+      completed_at: row.completed_at ? new Date(row.completed_at) : undefined,
+      estimated_completion: row.estimated_completion ? new Date(row.estimated_completion) : undefined,
+      options: row.options ? JSON.parse(row.options) : undefined
+    };
+  }
+
+  /**
+   * Update embedding job progress
+   */
+  async updateEmbeddingJob(jobId: string, updates: Record<string, any>): Promise<void> {
+    const db = await this.getDb();
+    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+    const values = Object.values(updates);
+    
+    await db.run(`
+      UPDATE embedding_jobs 
+      SET ${fields}, updated_at = datetime('now')
+      WHERE id = ?
+    `, [...values, jobId]);
+  }
+
+  /**
+   * Get all active embedding jobs
+   */
+  async getActiveEmbeddingJobs(): Promise<any[]> {
+    const db = await this.getDb();
+    const rows = await db.all(`
+      SELECT * FROM embedding_jobs 
+      WHERE status IN ('pending', 'running', 'paused')
+      ORDER BY created_at DESC
+    `);
+    
+    return rows.map(row => ({
+      id: row.id,
+      status: row.status,
+      entities: JSON.parse(row.entities || '[]'),
+      progress: row.progress,
+      total: row.total,
+      current_entity: row.current_entity,
+      processed_count: row.processed_count,
+      error_count: row.error_count,
+      last_error: row.last_error,
+      started_at: row.started_at ? new Date(row.started_at) : undefined,
+      updated_at: new Date(row.updated_at),
+      completed_at: row.completed_at ? new Date(row.completed_at) : undefined,
+      estimated_completion: row.estimated_completion ? new Date(row.estimated_completion) : undefined,
+      options: row.options ? JSON.parse(row.options) : undefined
+    }));
+  }
+
+  /**
+   * Get entities for embedding generation
+   */
+  async getEntitiesForEmbedding(entityType: string): Promise<Array<{id: string, name: string, description?: string}>> {
+    const db = await this.getDb();
+    
+    switch (entityType) {
+      case 'features':
+        return await db.all('SELECT id, name, description FROM features');
+      case 'products':
+        return await db.all('SELECT id, name, description FROM products');
+      case 'ideas':
+        return await db.all('SELECT id, name, description FROM ideas');
+      case 'epics':
+        return await db.all('SELECT id, name, description FROM epics');
+      case 'initiatives':
+        return await db.all('SELECT id, name, description FROM initiatives');
+      case 'releases':
+        return await db.all('SELECT id, name, description FROM releases');
+      case 'goals':
+        return await db.all('SELECT id, name, description FROM goals');
+      default:
+        throw new Error(`Unsupported entity type: ${entityType}`);
     }
   }
 }

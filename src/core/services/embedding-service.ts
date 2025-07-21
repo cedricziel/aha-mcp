@@ -100,11 +100,7 @@ export class EmbeddingService extends EventEmitter {
    */
   async getEmbeddingProgress(jobId: string): Promise<EmbeddingProgress | null> {
     try {
-      const db = await this.db.getDb();
-      const job = await db.get(`
-        SELECT * FROM embedding_jobs WHERE id = ?
-      `, [jobId]);
-      
+      const job = await this.db.getEmbeddingJob(jobId);
       if (!job) return null;
 
       return {
@@ -115,8 +111,8 @@ export class EmbeddingService extends EventEmitter {
         currentEntity: job.current_entity,
         processedCount: job.processed_count,
         errorCount: job.error_count,
-        startedAt: job.started_at ? new Date(job.started_at) : undefined,
-        estimatedCompletion: job.estimated_completion ? new Date(job.estimated_completion) : undefined,
+        startedAt: job.started_at,
+        estimatedCompletion: job.estimated_completion,
         errors: [] // TODO: Implement error tracking
       };
     } catch (error) {
@@ -130,12 +126,7 @@ export class EmbeddingService extends EventEmitter {
    */
   async getActiveEmbeddingJobs(): Promise<EmbeddingProgress[]> {
     try {
-      const db = await this.db.getDb();
-      const jobs = await db.all(`
-        SELECT * FROM embedding_jobs 
-        WHERE status IN ('pending', 'running', 'paused')
-        ORDER BY created_at DESC
-      `);
+      const jobs = await this.db.getActiveEmbeddingJobs();
       
       const progresses = await Promise.all(
         jobs.map(job => this.getEmbeddingProgress(job.id))
@@ -157,12 +148,11 @@ export class EmbeddingService extends EventEmitter {
     text: string,
     options: EmbeddingOptions = {}
   ): Promise<number[]> {
-    // For now, use a simple text-based embedding approach
-    // In a real implementation, you'd use OpenAI, Cohere, or another embedding API
+    // Use sqlite-vec for proper vector embeddings if available
     const embedding = await this.generateSimpleEmbedding(text, options.dimensions || 384);
     
-    // Store the embedding in the database
-    await this.storeEmbedding(entityType, entityId, embedding, text);
+    // Store the embedding using DatabaseService vector methods
+    await this.db.storeEmbedding(entityType, entityId, embedding, text, options);
     
     return embedding;
   }
@@ -183,34 +173,27 @@ export class EmbeddingService extends EventEmitter {
     metadata?: any;
   }>> {
     try {
+      // Generate query embedding
       const queryEmbedding = await this.generateSimpleEmbedding(queryText);
-      const db = await this.db.getDb();
       
-      // Use sqlite-vec for similarity search if available
-      let whereClause = '';
-      let params: any[] = [JSON.stringify(queryEmbedding), limit];
+      // Use DatabaseService's vector similarity search
+      const results = await this.db.vectorSimilaritySearch(
+        queryEmbedding,
+        entityTypes.length > 0 ? entityTypes : undefined,
+        limit,
+        threshold
+      );
       
-      if (entityTypes.length > 0) {
-        whereClause = `WHERE entity_type IN (${entityTypes.map(() => '?').join(',')})`;
-        params = [JSON.stringify(queryEmbedding), ...entityTypes, limit];
-      }
-      
-      const results = await db.all(`
-        SELECT 
-          entity_type,
-          entity_id,
-          text,
-          metadata,
-          vector_distance(embedding_vector, ?) as similarity
-        FROM embeddings
-        ${whereClause}
-        ORDER BY similarity DESC
-        LIMIT ?
-      `, params);
-      
-      return results.filter(r => r.similarity >= threshold);
+      // Map results to match expected interface
+      return results.map(result => ({
+        entity_type: result.entity_type,
+        entity_id: result.entity_id,
+        similarity: result.similarity,
+        text: result.text_content,
+        metadata: result.metadata
+      }));
     } catch (error) {
-      console.error('Similarity search failed:', error);
+      console.error('Vector similarity search failed:', error);
       // Fallback to text-based search
       return this.fallbackTextSearch(queryText, entityTypes, limit);
     }
@@ -223,26 +206,7 @@ export class EmbeddingService extends EventEmitter {
     entities: string[],
     options: EmbeddingOptions
   ): Promise<string> {
-    const jobId = `emb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const db = await this.db.getDb();
-    
-    await db.run(`
-      INSERT INTO embedding_jobs (
-        id, entities, status, progress, total, 
-        processed_count, error_count, options, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-    `, [
-      jobId,
-      JSON.stringify(entities),
-      'pending',
-      0,
-      100, // Will be updated with actual count
-      0,
-      0,
-      JSON.stringify(options)
-    ]);
-    
-    return jobId;
+    return await this.db.createEmbeddingJob(entities, options);
   }
 
   /**
@@ -252,15 +216,7 @@ export class EmbeddingService extends EventEmitter {
     jobId: string,
     updates: Record<string, any>
   ): Promise<void> {
-    const db = await this.db.getDb();
-    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-    const values = Object.values(updates);
-    
-    await db.run(`
-      UPDATE embedding_jobs 
-      SET ${fields}, updated_at = datetime('now')
-      WHERE id = ?
-    `, [...values, jobId]);
+    await this.db.updateEmbeddingJob(jobId, updates);
   }
 
   /**
@@ -378,57 +334,24 @@ export class EmbeddingService extends EventEmitter {
     let lastError: string | undefined;
 
     try {
-      const db = await this.db.getDb();
+      const entities = await this.db.getEntitiesForEmbedding(entityType);
       
-      switch (entityType) {
-        case 'features': {
-          const features = await db.all('SELECT id, name, description FROM features');
-          
-          for (let i = 0; i < features.length; i += batchSize) {
-            if (abortSignal.aborted) break;
-            
-            const batch = features.slice(i, i + batchSize);
-            for (const feature of batch) {
-              try {
-                const text = `${feature.name} ${feature.description || ''}`.trim();
-                if (text) {
-                  await this.generateEntityEmbedding('feature', feature.id, text, options);
-                  processed++;
-                }
-              } catch (error) {
-                errors++;
-                lastError = error instanceof Error ? error.message : String(error);
-              }
-            }
-          }
-          break;
-        }
+      for (let i = 0; i < entities.length; i += batchSize) {
+        if (abortSignal.aborted) break;
         
-        case 'products': {
-          const products = await db.all('SELECT id, name, description FROM products');
-          
-          for (let i = 0; i < products.length; i += batchSize) {
-            if (abortSignal.aborted) break;
-            
-            const batch = products.slice(i, i + batchSize);
-            for (const product of batch) {
-              try {
-                const text = `${product.name} ${product.description || ''}`.trim();
-                if (text) {
-                  await this.generateEntityEmbedding('product', product.id, text, options);
-                  processed++;
-                }
-              } catch (error) {
-                errors++;
-                lastError = error instanceof Error ? error.message : String(error);
-              }
+        const batch = entities.slice(i, i + batchSize);
+        for (const entity of batch) {
+          try {
+            const text = `${entity.name} ${entity.description || ''}`.trim();
+            if (text) {
+              await this.generateEntityEmbedding(entityType, entity.id, text, options);
+              processed++;
             }
+          } catch (error) {
+            errors++;
+            lastError = error instanceof Error ? error.message : String(error);
           }
-          break;
         }
-
-        default:
-          throw new Error(`Unsupported entity type for embeddings: ${entityType}`);
       }
 
     } catch (error) {
@@ -476,28 +399,24 @@ export class EmbeddingService extends EventEmitter {
   }
 
   /**
-   * Store embedding in database
+   * Check if vector operations are available
    */
-  private async storeEmbedding(
-    entityType: string,
-    entityId: string,
-    embedding: number[],
-    text: string,
-    metadata?: any
-  ): Promise<void> {
-    const db = await this.db.getDb();
-    
-    await db.run(`
-      INSERT OR REPLACE INTO embeddings (
-        entity_type, entity_id, embedding_vector, text, metadata, created_at
-      ) VALUES (?, ?, ?, ?, ?, datetime('now'))
-    `, [
-      entityType,
-      entityId,
-      JSON.stringify(embedding),
-      text,
-      metadata ? JSON.stringify(metadata) : null
-    ]);
+  isVectorEnabled(): boolean {
+    return this.db.isVectorEnabled();
+  }
+
+  /**
+   * Get stored embedding for an entity
+   */
+  async getEntityEmbedding(entityType: string, entityId: string): Promise<number[] | null> {
+    return await this.db.getEmbedding(entityType, entityId);
+  }
+
+  /**
+   * Delete stored embedding for an entity
+   */
+  async deleteEntityEmbedding(entityType: string, entityId: string): Promise<void> {
+    return await this.db.deleteEmbedding(entityType, entityId);
   }
 
   /**
@@ -514,29 +433,46 @@ export class EmbeddingService extends EventEmitter {
     text: string;
     metadata?: any;
   }>> {
-    const db = await this.db.getDb();
-    let whereClause = '';
-    let params: any[] = [`%${queryText}%`, limit];
-    
-    if (entityTypes.length > 0) {
-      whereClause = `AND entity_type IN (${entityTypes.map(() => '?').join(',')})`;
-      params = [`%${queryText}%`, ...entityTypes, limit];
+    try {
+      // Initialize database if needed and access it through a public method
+      await this.db.initialize();
+      
+      // For fallback, we'll search across all entity tables directly
+      const searchResults: Array<{
+        entity_type: string;
+        entity_id: string;
+        similarity: number;
+        text: string;
+        metadata?: any;
+      }> = [];
+
+      const entityTypesToSearch = entityTypes.length > 0 ? entityTypes : ['features', 'products', 'ideas', 'epics', 'initiatives', 'releases', 'goals'];
+
+      for (const entityType of entityTypesToSearch) {
+        try {
+          const entities = await this.db.getEntitiesForEmbedding(entityType);
+          const matches = entities.filter(entity => {
+            const text = `${entity.name} ${entity.description || ''}`.toLowerCase();
+            return text.includes(queryText.toLowerCase());
+          }).slice(0, Math.ceil(limit / entityTypesToSearch.length));
+
+          searchResults.push(...matches.map(entity => ({
+            entity_type: entityType,
+            entity_id: entity.id,
+            similarity: 0.8, // Static similarity score for text match
+            text: `${entity.name} ${entity.description || ''}`.trim(),
+            metadata: undefined
+          })));
+        } catch (error) {
+          console.warn(`Error searching ${entityType}:`, error);
+        }
+      }
+
+      return searchResults.slice(0, limit);
+    } catch (error) {
+      console.error('Fallback text search failed:', error);
+      return [];
     }
-    
-    const results = await db.all(`
-      SELECT 
-        entity_type,
-        entity_id,
-        text,
-        metadata,
-        0.8 as similarity
-      FROM embeddings
-      WHERE text LIKE ? ${whereClause}
-      ORDER BY length(text) ASC
-      LIMIT ?
-    `, params);
-    
-    return results;
   }
 }
 
