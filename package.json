@@ -54,6 +54,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^24.0.14",
+    "@types/sqlite3": "^3.1.11",
     "@commitlint/cli": "^19.0.0",
     "@commitlint/config-conventional": "^19.0.0",
     "husky": "^9.0.0"
@@ -67,6 +68,8 @@
     "axios": "^1.9.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
     "zod": "^3.23.8"
   }
 }
