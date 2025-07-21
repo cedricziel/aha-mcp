@@ -38,11 +38,26 @@ describe('AhaService', () => {
 
     it('should throw error when attempting to use service without credentials', async () => {
       try {
+        // Clear environment variables to ensure we're testing uninitialized state
+        const originalCompany = process.env.AHA_COMPANY;
+        const originalToken = process.env.AHA_TOKEN;
+        delete process.env.AHA_COMPANY;
+        delete process.env.AHA_TOKEN;
+        
+        // Reset the service state
+        (AhaService as any).subdomain = null;
+        (AhaService as any).apiKey = null;
+        (AhaService as any).accessToken = null;
+        
         await AhaService.listFeatures();
         expect.unreachable('Should have thrown an error');
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
         expect((error as Error).message).toContain('Aha API client not initialized');
+      } finally {
+        // Restore environment variables
+        process.env.AHA_COMPANY = 'test-company';
+        process.env.AHA_TOKEN = 'test-token';
       }
     });
 

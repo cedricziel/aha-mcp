@@ -182,28 +182,40 @@ export class DatabaseService {
     jobId: string,
     updates: Partial<Pick<SyncJob, 'status' | 'progress' | 'total' | 'current_entity' | 'current_entity_progress' | 'current_entity_total' | 'processed_count' | 'error_count' | 'last_error' | 'estimated_completion'>>
   ): Promise<void> {
-    const db = await this.getDb();
-    
-    const setClauses: string[] = [];
-    const values: any[] = [];
-    
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value !== undefined) {
-        setClauses.push(`${key} = ?`);
-        values.push(value);
+    try {
+      const db = await this.getDb();
+      if (!db) {
+        return; // Database is not available, skip update
       }
-    });
     
-    if (setClauses.length === 0) return;
-    
-    setClauses.push('updated_at = datetime(\'now\')');
-    values.push(jobId);
-    
-    await db.run(`
-      UPDATE sync_jobs 
-      SET ${setClauses.join(', ')} 
-      WHERE id = ?
-    `, values);
+      const setClauses: string[] = [];
+      const values: any[] = [];
+      
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value !== undefined) {
+          setClauses.push(`${key} = ?`);
+          values.push(value);
+        }
+      });
+      
+      if (setClauses.length === 0) return;
+      
+      setClauses.push('updated_at = datetime(\'now\')');
+      values.push(jobId);
+      
+      await db.run(`
+        UPDATE sync_jobs 
+        SET ${setClauses.join(', ')} 
+        WHERE id = ?
+      `, values);
+    } catch (error) {
+      // Silently ignore database errors during cleanup/shutdown
+      // This prevents "Database is closed" errors from propagating
+      if (error instanceof Error && error.message.includes('Database is closed')) {
+        return;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -276,17 +288,30 @@ export class DatabaseService {
     entityId?: string,
     details?: any
   ): Promise<void> {
-    const db = await this.getDb();
-    await db.run(`
-      INSERT INTO sync_history (job_id, entity_type, entity_id, action, details)
-      VALUES (?, ?, ?, ?, ?)
-    `, [
-      jobId,
-      entityType,
-      entityId || null,
-      action,
-      details ? JSON.stringify(details) : null
-    ]);
+    try {
+      const db = await this.getDb();
+      if (!db) {
+        return; // Database is not available, skip history entry
+      }
+      
+      await db.run(`
+        INSERT INTO sync_history (job_id, entity_type, entity_id, action, details)
+        VALUES (?, ?, ?, ?, ?)
+      `, [
+        jobId,
+        entityType,
+        entityId || null,
+        action,
+        details ? JSON.stringify(details) : null
+      ]);
+    } catch (error) {
+      // Silently ignore database errors during cleanup/shutdown
+      // This prevents "Database is closed" errors from propagating
+      if (error instanceof Error && error.message.includes('Database is closed')) {
+        return;
+      }
+      throw error;
+    }
   }
 
   /**

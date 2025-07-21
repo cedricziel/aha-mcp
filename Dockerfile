@@ -61,6 +61,9 @@ COPY package.json bun.lock ./
 # Install only production dependencies in production stage
 RUN bun install --frozen-lockfile --production --ignore-scripts
 
+# Install OpenTelemetry auto-instrumentation separately (not in package.json)
+RUN bun install @opentelemetry/auto-instrumentations-node
+
 # Copy built application from builder stage
 COPY --from=builder /app/build ./build
 
@@ -82,6 +85,16 @@ USER mcp
 ENV NODE_ENV=production
 ENV MCP_CONFIG_DIR=/home/mcp/.config
 
+# OpenTelemetry configuration
+ENV OTEL_SERVICE_NAME=aha-mcp-server
+ENV OTEL_SERVICE_VERSION=1.0.0
+ENV OTEL_INSTRUMENTATION_HTTP_ENABLED=true
+ENV OTEL_INSTRUMENTATION_EXPRESS_ENABLED=true
+ENV OTEL_INSTRUMENTATION_FS_ENABLED=false
+ENV OTEL_LOGS_EXPORTER=console
+ENV OTEL_TRACES_EXPORTER=console
+ENV OTEL_METRICS_EXPORTER=console
+
 # Expose port for SSE mode (default 3001)
 EXPOSE 3001
 
@@ -93,8 +106,8 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
         echo "stdio mode - no health check needed"; \
       fi
 
-# Use tini for proper signal handling
-ENTRYPOINT ["/sbin/tini", "--", "bun", "./build/index.js"]
+# Use tini for proper signal handling with OpenTelemetry auto-instrumentation
+ENTRYPOINT ["/sbin/tini", "--", "node", "--require", "@opentelemetry/auto-instrumentations-node/register", "./build/index.js"]
 
 # Default command is now part of entrypoint
 CMD []

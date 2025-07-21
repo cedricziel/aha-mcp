@@ -62,6 +62,8 @@ import {
   CompetitorsListResponse
 } from '../types/aha-types.js';
 
+import { log } from '../logger.js';
+
 /**
  * Service for interacting with the Aha.io API
  */
@@ -152,7 +154,7 @@ export class AhaService {
       const response = await meApi.meGetProfile();
       return response.data.user;
     } catch (error) {
-      console.error('Error getting current user:', error);
+      log.error('Error getting current user', error as Error, { operation: 'getMe' });
       throw error;
     }
   }
@@ -203,7 +205,7 @@ export class AhaService {
       this.ideaOrganizationsApi = new IdeaOrganizationsApi(this.configuration);
       this.ideaVotesApi = new IdeaVotesApi(this.configuration);
     } catch (error) {
-      console.error('Error initializing Aha.io client:', error);
+      log.error('Error initializing Aha.io client', error as Error, { subdomain: this.subdomain });
       throw new Error(`Failed to initialize Aha.io client: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -424,6 +426,7 @@ export class AhaService {
   ): Promise<FeaturesListResponse> {
     const featuresApi = this.getFeaturesApi();
 
+    const startTime = Date.now();
     try {
       const params: Record<string, string> = {};
       if (query) params.q = query;
@@ -433,9 +436,14 @@ export class AhaService {
 
       // Use the appropriate method from the FeaturesApi
       const response = await featuresApi.featuresList(params);
+      const duration = Date.now() - startTime;
+      // API call automatically traced by auto-instrumentation
       return response.data;
     } catch (error) {
-      console.error('Error listing features:', error);
+      const duration = Date.now() - startTime;
+      const statusCode = (error as any)?.response?.status || 500;
+      // API call automatically traced by auto-instrumentation
+      log.error('Error listing features', error as Error, { operation: 'listFeatures' });
       throw error;
     }
   }
@@ -455,7 +463,7 @@ export class AhaService {
       }
       return response.data.feature;
     } catch (error) {
-      console.error(`Error getting feature ${featureId}:`, error);
+      log.error('Error getting feature', error as Error, { operation: 'getFeature', feature_id: featureId });
       throw error;
     }
   }
@@ -472,7 +480,7 @@ export class AhaService {
       const response = await usersApi.usersList();
       return { users: response.data };
     } catch (error) {
-      console.error('Error listing users:', error);
+      log.error('Error listing users', error as Error, { operation: 'listUsers' });
       throw error;
     }
   }
@@ -489,7 +497,7 @@ export class AhaService {
       const response = await usersApi.usersGet({ id: userId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting user ${userId}:`, error);
+      log.error('Error getting user', error as Error, { operation: 'getUser', user_id: userId });
       throw error;
     }
   }
@@ -509,7 +517,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error listing epics for product ${productId}:`, error);
+      log.error('Error listing epics for product', error as Error, { operation: 'listEpics', product_id: productId });
       throw error;
     }
   }
@@ -526,7 +534,7 @@ export class AhaService {
       const response = await epicsApi.epicsGet({ epicId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting epic ${epicId}:`, error);
+      log.error('Error getting epic', error as Error, { operation: 'getEpic', epic_id: epicId });
       throw error;
     }
   }
@@ -550,7 +558,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error creating comment on feature ${featureId}:`, error);
+      log.error('Error creating comment on feature', error as Error, { operation: 'createFeatureComment', feature_id: featureId });
       throw error;
     }
   }
@@ -567,7 +575,7 @@ export class AhaService {
       const response = await ideasApi.ideasGetById({ id: ideaId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting idea ${ideaId}:`, error);
+      log.error('Error getting idea', error as Error, { operation: 'getIdea', idea_id: ideaId });
       throw error;
     }
   }
@@ -584,7 +592,7 @@ export class AhaService {
       const response = await productsApi.productsGet({ id: productId });
       return response.data.product;
     } catch (error) {
-      console.error(`Error getting product ${productId}:`, error);
+      log.error('Error getting product', error as Error, { operation: 'getProduct', product_id: productId });
       throw error;
     }
   }
@@ -604,7 +612,7 @@ export class AhaService {
       const response = await productsApi.productsList(params);
       return response.data;
     } catch (error) {
-      console.error('Error listing products:', error);
+      log.error('Error listing products', error as Error, { operation: 'listProducts' });
       throw error;
     }
   }
@@ -621,7 +629,7 @@ export class AhaService {
       const response = await initiativesApi.initiativesGet({ id: initiativeId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting initiative ${initiativeId}:`, error);
+      log.error('Error getting initiative', error as Error, { operation: 'getInitiative', initiative_id: initiativeId });
       throw error;
     }
   }
@@ -652,7 +660,7 @@ export class AhaService {
       const response = await initiativesApi.initiativesList(params);
       return response.data;
     } catch (error) {
-      console.error('Error listing initiatives:', error);
+      log.error('Error listing initiatives', error as Error, { operation: 'listInitiatives' });
       throw error;
     }
   }
@@ -706,7 +714,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error listing ideas for product ${productId}:`, error);
+      log.error('Error listing ideas for product', error as Error, { operation: 'listIdeasByProduct', product_id: productId });
       throw error;
     }
   }
@@ -723,7 +731,7 @@ export class AhaService {
       const response = await commentsApi.commentsGetEpic({ epicId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting comments for epic ${epicId}:`, error);
+      log.error('Error getting comments for epic', error as Error, { operation: 'getEpicComments', epic_id: epicId });
       throw error;
     }
   }
@@ -740,7 +748,7 @@ export class AhaService {
       const response = await commentsApi.commentsGetIdea({ ideaId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting comments for idea ${ideaId}:`, error);
+      log.error('Error getting comments for idea', error as Error, { operation: 'getIdeaComments', idea_id: ideaId });
       throw error;
     }
   }
@@ -757,7 +765,7 @@ export class AhaService {
       const response = await commentsApi.commentsGetInitiative({ initiativeId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting comments for initiative ${initiativeId}:`, error);
+      log.error('Error getting comments for initiative', error as Error, { operation: 'getInitiativeComments', initiative_id: initiativeId });
       throw error;
     }
   }
@@ -774,7 +782,7 @@ export class AhaService {
       const response = await commentsApi.commentsGetProduct({ productId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting comments for product ${productId}:`, error);
+      log.error('Error getting comments for product', error as Error, { operation: 'getProductComments', product_id: productId });
       throw error;
     }
   }
@@ -791,7 +799,7 @@ export class AhaService {
       const response = await commentsApi.commentsGetGoal({ goalId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting comments for goal ${goalId}:`, error);
+      log.error('Error getting comments for goal', error as Error, { operation: 'getGoalComments', goal_id: goalId });
       throw error;
     }
   }
@@ -808,7 +816,7 @@ export class AhaService {
       const response = await commentsApi.commentsGetRelease({ releaseId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting comments for release ${releaseId}:`, error);
+      log.error('Error getting comments for release', error as Error, { operation: 'getReleaseComments', release_id: releaseId });
       throw error;
     }
   }
@@ -825,7 +833,7 @@ export class AhaService {
       const response = await commentsApi.commentsGetReleasePhase({ releasePhaseId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting comments for release phase ${releasePhaseId}:`, error);
+      log.error('Error getting comments for release phase', error as Error, { operation: 'getReleasePhaseComments', release_phase_id: releasePhaseId });
       throw error;
     }
   }
@@ -842,7 +850,7 @@ export class AhaService {
       const response = await commentsApi.commentsGetRequirement({ requirementId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting comments for requirement ${requirementId}:`, error);
+      log.error('Error getting comments for requirement', error as Error, { operation: 'getRequirementComments', requirement_id: requirementId });
       throw error;
     }
   }
@@ -859,7 +867,7 @@ export class AhaService {
       const response = await commentsApi.commentsGetTodo({ todoId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting comments for todo ${todoId}:`, error);
+      log.error('Error getting comments for todo', error as Error, { operation: 'getTodoComments', todo_id: todoId });
       throw error;
     }
   }
@@ -876,7 +884,7 @@ export class AhaService {
       const response = await goalsApi.goalsGet({ id: goalId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting goal ${goalId}:`, error);
+      log.error('Error getting goal', error as Error, { operation: 'getGoal', goal_id: goalId });
       throw error;
     }
   }
@@ -892,7 +900,7 @@ export class AhaService {
       const response = await goalsApi.goalsList();
       return response.data;
     } catch (error) {
-      console.error('Error listing goals:', error);
+      log.error('Error listing goals', error as Error, { operation: 'listGoals' });
       throw error;
     }
   }
@@ -909,7 +917,7 @@ export class AhaService {
       const response = await epicsApi.epicsListByGoal({ goalId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting epics for goal ${goalId}:`, error);
+      log.error('Error getting epics for goal', error as Error, { operation: 'getGoalEpics', goal_id: goalId });
       throw error;
     }
   }
@@ -926,7 +934,7 @@ export class AhaService {
       const response = await releasesApi.releasesGet({ id: releaseId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting release ${releaseId}:`, error);
+      log.error('Error getting release', error as Error, { operation: 'getRelease', release_id: releaseId });
       throw error;
     }
   }
@@ -942,7 +950,7 @@ export class AhaService {
       const response = await releasesApi.releasesList();
       return response.data;
     } catch (error) {
-      console.error('Error listing releases:', error);
+      log.error('Error listing releases', error as Error, { operation: 'listReleases' });
       throw error;
     }
   }
@@ -971,7 +979,7 @@ export class AhaService {
 
       return await response.json();
     } catch (error) {
-      console.error(`Error getting features for release ${releaseId}:`, error);
+      log.error('Error getting features for release', error as Error, { operation: 'getReleaseFeatures', release_id: releaseId });
       throw error;
     }
   }
@@ -988,7 +996,7 @@ export class AhaService {
       const response = await epicsApi.epicsListInRelease({ releaseId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting epics for release ${releaseId}:`, error);
+      log.error('Error getting epics for release', error as Error, { operation: 'getReleaseEpics', release_id: releaseId });
       throw error;
     }
   }
@@ -1008,7 +1016,7 @@ export class AhaService {
       }
       return response.data.release_phase;
     } catch (error) {
-      console.error(`Error getting release phase ${releasePhaseId}:`, error);
+      log.error('Error getting release phase', error as Error, { operation: 'getReleasePhase', release_phase_id: releasePhaseId });
       throw error;
     }
   }
@@ -1024,7 +1032,7 @@ export class AhaService {
       const response = await releasePhasesApi.releasePhasesList();
       return response.data;
     } catch (error) {
-      console.error('Error listing release phases:', error);
+      log.error('Error listing release phases', error as Error, { operation: 'listReleasePhases' });
       throw error;
     }
   }
@@ -1044,7 +1052,7 @@ export class AhaService {
       }
       return response.data.requirement as Requirement;
     } catch (error) {
-      console.error(`Error getting requirement ${requirementId}:`, error);
+      log.error('Error getting requirement', error as Error, { operation: 'getRequirement', requirement_id: requirementId });
       throw error;
     }
   }
@@ -1061,7 +1069,7 @@ export class AhaService {
       const response = await competitorsApi.competitorsGet({ competitorId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting competitor ${competitorId}:`, error);
+      log.error('Error getting competitor', error as Error, { operation: 'getCompetitor', competitor_id: competitorId });
       throw error;
     }
   }
@@ -1081,7 +1089,7 @@ export class AhaService {
       }
       return response.data.task as Todo;
     } catch (error) {
-      console.error(`Error getting todo ${todoId}:`, error);
+      log.error('Error getting todo', error as Error, { operation: 'getTodo', todo_id: todoId });
       throw error;
     }
   }
@@ -1098,7 +1106,7 @@ export class AhaService {
       const response = await competitorsApi.competitorsListProduct({ productId });
       return response.data;
     } catch (error) {
-      console.error(`Error listing competitors for product ${productId}:`, error);
+      log.error('Error listing competitors for product', error as Error, { operation: 'listCompetitors', product_id: productId });
       throw error;
     }
   }
@@ -1127,7 +1135,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error associating feature ${featureId} with epic ${epicId}:`, error);
+      log.error('Error associating feature with epic', error as Error, { operation: 'associateFeatureWithEpic', feature_id: featureId, epic_id: epicId });
       throw error;
     }
   }
@@ -1152,7 +1160,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error moving feature ${featureId} to release ${releaseId}:`, error);
+      log.error('Error moving feature to release', error as Error, { operation: 'moveFeatureToRelease', feature_id: featureId, release_id: releaseId });
       throw error;
     }
   }
@@ -1177,7 +1185,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error associating feature ${featureId} with goals ${goalIds.join(', ')}:`, error);
+      log.error('Error associating feature with goals', error as Error, { operation: 'associateFeatureWithGoals', feature_id: featureId, goal_ids: goalIds });
       throw error;
     }
   }
@@ -1202,7 +1210,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error updating tags for feature ${featureId}:`, error);
+      log.error('Error updating tags for feature', error as Error, { operation: 'updateFeatureTags', feature_id: featureId });
       throw error;
     }
   }
@@ -1223,7 +1231,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error creating epic in product ${productId}:`, error);
+      log.error('Error creating epic in product', error as Error, { operation: 'createEpicInProduct', product_id: productId });
       throw error;
     }
   }
@@ -1244,7 +1252,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error creating epic in release ${releaseId}:`, error);
+      log.error('Error creating epic in release', error as Error, { operation: 'createEpicInRelease', release_id: releaseId });
       throw error;
     }
   }
@@ -1265,7 +1273,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error creating initiative in product ${productId}:`, error);
+      log.error('Error creating initiative in product', error as Error, { operation: 'createInitiativeInProduct', product_id: productId });
       throw error;
     }
   }
@@ -1289,7 +1297,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error creating feature in release ${releaseId}:`, error);
+      log.error('Error creating feature in release', error as Error, { operation: 'createFeature', release_id: releaseId });
       throw error;
     }
   }
@@ -1310,7 +1318,7 @@ export class AhaService {
       });
       return response.data.feature;
     } catch (error) {
-      console.error(`Error updating feature ${featureId}:`, error);
+      log.error('Error updating feature', error as Error, { operation: 'updateFeature', feature_id: featureId });
       throw error;
     }
   }
@@ -1326,7 +1334,7 @@ export class AhaService {
     try {
       await featuresApi.featuresDelete({ id: featureId });
     } catch (error) {
-      console.error(`Error deleting feature ${featureId}:`, error);
+      log.error('Error deleting feature', error as Error, { operation: 'deleteFeature', feature_id: featureId });
       throw error;
     }
   }
@@ -1351,7 +1359,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error updating progress for feature ${featureId}:`, error);
+      log.error('Error updating progress for feature', error as Error, { operation: 'updateFeatureProgress', feature_id: featureId });
       throw error;
     }
   }
@@ -1377,7 +1385,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error updating score for feature ${featureId}:`, error);
+      log.error('Error updating score for feature', error as Error, { operation: 'updateFeatureScore', feature_id: featureId });
       throw error;
     }
   }
@@ -1396,7 +1404,7 @@ export class AhaService {
         id: featureId
       });
     } catch (error) {
-      console.error(`Error updating custom fields for feature ${featureId}:`, error);
+      log.error('Error updating custom fields for feature', error as Error, { operation: 'updateFeatureCustomFields', feature_id: featureId });
       throw error;
     }
   }
@@ -1421,7 +1429,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error updating epic ${epicId}:`, error);
+      log.error('Error updating epic', error as Error, { operation: 'updateEpic', epic_id: epicId });
       throw error;
     }
   }
@@ -1437,7 +1445,7 @@ export class AhaService {
     try {
       await epicsApi.epicsDelete({ epicId: epicId });
     } catch (error) {
-      console.error(`Error deleting epic ${epicId}:`, error);
+      log.error('Error deleting epic', error as Error, { operation: 'deleteEpic', epic_id: epicId });
       throw error;
     }
   }
@@ -1462,7 +1470,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error creating idea in product ${productId}:`, error);
+      log.error('Error creating idea in product', error as Error, { operation: 'createIdea', product_id: productId });
       throw error;
     }
   }
@@ -1494,7 +1502,7 @@ export class AhaService {
 
       return await response.json();
     } catch (error) {
-      console.error(`Error creating idea with category in product ${productId}:`, error);
+      log.error('Error creating idea with category in product', error as Error, { operation: 'createIdeaWithCategory', product_id: productId });
       throw error;
     }
   }
@@ -1526,7 +1534,7 @@ export class AhaService {
 
       return await response.json();
     } catch (error) {
-      console.error(`Error creating idea with score in product ${productId}:`, error);
+      log.error('Error creating idea with score in product', error as Error, { operation: 'createIdeaWithScore', product_id: productId });
       throw error;
     }
   }
@@ -1542,7 +1550,7 @@ export class AhaService {
     try {
       await ideasApi.ideasDelete({ id: ideaId });
     } catch (error) {
-      console.error(`Error deleting idea ${ideaId}:`, error);
+      log.error('Error deleting idea', error as Error, { operation: 'deleteIdea', idea_id: ideaId });
       throw error;
     }
   }
@@ -1565,7 +1573,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error creating competitor in product ${productId}:`, error);
+      log.error('Error creating competitor in product', error as Error, { operation: 'createCompetitor', product_id: productId });
       throw error;
     }
   }
@@ -1586,7 +1594,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error updating competitor ${competitorId}:`, error);
+      log.error('Error updating competitor', error as Error, { operation: 'updateCompetitor', competitor_id: competitorId });
       throw error;
     }
   }
@@ -1602,7 +1610,7 @@ export class AhaService {
     try {
       await competitorsApi.competitorsDelete({ competitorId: competitorId });
     } catch (error) {
-      console.error(`Error deleting competitor ${competitorId}:`, error);
+      log.error('Error deleting competitor', error as Error, { operation: 'deleteCompetitor', competitor_id: competitorId });
       throw error;
     }
   }
@@ -1621,7 +1629,7 @@ export class AhaService {
       const response = await epicsApi.epicsListByInitiative({ initiativeId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting epics for initiative ${initiativeId}:`, error);
+      log.error('Error getting epics for initiative', error as Error, { operation: 'getInitiativeEpics', initiative_id: initiativeId });
       throw error;
     }
   }
@@ -1655,7 +1663,7 @@ export class AhaService {
 
       return await response.json();
     } catch (error) {
-      console.error(`Error creating idea by portal user in product ${productId}:`, error);
+      log.error('Error creating idea by portal user in product', error as Error, { operation: 'createIdeaByPortalUser', product_id: productId });
       throw error;
     }
   }
@@ -1676,7 +1684,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error creating idea with portal settings in product ${productId}:`, error);
+      log.error('Error creating idea with portal settings in product', error as Error, { operation: 'createIdeaWithPortalSettings', product_id: productId });
       throw error;
     }
   }
@@ -1696,7 +1704,7 @@ export class AhaService {
       }
       return response.data.strategic_model;
     } catch (error) {
-      console.error(`Error getting strategic model ${strategicModelId}:`, error);
+      log.error('Error getting strategic model', error as Error, { operation: 'getStrategicModel', strategic_model_id: strategicModelId });
       throw error;
     }
   }
@@ -1711,7 +1719,7 @@ export class AhaService {
       const response = await strategicModelsApi.strategicModelsList();
       return response.data;
     } catch (error) {
-      console.error('Error listing strategic models:', error);
+      log.error('Error listing strategic models', error as Error, { operation: 'listStrategicModels' });
       throw error;
     }
   }
@@ -1727,7 +1735,7 @@ export class AhaService {
       const response = await todosApi.todosList();
       return response.data;
     } catch (error) {
-      console.error('Error listing todos:', error);
+      log.error('Error listing todos', error as Error, { operation: 'listTodos' });
       throw error;
     }
   }
@@ -1747,7 +1755,7 @@ export class AhaService {
       }
       return response.data.idea_organization;
     } catch (error) {
-      console.error(`Error getting idea organization ${ideaOrganizationId}:`, error);
+      log.error('Error getting idea organization', error as Error, { operation: 'getIdeaOrganization', idea_organization_id: ideaOrganizationId });
       throw error;
     }
   }
@@ -1762,7 +1770,7 @@ export class AhaService {
       const response = await ideaOrganizationsApi.ideaOrganizationsList();
       return response.data;
     } catch (error) {
-      console.error('Error listing idea organizations:', error);
+      log.error('Error listing idea organizations', error as Error, { operation: 'listIdeaOrganizations' });
       throw error;
     }
   }
@@ -1778,7 +1786,7 @@ export class AhaService {
       const response = await meApi.meGetAssignedRecords();
       return response.data;
     } catch (error) {
-      console.error('Error getting assigned records:', error);
+      log.error('Error getting assigned records', error as Error, { operation: 'getMeAssignedRecords' });
       throw error;
     }
   }
@@ -1793,7 +1801,7 @@ export class AhaService {
       const response = await meApi.meGetPendingTasks();
       return response.data;
     } catch (error) {
-      console.error('Error getting pending tasks:', error);
+      log.error('Error getting pending tasks', error as Error, { operation: 'getMePendingTasks' });
       throw error;
     }
   }
@@ -1810,7 +1818,7 @@ export class AhaService {
       const response = await ideasApi.ideasGetEndorsements({ id: ideaId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting endorsements for idea ${ideaId}:`, error);
+      log.error('Error getting endorsements for idea', error as Error, { operation: 'getIdeaEndorsements', idea_id: ideaId });
       throw error;
     }
   }
@@ -1826,7 +1834,7 @@ export class AhaService {
       const response = await ideasApi.ideasGetVotes({ id: ideaId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting votes for idea ${ideaId}:`, error);
+      log.error('Error getting votes for idea', error as Error, { operation: 'getIdeaVotes', idea_id: ideaId });
       throw error;
     }
   }
@@ -1842,7 +1850,7 @@ export class AhaService {
       const response = await ideasApi.ideasGetWatchers({ id: ideaId });
       return response.data;
     } catch (error) {
-      console.error(`Error getting watchers for idea ${ideaId}:`, error);
+      log.error('Error getting watchers for idea', error as Error, { operation: 'getIdeaWatchers', idea_id: ideaId });
       throw error;
     }
   }
@@ -1875,7 +1883,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error('Error listing ideas:', error);
+      log.error('Error listing ideas', error as Error, { operation: 'listIdeas' });
       throw error;
     }
   }
@@ -1907,7 +1915,7 @@ export class AhaService {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error listing releases for product ${productId}:`, error);
+      log.error('Error listing releases for product', error as Error, { operation: 'getProductReleases', product_id: productId });
       throw error;
     }
   }

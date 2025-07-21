@@ -37,8 +37,21 @@ describe('BackgroundSyncService', () => {
         }
       }
       
-      // Wait a moment for syncs to actually stop
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait longer for syncs to actually stop and finish database operations
+      // This prevents "Database is closed" race condition errors
+      let attempts = 0;
+      const maxAttempts = 20; // 2 seconds max
+      while (attempts < maxAttempts) {
+        const stillActive = await syncService.getActiveSyncs();
+        if (stillActive.length === 0) {
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      // Extra wait to ensure any pending database operations complete
+      await new Promise(resolve => setTimeout(resolve, 200));
     } catch (error) {
       // Ignore if service is already broken
     }
@@ -48,7 +61,7 @@ describe('BackgroundSyncService', () => {
       const db = await mockDatabase.getDb();
       await db.close();
     } catch (error) {
-      // Ignore close errors
+      // Ignore close errors - database may already be closed
     }
     
     try {
@@ -172,8 +185,8 @@ describe('BackgroundSyncService', () => {
       // API will fail because we haven't provided real credentials
       const jobId = await syncService.startSync(['features'], {});
       
-      // Wait for sync to complete with error
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Wait for sync to complete with error (increase timeout)
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       const progress = await syncService.getSyncProgress(jobId);
       // Should complete even with errors

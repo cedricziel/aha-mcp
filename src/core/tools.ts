@@ -4,6 +4,8 @@ import * as services from "./services/index.js";
 import { databaseService } from './database/database.js';
 import { registerSyncTools } from "./tools/sync-tools.js";
 import { registerEmbeddingTools } from "./tools/embedding-tools.js";
+import { log } from "./logger.js";
+
 
 /**
  * Register all tools with the MCP server
@@ -114,7 +116,7 @@ export function registerTools(server: McpServer) {
               }
             }
           } catch (dbError) {
-            console.warn('Database query failed, falling back to API:', dbError);
+            log.warn('Database query failed, falling back to API', { error: dbError instanceof Error ? dbError.message : String(dbError), operation: 'listFeatures' });
             features = null;
           }
         }
@@ -175,7 +177,7 @@ export function registerTools(server: McpServer) {
               feature = localFeature;
             }
           } catch (dbError) {
-            console.warn('Database query failed, falling back to API:', dbError);
+            log.warn('Database query failed, falling back to API', { error: dbError instanceof Error ? dbError.message : String(dbError), operation: 'getFeature', feature_id: params.featureId });
           }
         }
 
@@ -229,7 +231,7 @@ export function registerTools(server: McpServer) {
               users = localUsers;
             }
           } catch (dbError) {
-            console.warn('Database query failed, falling back to API:', dbError);
+            log.warn('Database query failed, falling back to API', { error: dbError instanceof Error ? dbError.message : String(dbError), operation: 'listUsers' });
           }
         }
 
@@ -285,7 +287,7 @@ export function registerTools(server: McpServer) {
               epics = localEpics;
             }
           } catch (dbError) {
-            console.warn('Database query failed, falling back to API:', dbError);
+            log.warn('Database query failed, falling back to API', { error: dbError instanceof Error ? dbError.message : String(dbError), operation: 'listEpics', product_id: params.productId });
           }
         }
 
@@ -1303,7 +1305,7 @@ export function registerTools(server: McpServer) {
               }
             }
           } catch (dbError) {
-            console.warn('Database query failed, falling back to API:', dbError);
+            log.warn('Database query failed, falling back to API', { error: dbError instanceof Error ? dbError.message : String(dbError), operation: 'listInitiatives' });
             initiatives = null;
           }
         }

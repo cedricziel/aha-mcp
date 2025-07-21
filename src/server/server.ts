@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import * as services from "../core/services/index.js";
 import { ConfigService } from "../core/config.js";
+import { log } from "../core/logger.js";
 import { z } from "zod";
 
 // Get package.json info for server metadata
@@ -300,44 +301,52 @@ async function startServer() {
     registerPrompts(server);
     
     // Log comprehensive server information
-    console.error(`🚀 Aha.io MCP Server v${packageJson.version} initialized`);
-    console.error(`📋 Description: ${packageJson.description}`);
-    console.error(`👤 Author: ${packageJson.author}`);
-    console.error(`🏠 Homepage: ${packageJson.homepage}`);
-    console.error(`📦 Repository: ${packageJson.repository?.url}`);
-    console.error(`⚖️  License: ${packageJson.license}`);
-    console.error(`🔧 Node.js version: ${process.version}`);
-    console.error(`📊 Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`);
-    console.error(`🌐 Platform: ${process.platform} ${process.arch}`);
-    console.error(`📂 Working directory: ${process.cwd()}`);
-    console.error("");
-    console.error("🔌 Server capabilities:");
-    console.error("  ✅ Tools: 41 Aha.io integration tools (including health checks & configuration)");
-    console.error("  ✅ Resources: 40+ Aha.io entity resources");
-    console.error("  ✅ Prompts: 12 domain-specific workflow prompts");
-    console.error("  ✅ Context-aware: Auto-fetch Aha.io data for prompts");
-    console.error("  ✅ Dual transport: stdio and HTTP modes");
-    console.error("  ✅ Full CRUD: Complete lifecycle management");
-    console.error("  ✅ Health checks: Server monitoring and diagnostics");
-    console.error("  ✅ Runtime configuration: Company, token, and mode settings");
-    console.error("");
-    console.error("📡 Server is ready to handle requests");
+    log.info('Aha.io MCP Server initialized successfully', {
+      version: packageJson.version,
+      description: packageJson.description,
+      author: packageJson.author,
+      homepage: packageJson.homepage,
+      repository: packageJson.repository?.url,
+      license: packageJson.license,
+      node_version: process.version,
+      memory_usage_mb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      platform: process.platform,
+      arch: process.arch,
+      working_directory: process.cwd(),
+      capabilities: {
+        tools: 41,
+        resources: '40+',
+        prompts: 12,
+        features: [
+          'context-aware',
+          'dual-transport',
+          'full-crud', 
+          'health-checks',
+          'runtime-config'
+        ]
+      }
+    });
     
     updateServerStatus("ready");
     
     // Perform initial health check
     try {
-      await performHealthCheck();
-      console.error("✅ Initial health check completed successfully");
+      const healthResult = await performHealthCheck();
+      log.info('Initial health check completed successfully', {
+        health_status: healthResult.status,
+        aha_connection: healthResult.checks.aha.status,
+        memory_check: healthResult.checks.memory.status
+      });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("⚠️  Initial health check encountered issues:", errorMessage);
+      log.warn('Initial health check encountered issues', {
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
     
     return server;
   } catch (error) {
     updateServerStatus("error");
-    console.error("❌ Failed to initialize server:", error);
+    log.error('Failed to initialize server', error as Error);
     process.exit(1);
   }
 }

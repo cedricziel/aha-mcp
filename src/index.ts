@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import startServer from "./server/server.js";
 import { ConfigService } from "./core/config.js";
+import { log } from "./core/logger.js";
 import express from "express";
 import cors from "cors";
 
@@ -21,7 +22,7 @@ function parseArgs(): { mode?: string; port?: number; host?: string } {
           result.mode = nextArg;
           i++; // Skip next argument
         } else {
-          console.error('Error: --mode must be "stdio" or "sse"');
+          log.error('CLI argument error: --mode must be "stdio" or "sse"');
           process.exit(1);
         }
         break;
@@ -29,13 +30,13 @@ function parseArgs(): { mode?: string; port?: number; host?: string } {
         if (nextArg) {
           const port = parseInt(nextArg, 10);
           if (isNaN(port) || port < 1 || port > 65535) {
-            console.error('Error: --port must be a number between 1 and 65535');
+            log.error('CLI argument error: --port must be a number between 1 and 65535');
             process.exit(1);
           }
           result.port = port;
           i++; // Skip next argument
         } else {
-          console.error('Error: --port requires a value');
+          log.error('CLI argument error: --port requires a value');
           process.exit(1);
         }
         break;
@@ -44,12 +45,13 @@ function parseArgs(): { mode?: string; port?: number; host?: string } {
           result.host = nextArg;
           i++; // Skip next argument
         } else {
-          console.error('Error: --host requires a value');
+          log.error('CLI argument error: --host requires a value');
           process.exit(1);
         }
         break;
       case '--help':
       case '-h':
+        log.info('Displaying CLI help')
         console.log(`
 Aha.io MCP Server
 
@@ -70,7 +72,7 @@ Examples:
         process.exit(0);
         break;
       default:
-        console.error(`Error: Unknown argument "${arg}"`);
+        log.error(`CLI argument error: Unknown argument "${arg}"`);
         process.exit(1);
     }
   }
@@ -82,7 +84,7 @@ Examples:
 async function startStdioTransport(server: any) {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("📡 MCP Server running on stdio transport");
+  log.info('MCP Server started successfully', { transport: 'stdio' });
 }
 
 // Start SSE transport
@@ -104,14 +106,14 @@ async function startSSETransport(server: any, port: number, host: string) {
 
   // SSE endpoint
   app.get("/sse", (req, res) => {
-    console.error(`📡 SSE connection request from ${req.ip}`);
+    log.info('SSE connection request received', { client_ip: req.ip });
     
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     
     const sessionId = generateSessionId();
-    console.error(`🔗 Creating SSE session: ${sessionId}`);
+    log.info('Creating SSE session', { session_id: sessionId });
     
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache, no-transform");
@@ -122,19 +124,19 @@ async function startSSETransport(server: any, port: number, host: string) {
       connections.set(sessionId, transport);
       
       req.on("close", () => {
-        console.error(`🔗 SSE connection closed: ${sessionId}`);
+        log.info('SSE connection closed', { session_id: sessionId });
         connections.delete(sessionId);
       });
       
       server.connect(transport).then(() => {
-        console.error(`✅ SSE connection established: ${sessionId}`);
+        log.info('SSE connection established successfully', { session_id: sessionId });
         res.write(`data: ${JSON.stringify({ type: "session_init", sessionId })}\n\n`);
       }).catch((error: Error) => {
-        console.error(`❌ SSE connection error: ${error}`);
+        log.error('SSE connection error', error as Error, { session_id: sessionId });
         connections.delete(sessionId);
       });
     } catch (error) {
-      console.error(`❌ SSE transport error: ${error}`);
+      log.error('SSE transport error', error as Error, { session_id: sessionId });
       connections.delete(sessionId);
       res.status(500).send(`Internal server error: ${error}`);
     }
@@ -148,7 +150,7 @@ async function startSSETransport(server: any, port: number, host: string) {
       sessionId = Array.from(connections.keys())[0];
     }
     
-    console.error(`📨 Message received for session: ${sessionId}`);
+    log.debug('Message received for SSE session', { session_id: sessionId });
     
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -168,11 +170,11 @@ async function startSSETransport(server: any, port: number, host: string) {
     
     try {
       transport.handlePostMessage(req, res).catch((error: Error) => {
-        console.error(`❌ Message handling error: ${error}`);
+        log.error('Message handling error', error as Error, { session_id: sessionId });
         res.status(500).json({ error: `Internal server error: ${error.message}` });
       });
     } catch (error) {
-      console.error(`❌ Message handling exception: ${error}`);
+      log.error('Message handling exception', error as Error, { session_id: sessionId });
       res.status(500).json({ error: `Internal server error: ${error}` });
     }
   });
@@ -204,17 +206,23 @@ async function startSSETransport(server: any, port: number, host: string) {
 
   // Start HTTP server
   const httpServer = app.listen(port, host, () => {
-    console.error(`🌐 MCP Server running on SSE transport at http://${host}:${port}`);
-    console.error(`📡 SSE endpoint: http://${host}:${port}/sse`);
-    console.error(`💬 Messages endpoint: http://${host}:${port}/messages`);
-    console.error(`❤️  Health check: http://${host}:${port}/health`);
+    log.info('MCP Server started successfully on SSE transport', {
+      transport: 'sse',
+      host,
+      port,
+      endpoints: {
+        sse: `/sse`,
+        messages: `/messages`,
+        health: `/health`
+      }
+    });
   });
 
   // Graceful shutdown
   process.on('SIGINT', () => {
-    console.error('🛑 Shutting down SSE server...');
+    log.info('Shutting down SSE server');
     connections.forEach((transport, sessionId) => {
-      console.error(`🔗 Closing connection: ${sessionId}`);
+      log.info('Closing SSE connection', { session_id: sessionId });
     });
     httpServer.close(() => {
       process.exit(0);
@@ -248,7 +256,7 @@ async function main() {
       ...(cliArgs.host && { host: cliArgs.host })
     };
 
-    console.error(`🔧 Starting server with mode: ${finalConfig.mode}`);
+    log.info('Starting MCP server', { mode: finalConfig.mode, port: finalConfig.port, host: finalConfig.host });
     
     // Create server instance
     const server = await startServer();
@@ -261,12 +269,12 @@ async function main() {
     }
     
   } catch (error) {
-    console.error("❌ Error starting MCP server:", error);
+    log.error('Error starting MCP server', error as Error);
     process.exit(1);
   }
 }
 
 main().catch((error) => {
-  console.error("💥 Fatal error in main():", error);
+  log.error('Fatal error in main()', error as Error);
   process.exit(1);
 }); 
