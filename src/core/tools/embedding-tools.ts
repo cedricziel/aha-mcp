@@ -1,6 +1,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { z } from 'zod';
 import { embeddingService } from '../services/embedding-service.js';
+import { databaseService } from '../database/database.js';
 
 const EmbeddingOptionsSchema = z.object({
   batchSize: z.number().min(1).max(100).optional(),
@@ -235,35 +236,9 @@ export function registerEmbeddingTools(server: Server): void {
     },
     async ({ entityType, entityId, options }) => {
       try {
-        // Get the entity data first
-        const db = await embeddingService['db'].getDb();
-        let entityData;
-        
-        switch (entityType) {
-          case 'features':
-            entityData = await db.get('SELECT id, name, description FROM features WHERE id = ?', [entityId]);
-            break;
-          case 'products':
-            entityData = await db.get('SELECT id, name, description FROM products WHERE id = ?', [entityId]);
-            break;
-          case 'ideas':
-            entityData = await db.get('SELECT id, name, description FROM ideas WHERE id = ?', [entityId]);
-            break;
-          case 'epics':
-            entityData = await db.get('SELECT id, name, description FROM epics WHERE id = ?', [entityId]);
-            break;
-          case 'initiatives':
-            entityData = await db.get('SELECT id, name, description FROM initiatives WHERE id = ?', [entityId]);
-            break;
-          case 'releases':
-            entityData = await db.get('SELECT id, name, description FROM releases WHERE id = ?', [entityId]);
-            break;
-          case 'goals':
-            entityData = await db.get('SELECT id, name, description FROM goals WHERE id = ?', [entityId]);
-            break;
-          default:
-            throw new Error(`Unsupported entity type: ${entityType}`);
-        }
+        // Get the entity data using DatabaseService
+        const entities = await databaseService.getEntitiesForEmbedding(entityType);
+        const entityData = entities.find(entity => entity.id === entityId);
         
         if (!entityData) {
           return {
@@ -324,35 +299,9 @@ export function registerEmbeddingTools(server: Server): void {
     },
     async ({ entityType, entityId, targetEntityTypes, limit, threshold }) => {
       try {
-        // Get the source entity's text
-        const db = await embeddingService['db'].getDb();
-        let sourceEntity;
-        
-        switch (entityType) {
-          case 'features':
-            sourceEntity = await db.get('SELECT id, name, description FROM features WHERE id = ?', [entityId]);
-            break;
-          case 'products':
-            sourceEntity = await db.get('SELECT id, name, description FROM products WHERE id = ?', [entityId]);
-            break;
-          case 'ideas':
-            sourceEntity = await db.get('SELECT id, name, description FROM ideas WHERE id = ?', [entityId]);
-            break;
-          case 'epics':
-            sourceEntity = await db.get('SELECT id, name, description FROM epics WHERE id = ?', [entityId]);
-            break;
-          case 'initiatives':
-            sourceEntity = await db.get('SELECT id, name, description FROM initiatives WHERE id = ?', [entityId]);
-            break;
-          case 'releases':
-            sourceEntity = await db.get('SELECT id, name, description FROM releases WHERE id = ?', [entityId]);
-            break;
-          case 'goals':
-            sourceEntity = await db.get('SELECT id, name, description FROM goals WHERE id = ?', [entityId]);
-            break;
-          default:
-            throw new Error(`Unsupported entity type: ${entityType}`);
-        }
+        // Get the source entity's text using DatabaseService
+        const entities = await databaseService.getEntitiesForEmbedding(entityType);
+        const sourceEntity = entities.find(entity => entity.id === entityId);
         
         if (!sourceEntity) {
           return {
@@ -391,6 +340,132 @@ export function registerEmbeddingTools(server: Server): void {
               },
               similarEntities: filteredResults,
               count: filteredResults.length
+            }, null, 2)
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              success: false,
+              error: error instanceof Error ? error.message : String(error)
+            }, null, 2)
+          }]
+        };
+      }
+    }
+  );
+
+  // Check vector capabilities
+  server.tool(
+    'aha_vector_status',
+    'Check if vector operations are available and view vector storage statistics',
+    {},
+    async () => {
+      try {
+        const isVectorEnabled = embeddingService.isVectorEnabled();
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              vectorEnabled: isVectorEnabled,
+              capabilities: isVectorEnabled ? [
+                'Vector storage',
+                'Cosine similarity search',
+                'Semantic search',
+                'Entity similarity matching'
+              ] : [
+                'Fallback text search only'
+              ]
+            }, null, 2)
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              success: false,
+              error: error instanceof Error ? error.message : String(error)
+            }, null, 2)
+          }]
+        };
+      }
+    }
+  );
+
+  // Get entity embedding
+  server.tool(
+    'aha_get_entity_embedding',
+    'Retrieve the stored vector embedding for a specific entity',
+    {
+      entityType: EntityTypeSchema.describe('Type of the entity'),
+      entityId: z.string().describe('ID of the entity')
+    },
+    async ({ entityType, entityId }) => {
+      try {
+        const embedding = await embeddingService.getEntityEmbedding(entityType, entityId);
+        
+        if (!embedding) {
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                success: false,
+                error: `No embedding found for entity ${entityType}/${entityId}`
+              }, null, 2)
+            }]
+          };
+        }
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              entityType,
+              entityId,
+              embeddingLength: embedding.length,
+              embeddingPreview: embedding.slice(0, 5), // Show first 5 dimensions
+              magnitude: Math.sqrt(embedding.reduce((sum, val) => sum + val * val, 0))
+            }, null, 2)
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              success: false,
+              error: error instanceof Error ? error.message : String(error)
+            }, null, 2)
+          }]
+        };
+      }
+    }
+  );
+
+  // Delete entity embedding
+  server.tool(
+    'aha_delete_entity_embedding',
+    'Delete the stored vector embedding for a specific entity',
+    {
+      entityType: EntityTypeSchema.describe('Type of the entity'),
+      entityId: z.string().describe('ID of the entity')
+    },
+    async ({ entityType, entityId }) => {
+      try {
+        await embeddingService.deleteEntityEmbedding(entityType, entityId);
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              message: `Deleted embedding for entity ${entityType}/${entityId}`
             }, null, 2)
           }]
         };
