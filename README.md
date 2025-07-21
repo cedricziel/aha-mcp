@@ -4,7 +4,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6)
 ![MCP](https://img.shields.io/badge/MCP-1.7+-green)
 
-A Model Context Protocol (MCP) server that provides seamless integration with Aha.io's product management platform.
+A Model Context Protocol (MCP) server that provides seamless integration with Aha.io's product management platform. Features offline database synchronization, vector embeddings for semantic search, and comprehensive workflow automation.
 
 ## 🔧 Client Configuration
 
@@ -116,7 +116,15 @@ docker run --rm -p 3001:3001 -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TO
 
 ## 🔌 Aha.io Integration
 
-This MCP server includes integration with the Aha.io API, allowing you to access features, ideas, users, and more from your Aha.io account.
+This MCP server provides hybrid integration with Aha.io through both live API access and offline database synchronization. The server automatically maintains a local SQLite database with your Aha.io data, enabling faster queries, offline access, and advanced semantic search capabilities.
+
+### Architecture Overview
+
+- **Hybrid Data Access**: Live API calls for real-time data + offline SQLite database for performance
+- **Background Sync**: Automatic synchronization of Aha.io entities to local database
+- **Vector Embeddings**: Semantic search using sentence transformers and SQLite vector extensions
+- **Real-time Progress**: Background job monitoring with detailed progress tracking
+- **Configuration Management**: Runtime configuration without server restarts
 
 ### Configuration
 
@@ -317,6 +325,85 @@ The server provides three MCP tools for configuration management:
 3. **test_configuration**: Test API connectivity with current settings
 
 These tools allow you to manage configuration without restarting the server, making it easy to switch between different Aha.io accounts or update credentials.
+
+### Database Synchronization
+
+The server maintains a local SQLite database with your Aha.io data for improved performance and offline access.
+
+#### Sync Management Tools
+
+- `aha_sync_start`: Start background synchronization of specified entity types
+- `aha_sync_status`: Check the status and progress of sync jobs
+- `aha_sync_stop`: Stop a running sync job
+- `aha_sync_pause`: Pause a sync job (can be resumed later)
+- `aha_sync_resume`: Resume a paused sync job
+- `aha_sync_history`: View detailed history of sync operations
+- `aha_sync_health`: Get overall sync service health status
+- `aha_database_health`: Check database connectivity and statistics
+- `aha_database_cleanup`: Clean up old sync jobs and optimize database
+
+#### Sync Features
+
+- **Entity Types**: Sync features, products, ideas, epics, initiatives, releases, goals, users, comments
+- **Progress Tracking**: Real-time progress updates with detailed statistics
+- **Error Handling**: Comprehensive error logging and recovery mechanisms
+- **Batch Processing**: Configurable batch sizes for optimal performance
+- **Incremental Updates**: Support for `updatedSince` filtering to sync only recent changes
+- **Concurrent Operations**: Multiple sync jobs can run simultaneously
+
+#### Example Sync Workflow
+
+```bash
+# Start syncing features and products
+aha_sync_start --entities features,products --batchSize 50
+
+# Check progress
+aha_sync_status --jobId sync-abc123
+
+# View sync history
+aha_sync_history --jobId sync-abc123 --limit 20
+
+# Check overall health
+aha_sync_health
+```
+
+### Semantic Search & Embeddings
+
+The server includes advanced semantic search capabilities using vector embeddings.
+
+#### Embedding Management Tools
+
+- `aha_generate_embeddings`: Generate vector embeddings for entity text content
+- `aha_embedding_status`: Check the status of embedding generation jobs
+- `aha_semantic_search`: Search entities using natural language queries
+- `aha_generate_entity_embedding`: Generate embedding for a specific entity
+- `aha_find_similar`: Find entities similar to a given entity
+- `aha_pause_embeddings`: Pause embedding generation jobs
+- `aha_stop_embeddings`: Stop embedding generation jobs
+
+#### Semantic Search Features
+
+- **Vector Storage**: Embeddings stored in SQLite with sqlite-vec extension
+- **Multiple Models**: Support for different embedding models (default: all-MiniLM-L6-v2)
+- **Similarity Search**: Cosine similarity search with configurable thresholds
+- **Cross-Entity Search**: Find similar content across different entity types
+- **Real-time Generation**: Background embedding generation with progress tracking
+
+#### Example Embedding Workflow
+
+```bash
+# Generate embeddings for features and ideas
+aha_generate_embeddings --entities features,ideas --batchSize 25
+
+# Search for similar content
+aha_semantic_search --query "user authentication security" --threshold 0.7
+
+# Find similar features to a specific feature
+aha_find_similar --entityType features --entityId FEAT-123 --limit 5
+
+# Check embedding job progress
+aha_embedding_status --jobId embed-xyz789
+```
 
 ### Available Resources
 
@@ -524,12 +611,16 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 - **Comprehensive Entity Coverage**: Full CRUD operations for features, epics, ideas, and competitors
 
 #### Technical Achievements
-- **41 total MCP tools** (comprehensive Aha.io integration)
+- **56+ total MCP tools** (comprehensive Aha.io integration + sync + embeddings)
 - **48 total MCP resources** (complete entity coverage)
 - **13 domain-specific prompts** (workflow automation)
 - **24 CRUD operation tools** for complete lifecycle management
-- **133 tests passing** with full TypeScript type safety
-- **Portal integration** for advanced workflow management
+- **15+ sync & database tools** for offline data management
+- **6 embedding & semantic search tools** for AI-powered content discovery
+- **194+ tests passing** with comprehensive service coverage
+- **SQLite database with vector extensions** for high-performance local storage
+- **Background job processing** with real-time progress tracking
+- **Semantic search capabilities** using transformer models
 - **Comprehensive error handling** with proper Zod schema validation
 - **Professional-grade implementation** following MCP best practices
 
@@ -748,6 +839,8 @@ Commit messages are validated using commitlint on every commit and in CI.
 
 ### Testing
 
+#### Local Testing
+
 Run the test suite:
 
 ```bash
@@ -756,7 +849,83 @@ bun test
 
 # Run tests in watch mode
 bun run test:watch
+
+# Run tests with coverage
+bun test --coverage
 ```
+
+#### Docker Testing
+
+The Docker environment includes all necessary dependencies for testing:
+
+```bash
+# Test the Docker build
+docker build -t aha-mcp-test .
+
+# Run tests inside Docker container
+docker run --rm aha-mcp-test bun test
+
+# Test with environment variables
+docker run --rm \
+  -e AHA_COMPANY="test-company" \
+  -e AHA_TOKEN="test-token" \
+  aha-mcp-test bun test
+
+# Verify all dependencies are available
+docker run --rm aha-mcp-test bun install --dry-run
+
+# Test database functionality (SQLite)
+docker run --rm aha-mcp-test node -e "
+  const sqlite3 = require('sqlite3');
+  const db = new sqlite3.Database(':memory:');
+  console.log('SQLite available:', !!db);
+  db.close();
+"
+
+# Test if sqlite-vec extension loads (graceful fallback if not available)
+docker run --rm aha-mcp-test bun run start --help
+```
+
+#### Testing Database Features
+
+The Docker environment includes:
+- **SQLite3**: Core database functionality
+- **Node.js sqlite packages**: Database drivers and utilities
+- **Graceful fallback**: sqlite-vec extension warnings are suppressed in test environments
+- **Temporary databases**: Each test uses isolated temporary database files
+- **Proper cleanup**: Database connections and files are cleaned up after tests
+
+#### Verifying Docker Environment
+
+```bash
+# Check all key components are available
+docker run --rm aha-mcp-test sh -c "
+  echo 'Checking Bun...'; bun --version
+  echo 'Checking Node.js...'; node --version  
+  echo 'Checking SQLite...'; node -e 'console.log(require(\"sqlite3\"))'
+  echo 'Checking dependencies...'; bun install --dry-run
+  echo 'Running basic tests...'; bun test --reporter=dot
+"
+
+# Test MCP server startup
+docker run --rm -d --name aha-test \
+  -e AHA_COMPANY="test" \
+  -e AHA_TOKEN="test" \
+  aha-mcp-test
+
+# Check if server started successfully
+docker logs aha-test
+
+# Cleanup
+docker stop aha-test
+```
+
+The Docker environment supports the full test suite including:
+- **194+ test cases** across all services
+- **Database service tests** (25 test cases)
+- **Background sync service tests** (16 test cases)  
+- **MCP accessibility tests** (172 test cases)
+- **SQLite extension warnings** are automatically suppressed in test mode
 
 ### Building
 

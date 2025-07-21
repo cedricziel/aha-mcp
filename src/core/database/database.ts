@@ -116,10 +116,16 @@ export class DatabaseService {
         }
         
         if (!vectorLoaded) {
-          console.warn('sqlite-vec extension not found, vector operations will be disabled');
+          // Only show warning in non-test environments
+          if (!process.env.NODE_ENV?.includes('test') && !process.argv.some(arg => arg.includes('test'))) {
+            console.warn('sqlite-vec extension not found, vector operations will be disabled');
+          }
         }
       } catch (error) {
-        console.warn('Could not load sqlite-vec extension:', error);
+        // Only show warning in non-test environments
+        if (!process.env.NODE_ENV?.includes('test') && !process.argv.some(arg => arg.includes('test'))) {
+          console.warn('Could not load sqlite-vec extension:', error);
+        }
       }
 
       // Run migrations
