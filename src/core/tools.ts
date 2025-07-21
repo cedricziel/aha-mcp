@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as services from "./services/index.js";
 import { registerSyncTools } from "./tools/sync-tools.js";
+import { registerEmbeddingTools } from "./tools/embedding-tools.js";
 
 /**
  * Register all tools with the MCP server
@@ -1365,4 +1366,7 @@ export function registerTools(server: McpServer) {
 
   // Register sync tools for background synchronization and observability
   registerSyncTools(server);
+  
+  // Register embedding tools for semantic search capabilities
+  registerEmbeddingTools(server);
 }

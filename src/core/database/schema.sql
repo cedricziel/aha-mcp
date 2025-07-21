@@ -242,6 +242,38 @@ CREATE TABLE IF NOT EXISTS feature_tags (
 -- SEARCH AND EMBEDDING TABLES
 -- ===================================
 
+CREATE TABLE IF NOT EXISTS embedding_jobs (
+    id TEXT PRIMARY KEY,
+    status TEXT NOT NULL DEFAULT 'pending', -- pending, running, paused, completed, failed
+    entities TEXT NOT NULL, -- JSON array of entity types to process
+    progress INTEGER NOT NULL DEFAULT 0,
+    total INTEGER NOT NULL DEFAULT 100,
+    current_entity TEXT,
+    processed_count INTEGER DEFAULT 0,
+    error_count INTEGER DEFAULT 0,
+    last_error TEXT,
+    options TEXT, -- JSON embedding options
+    started_at DATETIME,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME,
+    estimated_completion DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS embeddings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    text TEXT NOT NULL, -- The text that was embedded
+    embedding_vector TEXT NOT NULL, -- JSON array of the embedding vector
+    metadata TEXT, -- JSON metadata about the embedding
+    model TEXT DEFAULT 'simple-hash', -- Embedding model used
+    dimensions INTEGER DEFAULT 384,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(entity_type, entity_id)
+);
+
 CREATE TABLE IF NOT EXISTS embedding_metadata (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     entity_type TEXT NOT NULL,
@@ -293,7 +325,12 @@ CREATE INDEX IF NOT EXISTS idx_goals_updated_at ON goals(updated_at);
 CREATE INDEX IF NOT EXISTS idx_comments_entity ON comments(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_comments_updated_at ON comments(updated_at);
 
--- Search indexes
+-- Search and embedding indexes
+CREATE INDEX IF NOT EXISTS idx_embedding_jobs_status ON embedding_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_embedding_jobs_updated_at ON embedding_jobs(updated_at);
+CREATE INDEX IF NOT EXISTS idx_embeddings_entity ON embeddings(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_embeddings_entity_type ON embeddings(entity_type);
+CREATE INDEX IF NOT EXISTS idx_embeddings_created_at ON embeddings(created_at);
 CREATE INDEX IF NOT EXISTS idx_search_cache_query_hash ON search_cache(query_hash);
 CREATE INDEX IF NOT EXISTS idx_search_cache_expires_at ON search_cache(expires_at);
 CREATE INDEX IF NOT EXISTS idx_embedding_metadata_entity ON embedding_metadata(entity_type, entity_id);
