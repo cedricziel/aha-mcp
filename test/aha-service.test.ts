@@ -5,10 +5,12 @@ describe('AhaService', () => {
   beforeEach(() => {
     // Reset environment variables
     delete process.env.AHA_TOKEN;
+    delete process.env.AHA_ACCESS_TOKEN;
     delete process.env.AHA_COMPANY;
     
     // Reset static state via reflection
     (AhaService as any).apiKey = null;
+    (AhaService as any).accessToken = null;
     (AhaService as any).subdomain = null;
     (AhaService as any).featuresApi = null;
     (AhaService as any).ideasApi = null;
@@ -43,6 +45,46 @@ describe('AhaService', () => {
         expect((error as Error).message).toContain('Aha API client not initialized');
       }
     });
+
+    it('should use Bearer token authentication when initialized with API key', () => {
+      AhaService.initialize('test-api-key', 'test-company');
+      
+      // Access private static fields to verify Bearer token setup
+      const apiKey = (AhaService as any).apiKey;
+      const accessToken = (AhaService as any).accessToken;
+      const configuration = (AhaService as any).configuration;
+      
+      // Verify the API key is stored
+      expect(apiKey).toBe('test-api-key');
+      
+      // Verify the access token is set to the same value (for Bearer auth)
+      expect(accessToken).toBe('test-api-key');
+      
+      // Verify the configuration uses accessToken for Bearer authentication
+      expect(configuration).toBeTruthy();
+      expect(configuration.accessToken).toBe('test-api-key');
+      expect(configuration.apiKey).toBeUndefined();
+    });
+
+    it('should use Bearer token authentication with environment variables', () => {
+      process.env.AHA_TOKEN = 'env-test-token';
+      process.env.AHA_COMPANY = 'env-test-company';
+      
+      // Reset and reinitialize to pick up env vars
+      (AhaService as any).apiKey = process.env.AHA_TOKEN;
+      (AhaService as any).accessToken = process.env.AHA_TOKEN;
+      (AhaService as any).subdomain = process.env.AHA_COMPANY;
+      (AhaService as any).configuration = null;
+      
+      AhaService.initialize();
+      
+      const configuration = (AhaService as any).configuration;
+      
+      // Verify the configuration uses accessToken for Bearer authentication
+      expect(configuration).toBeTruthy();
+      expect(configuration.accessToken).toBe('env-test-token');
+      expect(configuration.apiKey).toBeUndefined();
+    });
   });
 
   describe('with environment variables', () => {
@@ -51,6 +93,7 @@ describe('AhaService', () => {
       process.env.AHA_COMPANY = 'test-company';
       // Reset static state but keep env vars
       (AhaService as any).apiKey = process.env.AHA_TOKEN;
+      (AhaService as any).accessToken = process.env.AHA_TOKEN;
       (AhaService as any).subdomain = process.env.AHA_COMPANY;
       (AhaService as any).featuresApi = null;
       (AhaService as any).configuration = null;
