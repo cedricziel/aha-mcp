@@ -61,17 +61,21 @@ jobs:
     - name: Run Docker image test
       run: |
         # Test that the image can start and respond to --help
-        docker run --rm ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:latest --help
+        # Use the first tag from the metadata output (works for both PR and main builds)
+        IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+        docker run --rm $IMAGE_TAG --help
 
     - name: Test Docker image in stdio mode
       run: |
         # Test basic functionality without credentials
-        timeout 5s docker run --rm ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:latest --mode stdio || true
+        IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+        timeout 5s docker run --rm $IMAGE_TAG --mode stdio || true
 
     - name: Test Docker image in SSE mode
       run: |
         # Test SSE mode startup
-        docker run --rm -d --name aha-mcp-test -p 3001:3001 ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:latest --mode sse
+        IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+        docker run --rm -d --name aha-mcp-test -p 3001:3001 $IMAGE_TAG --mode sse
         sleep 5
         # Check health endpoint
         curl -f http://localhost:3001/health || exit 1
