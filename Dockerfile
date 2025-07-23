@@ -65,9 +65,10 @@ RUN bun install --frozen-lockfile --production --ignore-scripts
 COPY --from=builder /app/node_modules/sqlite3 ./node_modules/sqlite3/
 COPY --from=builder /app/node_modules/sqlite-vec ./node_modules/sqlite-vec/
 
-# Create binding directory structure and symlink for sqlite3 native module
-RUN mkdir -p /app/lib/binding/node-v137-linux-arm64/ && \
-    ln -sf /app/node_modules/sqlite3/build/Release/node_sqlite3.node /app/lib/binding/node-v137-linux-arm64/node_sqlite3.node
+# Create binding directory structure and symlinks for sqlite3 native module (both architectures)
+RUN mkdir -p /app/lib/binding/node-v137-linux-arm64/ /app/lib/binding/node-v137-linux-x64/ && \
+    ln -sf /app/node_modules/sqlite3/build/Release/node_sqlite3.node /app/lib/binding/node-v137-linux-arm64/node_sqlite3.node && \
+    ln -sf /app/node_modules/sqlite3/build/Release/node_sqlite3.node /app/lib/binding/node-v137-linux-x64/node_sqlite3.node
 
 # Install OpenTelemetry auto-instrumentation separately (not in package.json)
 RUN bun install @opentelemetry/auto-instrumentations-node
