@@ -98,7 +98,9 @@ export class DatabaseService {
       try {
         sqliteVec.load(this.db);
         this.vectorEnabled = true;
-        console.log('sqlite-vec extension loaded successfully');
+        if (!process.env.NODE_ENV?.includes('test')) {
+          console.log('sqlite-vec extension loaded successfully');
+        }
       } catch (error) {
         this.vectorEnabled = false;
         // Only show warning in non-test environments
@@ -111,7 +113,9 @@ export class DatabaseService {
       await this.runMigrations();
       
       this.isInitialized = true;
-      console.log('Database initialized successfully');
+      if (!process.env.NODE_ENV?.includes('test')) {
+        console.log('Database initialized successfully');
+      }
     } catch (error) {
       console.error('Failed to initialize database:', error);
       throw error;
@@ -135,7 +139,9 @@ export class DatabaseService {
       const schema = await fs.readFile(schemaPath, 'utf-8');
       await this.db.exec(schema);
       
-      console.log('Database schema applied successfully');
+      if (!process.env.NODE_ENV?.includes('test')) {
+        console.log('Database schema applied successfully');
+      }
     } catch (error) {
       console.error('Failed to run migrations:', error);
       throw error;

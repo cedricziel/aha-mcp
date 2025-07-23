@@ -58,8 +58,7 @@ describe('BackgroundSyncService', () => {
 
     // Clean up database
     try {
-      const db = await mockDatabase.getDb();
-      await db.close();
+      await mockDatabase.close();
     } catch (error) {
       // Ignore close errors - database may already be closed
     }
