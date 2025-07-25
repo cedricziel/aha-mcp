@@ -79,8 +79,8 @@ RUN bun install @opentelemetry/auto-instrumentations-node
 # Copy built application from builder stage
 COPY --from=builder /app/build ./build
 
-# Copy database schema file to the correct location relative to built JS
-COPY src/core/database/schema.sql ./build/core/database/
+# Copy database schema file from builder stage to the exact location where it's expected
+COPY --from=builder /app/src/core/database/schema.sql ./build/schema.sql
 
 # Copy package.json for runtime metadata
 COPY package.json ./
