@@ -4,6 +4,7 @@ import * as sqliteVec from 'sqlite-vec';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { log } from '../logger.js';
 
 export interface SyncJob {
   id: string;
@@ -99,13 +100,13 @@ export class DatabaseService {
         sqliteVec.load(this.db);
         this.vectorEnabled = true;
         if (!process.env.NODE_ENV?.includes('test')) {
-          console.log('sqlite-vec extension loaded successfully');
+          log.info('sqlite-vec extension loaded successfully');
         }
       } catch (error) {
         this.vectorEnabled = false;
         // Only show warning in non-test environments
         if (!process.env.NODE_ENV?.includes('test') && !process.argv.some(arg => arg.includes('test'))) {
-          console.warn('Could not load sqlite-vec extension:', error);
+          log.warn('Could not load sqlite-vec extension', { error: error.message });
         }
       }
 
@@ -114,10 +115,10 @@ export class DatabaseService {
       
       this.isInitialized = true;
       if (!process.env.NODE_ENV?.includes('test')) {
-        console.log('Database initialized successfully');
+        log.info('Database initialized successfully');
       }
     } catch (error) {
-      console.error('Failed to initialize database:', error);
+      log.error('Failed to initialize database', error);
       throw error;
     }
   }
@@ -140,10 +141,10 @@ export class DatabaseService {
       await this.db.exec(schema);
       
       if (!process.env.NODE_ENV?.includes('test')) {
-        console.log('Database schema applied successfully');
+        log.info('Database schema applied successfully');
       }
     } catch (error) {
-      console.error('Failed to run migrations:', error);
+      log.error('Failed to run migrations', error);
       throw error;
     }
   }
@@ -562,7 +563,7 @@ export class DatabaseService {
   ): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
     if (!this.vectorEnabled) {
-      console.warn('Vector operations disabled, skipping embedding storage');
+      log.warn('Vector operations disabled, skipping embedding storage');
       return;
     }
 
@@ -584,7 +585,7 @@ export class DatabaseService {
         embedding.length
       ]);
     } catch (error) {
-      console.error('Error storing embedding:', error);
+      log.error('Error storing embedding', error);
       throw error;
     }
   }
@@ -606,7 +607,7 @@ export class DatabaseService {
   }>> {
     if (!this.db) throw new Error('Database not initialized');
     if (!this.vectorEnabled) {
-      console.warn('Vector operations disabled, returning empty results');
+      log.warn('Vector operations disabled, returning empty results');
       return [];
     }
 
@@ -648,7 +649,7 @@ export class DatabaseService {
           
           similarity = this.calculateCosineSimilarity(queryEmbedding, storedEmbedding);
         } catch (error) {
-          console.warn('Error calculating similarity:', error);
+          log.warn('Error calculating similarity', { error: error.message });
         }
         
         return {
@@ -664,7 +665,7 @@ export class DatabaseService {
         .filter(item => item.similarity >= threshold)
         .sort((a, b) => b.similarity - a.similarity);
     } catch (error) {
-      console.error('Error performing vector similarity search:', error);
+      log.error('Error performing vector similarity search', error);
       throw error;
     }
   }
@@ -717,7 +718,7 @@ export class DatabaseService {
         return Array.from(new Float32Array(result.embedding_vector));
       }
     } catch (error) {
-      console.error('Error retrieving embedding:', error);
+      log.error('Error retrieving embedding', error);
       return null;
     }
   }
@@ -735,7 +736,7 @@ export class DatabaseService {
         WHERE entity_type = ? AND entity_id = ?
       `, [entityType, entityId]);
     } catch (error) {
-      console.error('Error deleting embedding:', error);
+      log.error('Error deleting embedding', error);
       throw error;
     }
   }

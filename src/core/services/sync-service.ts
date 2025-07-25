@@ -1,6 +1,7 @@
 import { DatabaseService, databaseService } from '../database/database.js';
 import { AhaService } from './aha-service.js';
 import { EventEmitter } from 'events';
+import { log } from '../logger.js';
 
 export interface SyncOptions {
   batchSize?: number;
@@ -56,7 +57,7 @@ export class BackgroundSyncService extends EventEmitter {
     
     // Don't await - run in background
     this.runSyncJob(jobId, entities, options).catch(error => {
-      console.error(`Sync job ${jobId} failed:`, error);
+      log.error(`Sync job ${jobId} failed`, error);
       this.emit('sync-error', { jobId, error: error.message });
     });
 
@@ -205,7 +206,7 @@ export class BackgroundSyncService extends EventEmitter {
               this.db.updateSyncJobProgress(jobId, {
                 current_entity_progress: progress,
                 current_entity_total: total
-              }).catch(console.error);
+              }).catch(error => log.error('Embedding job failed', error));
             }
           );
 
@@ -242,7 +243,7 @@ export class BackgroundSyncService extends EventEmitter {
             error: errorMessage
           });
 
-          console.error(`Failed to sync ${entityType} for job ${jobId}:`, error);
+          log.error(`Failed to sync ${entityType} for job ${jobId}`, error);
         }
       }
 
