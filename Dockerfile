@@ -83,9 +83,9 @@ COPY --from=builder /app/build ./build
 COPY package.json ./
 COPY package.json /package.json
 
-# Create directory for configuration with proper permissions
-RUN mkdir -p /home/mcp/.config && \
-    chown -R mcp:mcp /home/mcp
+# Create directories for configuration and data with proper permissions
+RUN mkdir -p /home/mcp/.config /app/data && \
+    chown -R mcp:mcp /home/mcp /app/data
 
 # Copy the built entry point and make it executable
 RUN chmod +x ./build/index.js
