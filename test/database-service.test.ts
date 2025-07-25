@@ -18,8 +18,7 @@ describe('DatabaseService', () => {
   afterEach(async () => {
     // Clean up temporary database
     try {
-      const db = await databaseService.getDb();
-      await db.close();
+      await databaseService.close();
     } catch (error) {
       // Ignore close errors
     }
