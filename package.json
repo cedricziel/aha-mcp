@@ -51,26 +51,26 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
-    "@types/node": "^24.0.14",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.5.2",
     "@types/sqlite3": "^5.1.0",
-    "@commitlint/cli": "^19.0.0",
+    "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^20.0.0",
-    "husky": "^9.0.0"
+    "husky": "^9.1.7"
   },
   "peerDependencies": {
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "@cedricziel/aha-js": "1.2.2",
-    "@modelcontextprotocol/sdk": "^1.15.1",
-    "axios": "^1.9.0",
+    "@modelcontextprotocol/sdk": "^1.18.2",
+    "axios": "^1.12.2",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
     "sqlite-vec": "^0.1.6",
-    "zod": "^3.23.8"
+    "zod": "^3.25.76"
   }
 }
