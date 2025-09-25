@@ -1,0 +1,217 @@
+{
+  "dxt_version": "0.1",
+  "name": "aha-mcp",
+  "display_name": "Aha.io MCP Server",
+  "version": "0.0.1",
+  "description": "Model Context Protocol server for Aha.io product management platform",
+  "long_description": "A comprehensive MCP server that provides seamless integration with Aha.io's API. This extension enables AI assistants to interact with Aha.io workspaces, manage features, ideas, requirements, and more. It includes 40+ tools for CRUD operations, resource access, and workflow automation.",
+  "author": {
+    "name": "Cedric Ziel",
+    "email": "mail@cedric-ziel.com",
+    "url": "https://github.com/cedricziel"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cedricziel/aha-mcp.git"
+  },
+  "homepage": "https://github.com/cedricziel/aha-mcp#readme",
+  "documentation": "https://github.com/cedricziel/aha-mcp#readme",
+  "support": "https://github.com/cedricziel/aha-mcp/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "build/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/build/index.js"],
+      "env": {
+        "AHA_COMPANY": "${user_config.company}",
+        "AHA_TOKEN": "${user_config.token}",
+        "NODE_ENV": "production"
+      }
+    }
+  },
+  "user_config": {
+    "company": {
+      "type": "string",
+      "title": "Aha.io Company Subdomain",
+      "description": "Your Aha.io company subdomain (e.g., 'mycompany' for mycompany.aha.io)",
+      "required": true,
+      "default": ""
+    },
+    "token": {
+      "type": "string",
+      "title": "Aha.io API Token",
+      "description": "Your Aha.io API token for authentication",
+      "required": true,
+      "default": ""
+    }
+  },
+  "tools": [
+    {
+      "name": "aha_list_features",
+      "description": "List features from Aha.io with optional filtering"
+    },
+    {
+      "name": "aha_get_feature",
+      "description": "Get a specific feature by ID from Aha.io"
+    },
+    {
+      "name": "aha_create_feature",
+      "description": "Create a new feature in Aha.io"
+    },
+    {
+      "name": "aha_update_feature",
+      "description": "Update an existing feature in Aha.io"
+    },
+    {
+      "name": "aha_delete_feature",
+      "description": "Delete a feature from Aha.io"
+    },
+    {
+      "name": "aha_list_ideas",
+      "description": "List ideas from Aha.io with optional filtering"
+    },
+    {
+      "name": "aha_get_idea",
+      "description": "Get a specific idea by ID from Aha.io"
+    },
+    {
+      "name": "aha_create_idea",
+      "description": "Create a new idea in Aha.io"
+    },
+    {
+      "name": "aha_update_idea",
+      "description": "Update an existing idea in Aha.io"
+    },
+    {
+      "name": "aha_delete_idea",
+      "description": "Delete an idea from Aha.io"
+    },
+    {
+      "name": "aha_list_requirements",
+      "description": "List requirements from Aha.io with optional filtering"
+    },
+    {
+      "name": "aha_get_requirement",
+      "description": "Get a specific requirement by ID from Aha.io"
+    },
+    {
+      "name": "aha_create_requirement",
+      "description": "Create a new requirement in Aha.io"
+    },
+    {
+      "name": "aha_update_requirement",
+      "description": "Update an existing requirement in Aha.io"
+    },
+    {
+      "name": "aha_delete_requirement",
+      "description": "Delete a requirement from Aha.io"
+    },
+    {
+      "name": "aha_list_products",
+      "description": "List products from Aha.io"
+    },
+    {
+      "name": "aha_get_product",
+      "description": "Get a specific product by ID from Aha.io"
+    },
+    {
+      "name": "aha_list_users",
+      "description": "List users from Aha.io workspace"
+    },
+    {
+      "name": "aha_get_user",
+      "description": "Get a specific user by ID from Aha.io"
+    },
+    {
+      "name": "aha_list_releases",
+      "description": "List releases from Aha.io with optional filtering"
+    },
+    {
+      "name": "aha_get_release",
+      "description": "Get a specific release by ID from Aha.io"
+    },
+    {
+      "name": "aha_create_release",
+      "description": "Create a new release in Aha.io"
+    },
+    {
+      "name": "aha_update_release",
+      "description": "Update an existing release in Aha.io"
+    },
+    {
+      "name": "aha_delete_release",
+      "description": "Delete a release from Aha.io"
+    },
+    {
+      "name": "aha_list_goals",
+      "description": "List goals from Aha.io"
+    },
+    {
+      "name": "aha_get_goal",
+      "description": "Get a specific goal by ID from Aha.io"
+    },
+    {
+      "name": "aha_create_goal",
+      "description": "Create a new goal in Aha.io"
+    },
+    {
+      "name": "aha_update_goal",
+      "description": "Update an existing goal in Aha.io"
+    },
+    {
+      "name": "aha_delete_goal",
+      "description": "Delete a goal from Aha.io"
+    },
+    {
+      "name": "aha_list_initiatives",
+      "description": "List initiatives from Aha.io"
+    },
+    {
+      "name": "aha_get_initiative",
+      "description": "Get a specific initiative by ID from Aha.io"
+    },
+    {
+      "name": "aha_create_initiative",
+      "description": "Create a new initiative in Aha.io"
+    },
+    {
+      "name": "aha_update_initiative",
+      "description": "Update an existing initiative in Aha.io"
+    },
+    {
+      "name": "aha_delete_initiative",
+      "description": "Delete an initiative from Aha.io"
+    },
+    {
+      "name": "aha_health_check",
+      "description": "Check the health status of the Aha.io MCP server"
+    },
+    {
+      "name": "aha_connection_test",
+      "description": "Test connection to Aha.io API with current credentials"
+    },
+    {
+      "name": "configure_server",
+      "description": "Configure the MCP server with Aha.io credentials"
+    },
+    {
+      "name": "get_server_config",
+      "description": "Get current server configuration"
+    },
+    {
+      "name": "test_configuration",
+      "description": "Test the current Aha.io configuration"
+    }
+  ],
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "aha",
+    "aha.io",
+    "product-management",
+    "ai",
+    "claude"
+  ]
+}

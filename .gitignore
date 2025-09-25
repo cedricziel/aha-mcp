@@ -6,3 +6,8 @@ package-lock.json
 /*.sqlite
 /*.sqlite-shm
 /*.sqlite-wal
+
+# DXT packaging
+*.dxt
+*.mcpb
+.dxt-cache/
