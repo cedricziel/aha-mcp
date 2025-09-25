@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.1.0...aha-mcp-v0.1.1) (2025-09-25)
+
+
+### Bug Fixes
+
+* grant write permissions for release asset upload ([#146](https://github.com/cedricziel/aha-mcp/issues/146)) ([f57909e](https://github.com/cedricziel/aha-mcp/commit/f57909e5aaa0fbc05674ec200b1832cd8596df69))
+
 ## [0.1.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.0.1...aha-mcp-v0.1.0) (2025-09-25)
 
 
