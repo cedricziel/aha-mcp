@@ -14,12 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-          release-type: node
+          config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
   publish:
@@ -46,6 +47,27 @@ jobs:
 
       - name: Build
         run: bun run build
+
+      - name: Install DXT CLI
+        run: npm install -g @anthropic-ai/dxt
+
+      - name: Build DXT package
+        run: bun run dxt:pack
+
+      - name: Get package version
+        id: package_version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Rename DXT file
+        run: mv aha-mcp.dxt aha-mcp-v${{ steps.package_version.outputs.version }}.dxt
+
+      - name: Upload DXT to Release
+        run: |
+          gh release upload ${{ needs.release-please.outputs.tag_name }} \
+            aha-mcp-v${{ steps.package_version.outputs.version }}.dxt \
+            --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
