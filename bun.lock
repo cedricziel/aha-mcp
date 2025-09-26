@@ -4,7 +4,7 @@
     "": {
       "name": "@cedricziel/aha-mcp",
       "dependencies": {
-        "@cedricziel/aha-js": "1.2.2",
+        "@cedricziel/aha-js": "1.2.3",
         "@modelcontextprotocol/sdk": "^1.18.2",
         "axios": "^1.12.2",
         "cors": "^2.8.5",
@@ -34,7 +34,7 @@
 
     "@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@7.27.1", "", {}, "sha512-D2hP9eA+Sqx1kBZgzxZh0y1trbuU+JoDkiEwqhQ36nodYqJwyEIhPSdMNd7lOm/4io72luTPWH20Yda0xOuUow=="],
 
-    "@cedricziel/aha-js": ["@cedricziel/aha-js@1.2.2", "", { "dependencies": { "axios": "^1.6.1" } }, "sha512-Plpl1pkFKaqqZhOXVA4r51cepFBw5hD3mcEYWFkLDRoH6m6pFpwpE2Hxkzw81iGMjuWz3cBpTECdYOWK37oEvw=="],
+    "@cedricziel/aha-js": ["@cedricziel/aha-js@1.2.3", "", { "dependencies": { "axios": "^1.6.1" } }, "sha512-hdNCWYUo3mYR6JT1Ee9E2hQNWDDFwk3YirjzQUGxu2v/3jGk9OsNVZonTpt3Q8GmR38PQakXQakQr+Qo6m5wHg=="],
 
     "@commitlint/cli": ["@commitlint/cli@19.8.1", "", { "dependencies": { "@commitlint/format": "^19.8.1", "@commitlint/lint": "^19.8.1", "@commitlint/load": "^19.8.1", "@commitlint/read": "^19.8.1", "@commitlint/types": "^19.8.1", "tinyexec": "^1.0.0", "yargs": "^17.0.0" }, "bin": { "commitlint": "./cli.js" } }, "sha512-LXUdNIkspyxrlV6VDHWBmCZRtkEVRpBKxi2Gtw3J54cGWhLCTouVD/Q6ZSaSvd2YaDObWK8mDjrz3TIKtaQMAA=="],
 
@@ -675,8 +675,6 @@
     "zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "zod-to-json-schema": ["zod-to-json-schema@3.24.6", "", { "peerDependencies": { "zod": "^3.24.1" } }, "sha512-h/z3PKvcTcTetyjl1fkj79MHNEjm+HpD6NXheWjzOekY7kV+lwDYnHw+ivHkijnCSMz1yJaWBD9vu/Fcmk+vEg=="],
-
-    "@cedricziel/aha-js/axios": ["axios@1.11.0", "", { "dependencies": { "follow-redirects": "^1.15.6", "form-data": "^4.0.4", "proxy-from-env": "^1.1.0" } }, "sha512-1Lx3WLFQWm3ooKDYZD1eXmoGO9fxYQjrycfHFC8P0sCfQVXyROp0p9PFWBehewBOdCwHc+f/b8I0fMto5eSfwA=="],
 
     "@commitlint/config-conventional/@commitlint/types": ["@commitlint/types@20.0.0", "", { "dependencies": { "@types/conventional-commits-parser": "^5.0.0", "chalk": "^5.3.0" } }, "sha512-bVUNBqG6aznYcYjTjnc3+Cat/iBgbgpflxbIBTnsHTX0YVpnmINPEkSRWymT2Q8aSH3Y7aKnEbunilkYe8TybA=="],
 
