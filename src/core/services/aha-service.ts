@@ -431,26 +431,30 @@ export class AhaService {
    * @param updatedSince Filter by updated since date (optional)
    * @param tag Filter by tag (optional)
    * @param assignedToUser Filter by assigned user (optional)
+   * @param page Page number for pagination (optional)
+   * @param perPage Number of items per page (max 200) (optional)
    * @returns A list of features
    */
   public static async listFeatures(
     query?: string,
     updatedSince?: string,
     tag?: string,
-    assignedToUser?: string
+    assignedToUser?: string,
+    page?: number,
+    perPage?: number
   ): Promise<FeaturesListResponse> {
     const featuresApi = this.getFeaturesApi();
 
     const startTime = Date.now();
     try {
-      const params: Record<string, string> = {};
-      if (query) params.q = query;
-      if (updatedSince) params.updated_since = updatedSince;
-      if (tag) params.tag = tag;
-      if (assignedToUser) params.assigned_to_user = assignedToUser;
-
-      // Use the appropriate method from the FeaturesApi
-      const response = await featuresApi.featuresList(params);
+      const response = await featuresApi.featuresList({
+        page,
+        perPage,
+        q: query,
+        updatedSince,
+        tag,
+        assignedToUser
+      });
       const duration = Date.now() - startTime;
       // API call automatically traced by auto-instrumentation
       return response.data;
@@ -617,14 +621,26 @@ export class AhaService {
    * @param updatedSince UTC timestamp (ISO8601 format) (optional)
    * @returns A list of products
    */
-  public static async listProducts(updatedSince?: string): Promise<ProductsListResponse> {
+  /**
+   * List products from Aha.io
+   * @param updatedSince Filter by updated since date (optional)
+   * @param page Page number for pagination (optional)
+   * @param perPage Number of items per page (max 200) (optional)
+   * @returns A list of products
+   */
+  public static async listProducts(
+    updatedSince?: string,
+    page?: number,
+    perPage?: number
+  ): Promise<ProductsListResponse> {
     const productsApi = this.getProductsApi();
 
     try {
-      const params: any = {};
-      if (updatedSince) params.updatedSince = updatedSince;
-
-      const response = await productsApi.productsList(params);
+      const response = await productsApi.productsList({
+        page,
+        perPage,
+        updatedSince
+      });
       return response.data;
     } catch (error) {
       log.error('Error listing products', error as Error, { operation: 'listProducts' });
@@ -655,24 +671,29 @@ export class AhaService {
    * @param updatedSince UTC timestamp (ISO8601 format) (optional)
    * @param assignedToUser ID or email address of a user (optional)
    * @param onlyActive When true, returns only active initiatives (optional)
+   * @param page Page number for pagination (optional)
+   * @param perPage Number of items per page (max 200) (optional)
    * @returns A list of initiatives
    */
   public static async listInitiatives(
     query?: string,
     updatedSince?: string,
     assignedToUser?: string,
-    onlyActive?: boolean
+    onlyActive?: boolean,
+    page?: number,
+    perPage?: number
   ): Promise<InitiativesListResponse> {
     const initiativesApi = this.getInitiativesApi();
 
     try {
-      const params: any = {};
-      if (query) params.q = query;
-      if (updatedSince) params.updatedSince = updatedSince;
-      if (assignedToUser) params.assignedToUser = assignedToUser;
-      if (onlyActive !== undefined) params.onlyActive = onlyActive;
-
-      const response = await initiativesApi.initiativesList(params);
+      const response = await initiativesApi.initiativesList({
+        page,
+        perPage,
+        q: query,
+        updatedSince,
+        assignedToUser,
+        onlyActive
+      });
       return response.data;
     } catch (error) {
       log.error('Error listing initiatives', error as Error, { operation: 'listInitiatives' });
@@ -711,21 +732,18 @@ export class AhaService {
     const ideasApi = this.getIdeasApi();
 
     try {
-      const params: any = {};
-      if (query) params.q = query;
-      if (spam !== undefined) params.spam = spam;
-      if (workflowStatus) params.workflowStatus = workflowStatus;
-      if (sort) params.sort = sort;
-      if (createdBefore) params.createdBefore = createdBefore;
-      if (createdSince) params.createdSince = createdSince;
-      if (updatedSince) params.updatedSince = updatedSince;
-      if (tag) params.tag = tag;
-      if (userId) params.userId = userId;
-      if (ideaUserId) params.ideaUserId = ideaUserId;
-
       const response = await ideasApi.ideasListProduct({ 
         productId: productId,
-        ...params 
+        q: query,
+        spam,
+        workflowStatus,
+        sort: sort as any, // Cast to any since the enum type is not exported
+        createdBefore,
+        createdSince,
+        updatedSince,
+        tag,
+        userId,
+        ideaUserId
       });
       return response.data;
     } catch (error) {
@@ -906,13 +924,33 @@ export class AhaService {
 
   /**
    * List goals from Aha.io
+   * @param query Search query (optional)
+   * @param updatedSince Filter by updated since date (optional)
+   * @param assignedToUser Filter by assigned user (optional)
+   * @param status Filter by status (optional)
+   * @param page Page number for pagination (optional)
+   * @param perPage Number of items per page (max 200) (optional)
    * @returns A list of goals
    */
-  public static async listGoals(): Promise<SdkGoalsListResponse> {
+  public static async listGoals(
+    query?: string,
+    updatedSince?: string,
+    assignedToUser?: string,
+    status?: string,
+    page?: number,
+    perPage?: number
+  ): Promise<SdkGoalsListResponse> {
     const goalsApi = this.getGoalsApi();
 
     try {
-      const response = await goalsApi.goalsList();
+      const response = await goalsApi.goalsList({
+        page,
+        perPage,
+        q: query,
+        updatedSince,
+        assignedToUser,
+        status
+      });
       return response.data;
     } catch (error) {
       log.error('Error listing goals', error as Error, { operation: 'listGoals' });
@@ -956,13 +994,36 @@ export class AhaService {
 
   /**
    * List releases from Aha.io
+   * @param query Search query (optional)
+   * @param updatedSince Filter by updated since date (optional)
+   * @param assignedToUser Filter by assigned user (optional)
+   * @param status Filter by status (optional)
+   * @param parkingLot Filter by parking lot (optional)
+   * @param page Page number for pagination (optional)
+   * @param perPage Number of items per page (max 200) (optional)
    * @returns A list of releases
    */
-  public static async listReleases(): Promise<SdkReleasesListResponse> {
+  public static async listReleases(
+    query?: string,
+    updatedSince?: string,
+    assignedToUser?: string,
+    status?: string,
+    parkingLot?: boolean,
+    page?: number,
+    perPage?: number
+  ): Promise<SdkReleasesListResponse> {
     const releasesApi = this.getReleasesApi();
 
     try {
-      const response = await releasesApi.releasesList();
+      const response = await releasesApi.releasesList({
+        page,
+        perPage,
+        q: query,
+        updatedSince,
+        assignedToUser,
+        status,
+        parkingLot
+      });
       return response.data;
     } catch (error) {
       log.error('Error listing releases', error as Error, { operation: 'listReleases' });
@@ -1726,12 +1787,29 @@ export class AhaService {
 
   /**
    * List strategic models
+   * @param query Search query (optional)
+   * @param type Filter by type (optional)
+   * @param updatedSince Filter by update date (optional)
+   * @param page Page number for pagination (optional)
+   * @param perPage Number of items per page (max 200) (optional)
    * @returns The list of strategic models
    */
-  public static async listStrategicModels(): Promise<StrategicModelsListResponse> {
+  public static async listStrategicModels(
+    query?: string,
+    type?: string,
+    updatedSince?: string,
+    page?: number,
+    perPage?: number
+  ): Promise<StrategicModelsListResponse> {
     const strategicModelsApi = this.getStrategicModelsApi();
     try {
-      const response = await strategicModelsApi.strategicModelsList();
+      const response = await strategicModelsApi.strategicModelsList({
+        page,
+        perPage,
+        q: query,
+        type: type as any, // Cast to any since the enum type is not exported
+        updatedSince
+      });
       return response.data;
     } catch (error) {
       log.error('Error listing strategic models', error as Error, { operation: 'listStrategicModels' });
@@ -1777,12 +1855,26 @@ export class AhaService {
 
   /**
    * List idea organizations
+   * @param query Search query (optional)
+   * @param emailDomain Filter by email domain (optional)
+   * @param page Page number for pagination (optional)
+   * @param perPage Number of items per page (max 200) (optional)
    * @returns The list of idea organizations
    */
-  public static async listIdeaOrganizations(): Promise<IdeaOrganizationsListResponse> {
+  public static async listIdeaOrganizations(
+    query?: string,
+    emailDomain?: string,
+    page?: number,
+    perPage?: number
+  ): Promise<IdeaOrganizationsListResponse> {
     const ideaOrganizationsApi = this.getIdeaOrganizationsApi();
     try {
-      const response = await ideaOrganizationsApi.ideaOrganizationsList();
+      const response = await ideaOrganizationsApi.ideaOrganizationsList({
+        page,
+        perPage,
+        q: query,
+        emailDomain
+      });
       return response.data;
     } catch (error) {
       log.error('Error listing idea organizations', error as Error, { operation: 'listIdeaOrganizations' });
@@ -1879,6 +1971,8 @@ export class AhaService {
    * @param status Filter by status (optional)
    * @param category Filter by category (optional)
    * @param fields Comma-separated list of fields to include (optional)
+   * @param page Page number for pagination (optional)
+   * @param perPage Number of items per page (max 200) (optional)
    * @returns The list of ideas
    */
   public static async listIdeas(
@@ -1887,11 +1981,15 @@ export class AhaService {
     assignedToUser?: string,
     status?: string,
     category?: string,
-    fields?: string
+    fields?: string,
+    page?: number,
+    perPage?: number
   ): Promise<IdeasListResponse> {
     const ideasApi = this.getIdeasApi();
     try {
       const response = await ideasApi.ideasList({
+        page,
+        perPage,
         q: query,
         updatedSince,
         assignedToUser,
@@ -1913,6 +2011,8 @@ export class AhaService {
    * @param updatedSince Filter by update date (optional)
    * @param status Filter by status (optional)
    * @param parkingLot Filter by parking lot (optional)
+   * @param page Page number for pagination (optional)
+   * @param perPage Number of items per page (max 200) (optional)
    * @returns The list of releases for the product
    */
   public static async listReleasesByProduct(
@@ -1920,12 +2020,16 @@ export class AhaService {
     query?: string,
     updatedSince?: string,
     status?: string,
-    parkingLot?: boolean
+    parkingLot?: boolean,
+    page?: number,
+    perPage?: number
   ): Promise<SdkReleasesListResponse> {
     const releasesApi = this.getReleasesApi();
     try {
       const response = await releasesApi.productReleasesList({
         productId,
+        page,
+        perPage,
         q: query,
         updatedSince,
         status,

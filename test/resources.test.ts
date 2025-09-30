@@ -313,6 +313,8 @@ describe('Resources', () => {
           undefined,
           undefined,
           undefined,
+          undefined,
+          undefined,
           undefined
         );
         expect(result.contents).toHaveLength(1);
@@ -329,7 +331,9 @@ describe('Resources', () => {
           'auth',
           '2023-01-01',
           'security',
-          'user123'
+          'user123',
+          undefined,
+          undefined
         );
         expect(result.contents).toHaveLength(1);
         expect(result.contents[0].uri).toBe('aha://features?query=auth&tag=security&updatedSince=2023-01-01&assignedToUser=user123');
@@ -344,7 +348,24 @@ describe('Resources', () => {
           'test',
           undefined,
           'bug',
+          undefined,
+          undefined,
           undefined
+        );
+      });
+
+      it('should handle pagination parameters', async () => {
+        const handler = resourceHandlers.get('aha_features');
+        const uri = new URL('aha://features?page=2&perPage=50');
+        await handler!(uri);
+
+        expect(mockAhaService.listFeatures).toHaveBeenCalledWith(
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          2,
+          50
         );
       });
     });
@@ -394,7 +415,7 @@ describe('Resources', () => {
         const uri = new URL('aha://products');
         const result = await handler!(uri);
 
-        expect(mockAhaService.listProducts).toHaveBeenCalledWith(undefined);
+        expect(mockAhaService.listProducts).toHaveBeenCalledWith(undefined, undefined, undefined);
         expect(result.contents).toHaveLength(1);
         expect(result.contents[0].uri).toBe('aha://products');
         expect(result.contents[0].text).toContain('PROD-1');
@@ -409,7 +430,7 @@ describe('Resources', () => {
         const uri = new URL('aha://initiatives');
         const result = await handler!(uri);
 
-        expect(mockAhaService.listInitiatives).toHaveBeenCalledWith(undefined, undefined, undefined, undefined);
+        expect(mockAhaService.listInitiatives).toHaveBeenCalledWith(undefined, undefined, undefined, undefined, undefined, undefined);
         expect(result.contents).toHaveLength(1);
         expect(result.contents[0].uri).toBe('aha://initiatives');
         expect(result.contents[0].text).toContain('INIT-1');
