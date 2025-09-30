@@ -1169,13 +1169,17 @@ export function registerResources(server: McpServer) {
         const assignedToUser = uri.searchParams.get('assignedToUser') || undefined;
         const status = uri.searchParams.get('status') || undefined;
         const category = uri.searchParams.get('category') || undefined;
+        
+        // Include custom_fields in the fields parameter to get custom fields in response
+        const fields = 'custom_fields';
 
         const ideas = await services.AhaService.listIdeas(
           query,
           updatedSince,
           assignedToUser,
           status,
-          category
+          category,
+          fields
         );
 
         return {

@@ -1863,6 +1863,7 @@ export class AhaService {
    * @param assignedToUser Filter by assigned user (optional)
    * @param status Filter by status (optional)
    * @param category Filter by category (optional)
+   * @param fields Comma-separated list of fields to include (optional)
    * @returns The list of ideas
    */
   public static async listIdeas(
@@ -1870,7 +1871,8 @@ export class AhaService {
     updatedSince?: string,
     assignedToUser?: string,
     status?: string,
-    category?: string
+    category?: string,
+    fields?: string
   ): Promise<IdeasListResponse> {
     const ideasApi = this.getIdeasApi();
     try {
@@ -1879,7 +1881,8 @@ export class AhaService {
         updatedSince,
         assignedToUser,
         status,
-        category
+        category,
+        fields
       });
       return response.data;
     } catch (error) {
