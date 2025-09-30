@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.1.1...aha-mcp-v0.2.0) (2025-09-30)
+
+
+### Features
+
+* ability to include custom fields in the ideas response ([#151](https://github.com/cedricziel/aha-mcp/issues/151)) ([211b478](https://github.com/cedricziel/aha-mcp/commit/211b4789e8043f9d5e9c047677f03fa8714d1f95))
+* Add custom fields support as MCP resources ([#155](https://github.com/cedricziel/aha-mcp/issues/155)) ([2c59e14](https://github.com/cedricziel/aha-mcp/commit/2c59e14616620c8dd8df1be2237b1cb14e65504f))
+
 ## [0.1.1](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.1.0...aha-mcp-v0.1.1) (2025-09-25)
 
 
