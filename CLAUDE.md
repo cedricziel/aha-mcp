@@ -95,7 +95,7 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
 
 - **AhaService**: Singleton service class that wraps the `aha-js` library for API interactions
 - **ConfigService**: Manages runtime configuration with file persistence and validation
-- **Tools**: 41 MCP tools for Aha.io operations (CRUD, health checks, configuration)
+- **Tools**: 40 MCP tools for Aha.io operations (CRUD, health checks, configuration)
 - **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes
 - **Prompts**: 12 domain-specific workflow prompts with context-aware responses
 - **Authentication**: Runtime configuration with environment variables and config file support

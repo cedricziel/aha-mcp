@@ -227,7 +227,7 @@ app.get("/", (req: Request, res: Response) => {
       note: isAuthEnabled() ? "Authentication required for SSE and messages endpoints" : "No authentication required"
     },
     capabilities: {
-      tools: "41 Aha.io integration tools (including health checks & configuration)",
+      tools: "40 Aha.io integration tools (including health checks & configuration)",
       resources: "40+ Aha.io entity resources",
       prompts: "12 domain-specific workflow prompts",
       features: [
