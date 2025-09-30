@@ -1,0 +1,21 @@
+name: Copilot Environment Setup
+
+on: workflow_dispatch
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Setup test environment
+        run: |
+          echo "NODE_ENV=test" >> $GITHUB_ENV
+          echo "AHA_COMPANY=test-company" >> $GITHUB_ENV
+          echo "AHA_TOKEN=test-token" >> $GITHUB_ENV
