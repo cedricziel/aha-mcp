@@ -454,6 +454,10 @@ aha_embedding_status --jobId embed-xyz789
 - `aha_release_phase`: Access individual release phases using `aha://release-phase/{release_phase_id}`
 - `aha_release_phases`: List all release phases using `aha://release-phases`
 
+#### Custom Fields Resources
+- `aha_custom_fields`: List all custom field definitions using `aha://custom-fields`
+- `aha_custom_field_options`: Access options for a custom field using `aha://custom-field/{custom_field_id}/options`
+
 #### Resource URI Examples
 ```
 # Individual Entity Resources
@@ -502,6 +506,10 @@ aha://release/REL-456/features    # Get features for release
 aha://release/REL-456/epics       # Get epics for release
 aha://release-phase/RP-123        # Get specific release phase
 aha://release-phases              # List all release phases
+
+# Custom Fields Resources
+aha://custom-fields               # List all custom field definitions
+aha://custom-field/CF-123/options # Get options for custom field
 ```
 
 ### Available Tools
