@@ -691,7 +691,14 @@ describe('Resources', () => {
         const uri = new URL('aha://goals');
         const result = await handler!(uri);
 
-        expect(mockAhaService.listGoals).toHaveBeenCalledWith();
+        expect(mockAhaService.listGoals).toHaveBeenCalledWith(
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined
+        );
         expect(result.contents).toHaveLength(1);
         expect(result.contents[0].uri).toBe('aha://goals');
         expect(result.contents[0].text).toContain('GOAL-1');
@@ -816,7 +823,15 @@ describe('Resources', () => {
         const uri = new URL('aha://releases');
         const result = await handler!(uri);
 
-        expect(mockAhaService.listReleases).toHaveBeenCalledWith();
+        expect(mockAhaService.listReleases).toHaveBeenCalledWith(
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined
+        );
         expect(result.contents).toHaveLength(1);
         expect(result.contents[0].uri).toBe('aha://releases');
         expect(result.contents[0].text).toContain('REL-1');
