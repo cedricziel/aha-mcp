@@ -314,7 +314,7 @@ async function startServer() {
       arch: process.arch,
       working_directory: process.cwd(),
       capabilities: {
-        tools: 41,
+        tools: 40,
         resources: '40+',
         prompts: 12,
         features: [

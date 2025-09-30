@@ -506,9 +506,6 @@ aha://release-phases              # List all release phases
 
 ### Available Tools
 
-#### Core Tools
-- `aha_initialize`: Initialize the Aha.io API client with support for multiple authentication methods (API token, OAuth 2.0)
-
 #### Feature & Product Tools
 - `aha_list_features`: List features from Aha.io with advanced filtering
 - `aha_get_feature`: Get a specific feature by ID
