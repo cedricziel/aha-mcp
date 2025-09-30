@@ -4,7 +4,7 @@
     "": {
       "name": "@cedricziel/aha-mcp",
       "dependencies": {
-        "@cedricziel/aha-js": "1.2.3",
+        "@cedricziel/aha-js": "1.2.4",
         "@modelcontextprotocol/sdk": "^1.18.2",
         "axios": "^1.12.2",
         "cors": "^2.8.5",
@@ -34,7 +34,7 @@
 
     "@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@7.27.1", "", {}, "sha512-D2hP9eA+Sqx1kBZgzxZh0y1trbuU+JoDkiEwqhQ36nodYqJwyEIhPSdMNd7lOm/4io72luTPWH20Yda0xOuUow=="],
 
-    "@cedricziel/aha-js": ["@cedricziel/aha-js@1.2.3", "", { "dependencies": { "axios": "^1.6.1" } }, "sha512-hdNCWYUo3mYR6JT1Ee9E2hQNWDDFwk3YirjzQUGxu2v/3jGk9OsNVZonTpt3Q8GmR38PQakXQakQr+Qo6m5wHg=="],
+    "@cedricziel/aha-js": ["@cedricziel/aha-js@1.2.4", "", { "dependencies": { "axios": "^1.6.1" } }, "sha512-eaOjDzTS8SmGrQ23FgVvYs++Y5ptyI3Alp/bewURNIwQ5eNBDI6q08BAbsTA09ZZAndz9TFR+E80W0JQvve3Jw=="],
 
     "@commitlint/cli": ["@commitlint/cli@19.8.1", "", { "dependencies": { "@commitlint/format": "^19.8.1", "@commitlint/lint": "^19.8.1", "@commitlint/load": "^19.8.1", "@commitlint/read": "^19.8.1", "@commitlint/types": "^19.8.1", "tinyexec": "^1.0.0", "yargs": "^17.0.0" }, "bin": { "commitlint": "./cli.js" } }, "sha512-LXUdNIkspyxrlV6VDHWBmCZRtkEVRpBKxi2Gtw3J54cGWhLCTouVD/Q6ZSaSvd2YaDObWK8mDjrz3TIKtaQMAA=="],
 
