@@ -3,7 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerResources } from '../src/core/resources';
 import { AhaService } from '../src/core/services/aha-service';
 
-// Mock the AhaService
+  // Mock the AhaService
 const mockAhaService = {
   getIdea: mock(() => Promise.resolve({ id: 'IDEA-123', name: 'Test Idea' })),
   getFeature: mock(() => Promise.resolve({ id: 'FEAT-123', name: 'Test Feature' })),
@@ -34,7 +34,9 @@ const mockAhaService = {
   getReleaseFeatures: mock(() => Promise.resolve({ features: [{ id: 'FEAT-1' }, { id: 'FEAT-2' }] })),
   getReleaseEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1' }, { id: 'EPIC-2' }] })),
   getReleasePhase: mock(() => Promise.resolve({ id: 'RP-123', name: 'Test Release Phase' })),
-  listReleasePhases: mock(() => Promise.resolve({ releasePhases: [{ id: 'RP-1' }, { id: 'RP-2' }] }))
+  listReleasePhases: mock(() => Promise.resolve({ releasePhases: [{ id: 'RP-1' }, { id: 'RP-2' }] })),
+  listCustomFields: mock(() => Promise.resolve({ custom_field_definitions: [{ id: 'CF-1', name: 'Custom Field 1' }, { id: 'CF-2', name: 'Custom Field 2' }] })),
+  listCustomFieldOptions: mock(() => Promise.resolve({ options: [{ id: 'OPT-1', name: 'Option 1' }, { id: 'OPT-2', name: 'Option 2' }] }))
 };
 
 describe('Resources', () => {
@@ -74,7 +76,9 @@ describe('Resources', () => {
       getReleaseFeatures: AhaService.getReleaseFeatures,
       getReleaseEpics: AhaService.getReleaseEpics,
       getReleasePhase: AhaService.getReleasePhase,
-      listReleasePhases: AhaService.listReleasePhases
+      listReleasePhases: AhaService.listReleasePhases,
+      listCustomFields: AhaService.listCustomFields,
+      listCustomFieldOptions: AhaService.listCustomFieldOptions
     };
 
     // Reset mocks
@@ -111,6 +115,8 @@ describe('Resources', () => {
     (AhaService as any).getReleaseEpics = mockAhaService.getReleaseEpics;
     (AhaService as any).getReleasePhase = mockAhaService.getReleasePhase;
     (AhaService as any).listReleasePhases = mockAhaService.listReleasePhases;
+    (AhaService as any).listCustomFields = mockAhaService.listCustomFields;
+    (AhaService as any).listCustomFieldOptions = mockAhaService.listCustomFieldOptions;
 
     // Create a mock server that captures resource registrations
     resourceHandlers = new Map();
@@ -156,6 +162,8 @@ describe('Resources', () => {
     (AhaService as any).getReleaseEpics = originalMethods.getReleaseEpics;
     (AhaService as any).getReleasePhase = originalMethods.getReleasePhase;
     (AhaService as any).listReleasePhases = originalMethods.listReleasePhases;
+    (AhaService as any).listCustomFields = originalMethods.listCustomFields;
+    (AhaService as any).listCustomFieldOptions = originalMethods.listCustomFieldOptions;
   });
 
   describe('Individual Entity Resources', () => {
@@ -745,7 +753,9 @@ describe('Resources', () => {
         'aha_release_features',
         'aha_release_epics',
         'aha_release_phase',
-        'aha_release_phases'
+        'aha_release_phases',
+        'aha_custom_fields',
+        'aha_custom_field_options'
       ];
 
       expectedResources.forEach(resourceName => {
@@ -870,6 +880,47 @@ describe('Resources', () => {
         expect(result.contents).toHaveLength(1);
         expect(result.contents[0].uri).toBe('aha://release-phases');
         expect(result.contents[0].text).toContain('RP-1');
+      });
+    });
+  });
+
+  describe('Custom Fields Resources', () => {
+    describe('aha_custom_fields resource', () => {
+      it('should list all custom fields', async () => {
+        const handler = resourceHandlers.get('aha_custom_fields');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://custom-fields');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.listCustomFields).toHaveBeenCalledWith();
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://custom-fields');
+        expect(result.contents[0].text).toContain('CF-1');
+        expect(result.contents[0].text).toContain('Custom Field 1');
+      });
+    });
+
+    describe('aha_custom_field_options resource', () => {
+      it('should retrieve options for a custom field', async () => {
+        const handler = resourceHandlers.get('aha_custom_field_options');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://custom-field/CF-123/options');
+        const result = await handler!(uri);
+
+        expect(mockAhaService.listCustomFieldOptions).toHaveBeenCalledWith('CF-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://custom-field/CF-123/options');
+        expect(result.contents[0].text).toContain('OPT-1');
+        expect(result.contents[0].text).toContain('Option 1');
+      });
+
+      it('should throw error for missing custom field ID', async () => {
+        const handler = resourceHandlers.get('aha_custom_field_options');
+        const uri = new URL('aha://custom-field//options');
+
+        await expect(handler!(uri)).rejects.toThrow('Invalid custom field ID: Custom field ID is missing from URI');
       });
     });
   });

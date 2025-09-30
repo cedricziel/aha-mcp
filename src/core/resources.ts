@@ -1263,4 +1263,53 @@ export function registerResources(server: McpServer) {
       }
     }
   );
+
+  // Aha custom fields list resource
+  server.resource(
+    "aha_custom_fields",
+    "aha://custom-fields",
+    async (uri: URL) => {
+      try {
+        const customFields = await services.AhaService.listCustomFields();
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(customFields, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error('Error retrieving custom fields list:', error);
+        throw error;
+      }
+    }
+  );
+
+  // Aha custom field options resource
+  server.resource(
+    "aha_custom_field_options",
+    "aha://custom-field/{id}/options",
+    async (uri: URL) => {
+      const pathParts = uri.pathname.split('/');
+      const customFieldId = pathParts[pathParts.length - 2]; // custom_field_id is before /options
+      
+      if (!customFieldId) {
+        throw new Error('Invalid custom field ID: Custom field ID is missing from URI');
+      }
+      
+      try {
+        const options = await services.AhaService.listCustomFieldOptions(customFieldId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(options, null, 2)
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving options for custom field ${customFieldId}:`, error);
+        throw error;
+      }
+    }
+  );
 }

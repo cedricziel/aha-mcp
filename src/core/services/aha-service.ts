@@ -18,6 +18,7 @@ import {
   StrategicModelsApi,
   IdeaOrganizationsApi,
   IdeaVotesApi,
+  CustomFieldsApi,
   // Types
   Feature,
   FeaturesListResponse,
@@ -50,7 +51,9 @@ import {
   MePendingTasksResponse,
   IdeasGetEndorsements200Response,
   IdeasGetVotes200Response,
-  IdeasGetWatchers200Response
+  IdeasGetWatchers200Response,
+  CustomFieldsListAll200Response,
+  CustomFieldsListOptions200Response
 } from '@cedricziel/aha-js';
 
 import {
@@ -87,6 +90,7 @@ export class AhaService {
   private static strategicModelsApi: StrategicModelsApi | null = null;
   private static ideaOrganizationsApi: IdeaOrganizationsApi | null = null;
   private static ideaVotesApi: IdeaVotesApi | null = null;
+  private static customFieldsApi: CustomFieldsApi | null = null;
 
   private static apiKey: string | null = process.env.AHA_TOKEN || null;
   private static accessToken: string | null = process.env.AHA_ACCESS_TOKEN || process.env.AHA_TOKEN || null;
@@ -204,6 +208,7 @@ export class AhaService {
       this.strategicModelsApi = new StrategicModelsApi(this.configuration);
       this.ideaOrganizationsApi = new IdeaOrganizationsApi(this.configuration);
       this.ideaVotesApi = new IdeaVotesApi(this.configuration);
+      this.customFieldsApi = new CustomFieldsApi(this.configuration);
     } catch (error) {
       log.error('Error initializing Aha.io client', error as Error, { subdomain: this.subdomain });
       throw new Error(`Failed to initialize Aha.io client: ${error instanceof Error ? error.message : String(error)}`);
@@ -409,6 +414,16 @@ export class AhaService {
     return this.ideaVotesApi!;
   }
 
+  /**
+   * Get the custom fields API instance
+   * @returns CustomFieldsApi instance
+   */
+  private static getCustomFieldsApi(): CustomFieldsApi {
+    if (!this.customFieldsApi) {
+      this.initializeClient();
+    }
+    return this.customFieldsApi!;
+  }
 
   /**
    * List features from Aha.io
@@ -1919,6 +1934,43 @@ export class AhaService {
       return response.data;
     } catch (error) {
       log.error('Error listing releases for product', error as Error, { operation: 'getProductReleases', product_id: productId });
+      throw error;
+    }
+  }
+
+  // ============================
+  // CUSTOM FIELDS OPERATIONS
+  // ============================
+
+  /**
+   * List all custom field definitions
+   * @returns A list of custom field definitions
+   */
+  public static async listCustomFields(): Promise<CustomFieldsListAll200Response> {
+    const customFieldsApi = this.getCustomFieldsApi();
+    try {
+      const response = await customFieldsApi.customFieldsListAll();
+      return response.data;
+    } catch (error) {
+      log.error('Error listing custom fields', error as Error, { operation: 'listCustomFields' });
+      throw error;
+    }
+  }
+
+  /**
+   * List options for a specific custom field
+   * @param customFieldDefinitionId The ID of the custom field definition
+   * @returns A list of options for the custom field
+   */
+  public static async listCustomFieldOptions(customFieldDefinitionId: string): Promise<CustomFieldsListOptions200Response> {
+    const customFieldsApi = this.getCustomFieldsApi();
+    try {
+      const response = await customFieldsApi.customFieldsListOptions({
+        customFieldDefinitionId
+      });
+      return response.data;
+    } catch (error) {
+      log.error('Error listing custom field options', error as Error, { operation: 'listCustomFieldOptions', custom_field_definition_id: customFieldDefinitionId });
       throw error;
     }
   }
