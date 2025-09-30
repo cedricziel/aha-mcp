@@ -514,23 +514,10 @@ aha://custom-field/CF-123/options # Get options for custom field
 
 ### Available Tools
 
-#### Feature & Product Tools
-- `aha_list_features`: List features from Aha.io with advanced filtering
-- `aha_get_feature`: Get a specific feature by ID
-- `aha_list_users`: List users from Aha.io
-- `aha_list_epics`: List epics in a product
+**Note**: Read operations (list/get) are handled through MCP resources. Tools are focused on write operations and relationship management.
 
-#### Comment Tools
+#### Write Operation Tools
 - `aha_create_feature_comment`: Create a comment on a feature
-- `aha_get_requirement_comments`: Get comments for a specific requirement
-- `aha_get_todo_comments`: Get comments for a specific todo
-- `aha_get_initiative_comments`: Get comments for a specific initiative
-
-#### Initiative Management Tools
-- `aha_list_initiatives`: List initiatives with filtering options
-- `aha_get_initiative`: Get a specific initiative by ID
-- `aha_get_initiative_comments`: Get comments for a specific initiative
-- `aha_get_initiative_epics`: Get epics associated with an initiative
 - `aha_create_initiative_in_product`: Create an initiative within a specific product
 
 #### Feature CRUD Tools
@@ -568,7 +555,11 @@ aha://custom-field/CF-123/options # Get options for custom field
 - `aha_associate_feature_with_goals`: Associate a feature with multiple goals
 - `aha_update_feature_tags`: Update tags for a feature
 
-**Note**: All MCP resources provide comprehensive access to Aha.io entities with advanced filtering capabilities. Most functionality is exposed through the resource system rather than individual tools, allowing for more flexible queries through URI parameters.
+**Note**: The MCP server follows best practices by separating read and write operations:
+- **Resources** are used for all read operations (list/get) and provide comprehensive access to Aha.io entities with advanced filtering capabilities through URI parameters
+- **Tools** are reserved for write operations (create/update/delete) and relationship management (associate/move) that modify data in Aha.io
+
+This separation ensures a clean architecture where resources handle data retrieval and tools handle data modification.
 
 ### 🚀 Phase 8 - Complete CRUD Operations & Advanced Features
 
@@ -593,17 +584,13 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 - `aha_create_idea_with_score`: Create ideas with scores
 - `aha_delete_idea`: Delete ideas
 
-#### Phase 8B - Competitor & Initiative Management (7 Tools)
+#### Phase 8B - Competitor Management (3 Tools)
 **Competitor Management (3 Tools)**
 - `aha_create_competitor`: Create competitors in products
 - `aha_update_competitor`: Update existing competitors
 - `aha_delete_competitor`: Delete competitors
 
-**Initiative Management (4 Tools)**
-- `aha_list_initiatives`: List initiatives with filtering
-- `aha_get_initiative`: Get specific initiatives
-- `aha_get_initiative_comments`: Get initiative comments
-- `aha_get_initiative_epics`: Get epics associated with initiatives
+**Note**: Initiative data access is now handled through MCP resources (`aha_initiative`, `aha_initiatives`, `aha_initiative_comments`, `aha_initiative_epics`) for a cleaner separation between read and write operations.
 
 #### Phase 8C - Portal Integration & Advanced Features (2 Tools)
 **Portal Integration**
@@ -616,13 +603,14 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 - **Comprehensive Entity Coverage**: Full CRUD operations for features, epics, ideas, and competitors
 
 #### Technical Achievements
-- **56+ total MCP tools** (comprehensive Aha.io integration + sync + embeddings)
-- **48 total MCP resources** (complete entity coverage)
+- **49 total MCP tools** (comprehensive Aha.io integration + sync + embeddings + config)
+- **50 total MCP resources** (complete entity coverage)
 - **13 domain-specific prompts** (workflow automation)
-- **24 CRUD operation tools** for complete lifecycle management
-- **15+ sync & database tools** for offline data management
-- **6 embedding & semantic search tools** for AI-powered content discovery
-- **194+ tests passing** with comprehensive service coverage
+- **25 core CRUD and write operation tools** for complete lifecycle management
+- **9 sync & database tools** for offline data management
+- **10 embedding & semantic search tools** for AI-powered content discovery
+- **5 server configuration tools** for runtime configuration
+- **209 tests passing** with comprehensive service coverage
 - **SQLite database with vector extensions** for high-performance local storage
 - **Background job processing** with real-time progress tracking
 - **Semantic search capabilities** using transformer models
