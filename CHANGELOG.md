@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.2.0...aha-mcp-v0.3.0) (2025-09-30)
+
+
+### Features
+
+* add Docker build to release-please workflow for automated image publishing ([#156](https://github.com/cedricziel/aha-mcp/issues/156)) ([e90947f](https://github.com/cedricziel/aha-mcp/commit/e90947f95eaa6a96e307e947cfa2ee7159bec52e))
+
 ## [0.2.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.1.1...aha-mcp-v0.2.0) (2025-09-30)
 
 
