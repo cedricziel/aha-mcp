@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.3.0...aha-mcp-v0.4.0) (2025-09-30)
+
+
+### Features
+
+* Add pagination support to all MCP resources with aha-js pagination capabilities ([#158](https://github.com/cedricziel/aha-mcp/issues/158)) ([59a699e](https://github.com/cedricziel/aha-mcp/commit/59a699e7629ebd3a6634445d29e40ea352a840c1))
+
 ## [0.3.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.2.0...aha-mcp-v0.3.0) (2025-09-30)
 
 
