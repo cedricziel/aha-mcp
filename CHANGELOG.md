@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.4.0...aha-mcp-v0.5.0) (2025-09-30)
+
+
+### Features
+
+* migrate resources to ResourceTemplate for parameter discovery ([#163](https://github.com/cedricziel/aha-mcp/issues/163)) ([687f72b](https://github.com/cedricziel/aha-mcp/commit/687f72bf739a1a20323eaf64e3f7cc583f8b50d9))
+
+
+### Bug Fixes
+
+* remove read-only tools that duplicate resources ([#161](https://github.com/cedricziel/aha-mcp/issues/161)) ([c8ea984](https://github.com/cedricziel/aha-mcp/commit/c8ea984531384efe5767db2378696ca6c135154c))
+
 ## [0.4.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.3.0...aha-mcp-v0.4.0) (2025-09-30)
 
 
