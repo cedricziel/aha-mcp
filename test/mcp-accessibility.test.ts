@@ -76,7 +76,21 @@ describe('MCP Server Accessibility', () => {
     promptHandlers = new Map();
     
     server = {
-      resource: (name: string, _template: string, handler: Function) => {
+      resource: (name: string, templateOrUri: any, handlerOrMetadata?: any, possibleHandler?: Function) => {
+        // Handle both old signature (string, handler) and new signature (ResourceTemplate, metadata, handler)
+        let handler: Function;
+        if (typeof templateOrUri === 'string' && typeof handlerOrMetadata === 'function') {
+          // Old signature: resource(name, uri, handler)
+          handler = handlerOrMetadata;
+        } else if (typeof templateOrUri === 'object' && typeof possibleHandler === 'function') {
+          // New signature: resource(name, ResourceTemplate, metadata, handler)
+          handler = possibleHandler;
+        } else if (typeof templateOrUri === 'object' && typeof handlerOrMetadata === 'function') {
+          // New signature without metadata: resource(name, ResourceTemplate, handler)
+          handler = handlerOrMetadata;
+        } else {
+          handler = handlerOrMetadata;
+        }
         resourceHandlers.set(name, handler);
       },
       prompt: (name: string, _description: string, _schema: any, handler: Function) => {

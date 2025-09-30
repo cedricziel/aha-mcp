@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as services from "./services/index.js";
 
 /**
@@ -6,12 +6,26 @@ import * as services from "./services/index.js";
  * @param server The MCP server instance
  */
 export function registerResources(server: McpServer) {
-  // Aha idea resource
+  // Aha idea resource with path variable
   server.resource(
     "aha_idea",
-    "aha://idea/{id}",
-    async (uri: URL) => {
-      const id = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://idea/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => [] // Could fetch actual idea IDs for completion
+        }
+      }
+    ),
+    {
+      title: "Aha Idea",
+      description: "Get a specific idea by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      // Support both direct URI calls (from tests) and ResourceTemplate calls
+      const id = variables?.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid idea ID: ID is missing from URI');
       }
@@ -20,7 +34,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(idea, null, 2)
+            text: JSON.stringify(idea, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -30,12 +45,26 @@ export function registerResources(server: McpServer) {
     }
   );
 
-  // Aha feature resource
+  // Aha feature resource with path variable
   server.resource(
     "aha_feature",
-    "aha://feature/{id}",
-    async (uri: URL) => {
-      const id = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://feature/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => [] // Could fetch actual feature IDs for completion
+        }
+      }
+    ),
+    {
+      title: "Aha Feature",
+      description: "Get a specific feature by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      // Support both direct URI calls (from tests) and ResourceTemplate calls
+      const id = variables?.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid feature ID: ID is missing from URI');
       }
@@ -44,7 +73,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(feature, null, 2)
+            text: JSON.stringify(feature, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -102,25 +132,34 @@ export function registerResources(server: McpServer) {
     }
   );
 
-  // Aha features list resource
+  // Aha features list resource with pagination and filter parameters
   server.resource(
     "aha_features",
-    "aha://features",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://features{?query,updatedSince,tag,assignedToUser,page,perPage}",
+      {
+        list: undefined, // Not listing all instances, just defining the template
+        complete: {
+          page: async () => ['1', '2', '3', '4', '5'],
+          perPage: async () => ['20', '50', '100', '200']
+        }
+      }
+    ),
+    {
+      title: "Aha Features",
+      description: "List features with optional filters and pagination",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       try {
-        const params = new URLSearchParams(uri.search);
-        const query = params.get('query') || undefined;
-        const updatedSince = params.get('updatedSince') || undefined;
-        const tag = params.get('tag') || undefined;
-        const assignedToUser = params.get('assignedToUser') || undefined;
-        const page = params.get('page') ? parseInt(params.get('page')!) : undefined;
-        const perPage = params.get('perPage') ? parseInt(params.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const features = await services.AhaService.listFeatures(
-          query,
-          updatedSince,
-          tag,
-          assignedToUser,
+          variables?.query || uri.searchParams.get('query') || undefined,
+          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
+          variables?.tag || uri.searchParams.get('tag') || undefined,
+          variables?.assignedToUser || uri.searchParams.get('assignedToUser') || undefined,
           page,
           perPage
         );
@@ -128,7 +167,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(features, null, 2)
+            text: JSON.stringify(features, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -211,23 +251,40 @@ export function registerResources(server: McpServer) {
     }
   );
 
-  // Aha products list resource
+  // Aha products list resource with pagination parameters
   server.resource(
     "aha_products",
-    "aha://products",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://products{?updatedSince,page,perPage}",
+      {
+        list: undefined,
+        complete: {
+          page: async () => ['1', '2', '3', '4', '5'],
+          perPage: async () => ['20', '50', '100', '200']
+        }
+      }
+    ),
+    {
+      title: "Aha Products",
+      description: "List products with optional date filter and pagination",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       try {
-        // Extract query parameters for filtering
-        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
-        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
-        const products = await services.AhaService.listProducts(updatedSince, page, perPage);
+        const products = await services.AhaService.listProducts(
+          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
+          page,
+          perPage
+        );
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(products, null, 2)
+            text: JSON.stringify(products, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -261,25 +318,38 @@ export function registerResources(server: McpServer) {
     }
   );
 
-  // Aha initiatives list resource
+  // Aha initiatives list resource with advanced filters and pagination
   server.resource(
     "aha_initiatives",
-    "aha://initiatives",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://initiatives{?query,updatedSince,assignedToUser,onlyActive,page,perPage}",
+      {
+        list: undefined,
+        complete: {
+          onlyActive: async () => ['true', 'false'],
+          page: async () => ['1', '2', '3', '4', '5'],
+          perPage: async () => ['20', '50', '100', '200']
+        }
+      }
+    ),
+    {
+      title: "Aha Initiatives",
+      description: "List initiatives with optional filters and pagination",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       try {
-        // Extract query parameters for advanced filtering
-        const query = uri.searchParams.get('query') || undefined;
-        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
-        const assignedToUser = uri.searchParams.get('assignedToUser') || undefined;
-        const onlyActive = uri.searchParams.get('onlyActive') === 'true' ? true : 
+        const onlyActive = variables?.onlyActive === 'true' ? true : 
+                          variables?.onlyActive === 'false' ? false : 
+                          uri.searchParams.get('onlyActive') === 'true' ? true :
                           uri.searchParams.get('onlyActive') === 'false' ? false : undefined;
-        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const initiatives = await services.AhaService.listInitiatives(
-          query,
-          updatedSince,
-          assignedToUser,
+          variables?.query || uri.searchParams.get('query') || undefined,
+          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
+          variables?.assignedToUser || uri.searchParams.get('assignedToUser') || undefined,
           onlyActive,
           page,
           perPage
@@ -288,7 +358,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(initiatives, null, 2)
+            text: JSON.stringify(initiatives, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -627,24 +698,34 @@ export function registerResources(server: McpServer) {
     }
   );
 
-  // Aha goals list resource
+  // Aha goals list resource with filters and pagination
   server.resource(
     "aha_goals",
-    "aha://goals",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://goals{?query,updatedSince,assignedToUser,status,page,perPage}",
+      {
+        list: undefined,
+        complete: {
+          page: async () => ['1', '2', '3', '4', '5'],
+          perPage: async () => ['20', '50', '100', '200']
+        }
+      }
+    ),
+    {
+      title: "Aha Goals",
+      description: "List goals with optional filters and pagination",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       try {
-        const query = uri.searchParams.get('query') || undefined;
-        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
-        const assignedToUser = uri.searchParams.get('assignedToUser') || undefined;
-        const status = uri.searchParams.get('status') || undefined;
-        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const goals = await services.AhaService.listGoals(
-          query,
-          updatedSince,
-          assignedToUser,
-          status,
+          variables?.query || uri.searchParams.get('query') || undefined,
+          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
+          variables?.assignedToUser || uri.searchParams.get('assignedToUser') || undefined,
+          variables?.status || uri.searchParams.get('status') || undefined,
           page,
           perPage
         );
@@ -652,7 +733,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(goals, null, 2)
+            text: JSON.stringify(goals, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -714,26 +796,39 @@ export function registerResources(server: McpServer) {
     }
   );
 
-  // Aha releases list resource
+  // Aha releases list resource with filters and pagination
   server.resource(
     "aha_releases",
-    "aha://releases",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://releases{?query,updatedSince,assignedToUser,status,parkingLot,page,perPage}",
+      {
+        list: undefined,
+        complete: {
+          parkingLot: async () => ['true', 'false'],
+          page: async () => ['1', '2', '3', '4', '5'],
+          perPage: async () => ['20', '50', '100', '200']
+        }
+      }
+    ),
+    {
+      title: "Aha Releases",
+      description: "List releases with optional filters and pagination",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       try {
-        const query = uri.searchParams.get('query') || undefined;
-        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
-        const assignedToUser = uri.searchParams.get('assignedToUser') || undefined;
-        const status = uri.searchParams.get('status') || undefined;
-        const parkingLot = uri.searchParams.get('parkingLot') === 'true' ? true :
+        const parkingLot = variables?.parkingLot === 'true' ? true :
+                          variables?.parkingLot === 'false' ? false :
+                          uri.searchParams.get('parkingLot') === 'true' ? true :
                           uri.searchParams.get('parkingLot') === 'false' ? false : undefined;
-        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const releases = await services.AhaService.listReleases(
-          query,
-          updatedSince,
-          assignedToUser,
-          status,
+          variables?.query || uri.searchParams.get('query') || undefined,
+          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
+          variables?.assignedToUser || uri.searchParams.get('assignedToUser') || undefined,
+          variables?.status || uri.searchParams.get('status') || undefined,
           parkingLot,
           page,
           perPage
@@ -742,7 +837,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(releases, null, 2)
+            text: JSON.stringify(releases, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -973,29 +1069,41 @@ export function registerResources(server: McpServer) {
     }
   );
 
-  // Aha strategic models list resource
+  // Aha strategic models list resource with filters and pagination
   server.resource(
     "aha_strategic_models",
-    "aha://strategic-models",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://strategic-models{?query,type,updatedSince,page,perPage}",
+      {
+        list: undefined,
+        complete: {
+          page: async () => ['1', '2', '3', '4', '5'],
+          perPage: async () => ['20', '50', '100', '200']
+        }
+      }
+    ),
+    {
+      title: "Aha Strategic Models",
+      description: "List strategic models with optional filters and pagination",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       try {
-        const query = uri.searchParams.get('query') || undefined;
-        const type = uri.searchParams.get('type') || undefined;
-        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
-        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const strategicModels = await services.AhaService.listStrategicModels(
-          query,
-          type,
-          updatedSince,
+          variables?.query || uri.searchParams.get('query') || undefined,
+          variables?.type || uri.searchParams.get('type') || undefined,
+          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
           page,
           perPage
         );
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(strategicModels, null, 2)
+            text: JSON.stringify(strategicModels, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -1049,27 +1157,40 @@ export function registerResources(server: McpServer) {
     }
   );
 
-  // Aha idea organizations list resource
+  // Aha idea organizations list resource with filters and pagination
   server.resource(
     "aha_idea_organizations",
-    "aha://idea-organizations",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://idea-organizations{?query,emailDomain,page,perPage}",
+      {
+        list: undefined,
+        complete: {
+          page: async () => ['1', '2', '3', '4', '5'],
+          perPage: async () => ['20', '50', '100', '200']
+        }
+      }
+    ),
+    {
+      title: "Aha Idea Organizations",
+      description: "List idea organizations with optional filters and pagination",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       try {
-        const query = uri.searchParams.get('query') || undefined;
-        const emailDomain = uri.searchParams.get('emailDomain') || undefined;
-        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const ideaOrganizations = await services.AhaService.listIdeaOrganizations(
-          query,
-          emailDomain,
+          variables?.query || uri.searchParams.get('query') || undefined,
+          variables?.emailDomain || uri.searchParams.get('emailDomain') || undefined,
           page,
           perPage
         );
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(ideaOrganizations, null, 2)
+            text: JSON.stringify(ideaOrganizations, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -1220,30 +1341,38 @@ export function registerResources(server: McpServer) {
     }
   );
 
-  // Aha global ideas list resource
+  // Aha global ideas list resource with advanced filters and pagination
   server.resource(
     "aha_ideas",
-    "aha://ideas",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://ideas{?query,updatedSince,assignedToUser,status,category,page,perPage}",
+      {
+        list: undefined,
+        complete: {
+          page: async () => ['1', '2', '3', '4', '5'],
+          perPage: async () => ['20', '50', '100', '200']
+        }
+      }
+    ),
+    {
+      title: "Aha Ideas (Global)",
+      description: "List all ideas across products with optional filters and pagination",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       try {
-        // Extract query parameters for advanced filtering
-        const query = uri.searchParams.get('query') || undefined;
-        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
-        const assignedToUser = uri.searchParams.get('assignedToUser') || undefined;
-        const status = uri.searchParams.get('status') || undefined;
-        const category = uri.searchParams.get('category') || undefined;
-        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
         
         // Include custom_fields in the fields parameter to get custom fields in response
         const fields = 'custom_fields';
 
         const ideas = await services.AhaService.listIdeas(
-          query,
-          updatedSince,
-          assignedToUser,
-          status,
-          category,
+          variables?.query || uri.searchParams.get('query') || undefined,
+          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
+          variables?.assignedToUser || uri.searchParams.get('assignedToUser') || undefined,
+          variables?.status || uri.searchParams.get('status') || undefined,
+          variables?.category || uri.searchParams.get('category') || undefined,
           fields,
           page,
           perPage
@@ -1252,7 +1381,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(ideas, null, 2)
+            text: JSON.stringify(ideas, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -1262,33 +1392,43 @@ export function registerResources(server: McpServer) {
     }
   );
 
-  // Aha product releases resource
+  // Aha product releases resource with path variable and pagination
   server.resource(
     "aha_product_releases",
-    "aha://releases/{product_id}",
-    async (uri: URL) => {
-      const pathParts = uri.pathname.split('/');
-      const productId = pathParts[pathParts.length - 1];
+    new ResourceTemplate(
+      "aha://releases/{product_id}{?query,updatedSince,status,parkingLot,page,perPage}",
+      {
+        list: undefined,
+        complete: {
+          parkingLot: async () => ['true', 'false'],
+          page: async () => ['1', '2', '3', '4', '5'],
+          perPage: async () => ['20', '50', '100', '200']
+        }
+      }
+    ),
+    {
+      title: "Aha Product Releases",
+      description: "List releases for a specific product with optional filters and pagination",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      const productId = variables?.product_id || uri.pathname.split('/').pop();
       
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
       }
       
       try {
-        // Extract query parameters for advanced filtering
-        const query = uri.searchParams.get('query') || undefined;
-        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
-        const status = uri.searchParams.get('status') || undefined;
-        const parkingLot = uri.searchParams.get('parkingLot') === 'true' ? true : 
-                          uri.searchParams.get('parkingLot') === 'false' ? false : undefined;
-        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const parkingLot = variables.parkingLot === 'true' ? true : 
+                          variables.parkingLot === 'false' ? false : undefined;
+        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const releases = await services.AhaService.listReleasesByProduct(
           productId,
-          query,
-          updatedSince,
-          status,
+          variables?.query || uri.searchParams.get('query') || undefined,
+          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
+          variables?.status || uri.searchParams.get('status') || undefined,
           parkingLot,
           page,
           perPage
@@ -1297,7 +1437,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(releases, null, 2)
+            text: JSON.stringify(releases, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
