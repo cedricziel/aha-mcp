@@ -79,3 +79,74 @@ jobs:
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  docker:
+    needs: release-please
+    runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.release_created }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          # Extract version from tag (e.g., aha-mcp-v0.2.0 -> 0.2.0)
+          VERSION="${{ needs.release-please.outputs.tag_name }}"
+          VERSION="${VERSION#aha-mcp-v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "major=$(echo ${VERSION} | cut -d. -f1)" >> $GITHUB_OUTPUT
+          echo "minor=$(echo ${VERSION} | cut -d. -f1-2)" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/cedricziel/aha-mcp:latest
+            ghcr.io/cedricziel/aha-mcp:${{ steps.version.outputs.version }}
+            ghcr.io/cedricziel/aha-mcp:${{ steps.version.outputs.minor }}
+            ghcr.io/cedricziel/aha-mcp:${{ steps.version.outputs.major }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/cedricziel/aha-mcp
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test Docker image
+        run: |
+          # Test that the image can start and respond to --help
+          docker run --rm ghcr.io/cedricziel/aha-mcp:${{ steps.version.outputs.version }} --help
+
+      - name: Test Docker image in stdio mode
+        run: |
+          # Test basic functionality without credentials
+          timeout 5s docker run --rm ghcr.io/cedricziel/aha-mcp:${{ steps.version.outputs.version }} --mode stdio || true
+
+      - name: Test Docker image in SSE mode
+        run: |
+          # Test SSE mode startup
+          docker run --rm -d --name aha-mcp-test -p 3001:3001 ghcr.io/cedricziel/aha-mcp:${{ steps.version.outputs.version }} --mode sse
+          sleep 5
+          # Check health endpoint
+          curl -f http://localhost:3001/health || exit 1
+          # Check info endpoint
+          curl -f http://localhost:3001/ || exit 1
+          # Cleanup
+          docker stop aha-mcp-test
