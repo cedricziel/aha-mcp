@@ -113,12 +113,16 @@ export function registerResources(server: McpServer) {
         const updatedSince = params.get('updatedSince') || undefined;
         const tag = params.get('tag') || undefined;
         const assignedToUser = params.get('assignedToUser') || undefined;
+        const page = params.get('page') ? parseInt(params.get('page')!) : undefined;
+        const perPage = params.get('perPage') ? parseInt(params.get('perPage')!) : undefined;
 
         const features = await services.AhaService.listFeatures(
           query,
           updatedSince,
           tag,
-          assignedToUser
+          assignedToUser,
+          page,
+          perPage
         );
 
         return {
@@ -215,8 +219,10 @@ export function registerResources(server: McpServer) {
       try {
         // Extract query parameters for filtering
         const updatedSince = uri.searchParams.get('updatedSince') || undefined;
+        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
-        const products = await services.AhaService.listProducts(updatedSince);
+        const products = await services.AhaService.listProducts(updatedSince, page, perPage);
 
         return {
           contents: [{
@@ -267,12 +273,16 @@ export function registerResources(server: McpServer) {
         const assignedToUser = uri.searchParams.get('assignedToUser') || undefined;
         const onlyActive = uri.searchParams.get('onlyActive') === 'true' ? true : 
                           uri.searchParams.get('onlyActive') === 'false' ? false : undefined;
+        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const initiatives = await services.AhaService.listInitiatives(
           query,
           updatedSince,
           assignedToUser,
-          onlyActive
+          onlyActive,
+          page,
+          perPage
         );
 
         return {
@@ -623,7 +633,21 @@ export function registerResources(server: McpServer) {
     "aha://goals",
     async (uri: URL) => {
       try {
-        const goals = await services.AhaService.listGoals();
+        const query = uri.searchParams.get('query') || undefined;
+        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
+        const assignedToUser = uri.searchParams.get('assignedToUser') || undefined;
+        const status = uri.searchParams.get('status') || undefined;
+        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+
+        const goals = await services.AhaService.listGoals(
+          query,
+          updatedSince,
+          assignedToUser,
+          status,
+          page,
+          perPage
+        );
 
         return {
           contents: [{
@@ -696,7 +720,24 @@ export function registerResources(server: McpServer) {
     "aha://releases",
     async (uri: URL) => {
       try {
-        const releases = await services.AhaService.listReleases();
+        const query = uri.searchParams.get('query') || undefined;
+        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
+        const assignedToUser = uri.searchParams.get('assignedToUser') || undefined;
+        const status = uri.searchParams.get('status') || undefined;
+        const parkingLot = uri.searchParams.get('parkingLot') === 'true' ? true :
+                          uri.searchParams.get('parkingLot') === 'false' ? false : undefined;
+        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+
+        const releases = await services.AhaService.listReleases(
+          query,
+          updatedSince,
+          assignedToUser,
+          status,
+          parkingLot,
+          page,
+          perPage
+        );
 
         return {
           contents: [{
@@ -938,7 +979,19 @@ export function registerResources(server: McpServer) {
     "aha://strategic-models",
     async (uri: URL) => {
       try {
-        const strategicModels = await services.AhaService.listStrategicModels();
+        const query = uri.searchParams.get('query') || undefined;
+        const type = uri.searchParams.get('type') || undefined;
+        const updatedSince = uri.searchParams.get('updatedSince') || undefined;
+        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+
+        const strategicModels = await services.AhaService.listStrategicModels(
+          query,
+          type,
+          updatedSince,
+          page,
+          perPage
+        );
         return {
           contents: [{
             uri: uri.toString(),
@@ -1002,7 +1055,17 @@ export function registerResources(server: McpServer) {
     "aha://idea-organizations",
     async (uri: URL) => {
       try {
-        const ideaOrganizations = await services.AhaService.listIdeaOrganizations();
+        const query = uri.searchParams.get('query') || undefined;
+        const emailDomain = uri.searchParams.get('emailDomain') || undefined;
+        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+
+        const ideaOrganizations = await services.AhaService.listIdeaOrganizations(
+          query,
+          emailDomain,
+          page,
+          perPage
+        );
         return {
           contents: [{
             uri: uri.toString(),
@@ -1169,6 +1232,8 @@ export function registerResources(server: McpServer) {
         const assignedToUser = uri.searchParams.get('assignedToUser') || undefined;
         const status = uri.searchParams.get('status') || undefined;
         const category = uri.searchParams.get('category') || undefined;
+        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
         
         // Include custom_fields in the fields parameter to get custom fields in response
         const fields = 'custom_fields';
@@ -1179,7 +1244,9 @@ export function registerResources(server: McpServer) {
           assignedToUser,
           status,
           category,
-          fields
+          fields,
+          page,
+          perPage
         );
 
         return {
@@ -1214,13 +1281,17 @@ export function registerResources(server: McpServer) {
         const status = uri.searchParams.get('status') || undefined;
         const parkingLot = uri.searchParams.get('parkingLot') === 'true' ? true : 
                           uri.searchParams.get('parkingLot') === 'false' ? false : undefined;
+        const page = uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const releases = await services.AhaService.listReleasesByProduct(
           productId,
           query,
           updatedSince,
           status,
-          parkingLot
+          parkingLot,
+          page,
+          perPage
         );
 
         return {
