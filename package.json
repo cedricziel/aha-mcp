@@ -70,7 +70,7 @@
     "@modelcontextprotocol/sdk": "github:mgyarmathy/modelcontextprotocol--typescript-sdk#6ec58add67a5d9731620f80685abce0da379533b",
     "axios": "^1.12.2",
     "cors": "^2.8.5",
-    "express": "^4.21.2",
+    "express": "^5.2.1",
     "sqlite": "^5.1.1",
     "sqlite-vec": "^0.1.6",
     "sqlite3": "^5.1.7",
