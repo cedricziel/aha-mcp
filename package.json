@@ -45,7 +45,7 @@
     "test:watch": "bun test --watch --preload ./test/setup.ts",
     "prepublishOnly": "bun run build",
     "prepare": "husky",
-    "postinstall": "cd node_modules/@modelcontextprotocol/sdk 2>/dev/null && npm run build:esm 2>/dev/null || true",
+    "postinstall": "if [ -d node_modules/@modelcontextprotocol/sdk ] && [ ! -d node_modules/@modelcontextprotocol/sdk/dist/esm ]; then cd node_modules/@modelcontextprotocol/sdk && npm run build:esm 2>/dev/null; fi || true",
     "dxt:pack": "dxt pack",
     "docker:build": "docker build -t ghcr.io/cedricziel/aha-mcp .",
     "docker:run": "docker run --rm -e AHA_COMPANY=${AHA_COMPANY} -e AHA_TOKEN=${AHA_TOKEN} ghcr.io/cedricziel/aha-mcp",
