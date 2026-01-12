@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.5.1...aha-mcp-v0.6.0) (2026-01-12)
+
+
+### Features
+
+* Add E2E testing with real MCP client and migrate to SDK 1.25.2 APIs ([#195](https://github.com/cedricziel/aha-mcp/issues/195)) ([2615506](https://github.com/cedricziel/aha-mcp/commit/2615506fb97ba234262e71b98f4eab8f051ae8f0))
+* add resource discovery with MCP sampling and terminology mapping ([#192](https://github.com/cedricziel/aha-mcp/issues/192)) ([a9ee1bd](https://github.com/cedricziel/aha-mcp/commit/a9ee1bdb367a5dc4bcbfc70e155fe0c12134c53e))
+
+
+### Bug Fixes
+
+* resolve TypeScript errors and complete SDK 1.25.2 migration ([#196](https://github.com/cedricziel/aha-mcp/issues/196)) ([323a1e8](https://github.com/cedricziel/aha-mcp/commit/323a1e8ef7ac7672dd40ee6e14d6e7b6757cf257))
+
 ## [0.5.1](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.5.0...aha-mcp-v0.5.1) (2026-01-12)
 
 
