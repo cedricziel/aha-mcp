@@ -974,4 +974,173 @@ describe('Resources', () => {
       });
     });
   });
+
+  describe('ResourceTemplate Variable Extraction', () => {
+    describe('Category A: Single Path Parameter (simple ID at end)', () => {
+      it('should extract ID from variables parameter for aha_product', async () => {
+        const handler = resourceHandlers.get('aha_product');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://product/PROD-123');
+        const variables = { id: 'PROD-123' };
+        const result = await handler!(uri, variables);
+
+        expect(mockAhaService.getProduct).toHaveBeenCalledWith('PROD-123');
+        expect(result.contents).toHaveLength(1);
+        expect(result.contents[0].uri).toBe('aha://product/PROD-123');
+      });
+
+      it('should extract ID from variables parameter for aha_epic', async () => {
+        const handler = resourceHandlers.get('aha_epic');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://epic/EPIC-456');
+        const variables = { id: 'EPIC-456' };
+        const result = await handler!(uri, variables);
+
+        expect(mockAhaService.getEpic).toHaveBeenCalledWith('EPIC-456');
+        expect(result.contents).toHaveLength(1);
+      });
+    });
+
+    describe('Category B: Parent ID Collections', () => {
+      it('should extract product_id from variables parameter for aha_epics', async () => {
+        const handler = resourceHandlers.get('aha_epics');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://epics/PROD-789');
+        const variables = { product_id: 'PROD-789' };
+        const result = await handler!(uri, variables);
+
+        expect(mockAhaService.listEpics).toHaveBeenCalledWith('PROD-789');
+        expect(result.contents).toHaveLength(1);
+      });
+
+      it('should extract product_id from variables parameter for aha_ideas_by_product', async () => {
+        const handler = resourceHandlers.get('aha_ideas_by_product');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://ideas/PROD-789');
+        const variables = { product_id: 'PROD-789' };
+        const result = await handler!(uri, variables);
+
+        expect(mockAhaService.listIdeasByProduct).toHaveBeenCalledWith('PROD-789', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined);
+        expect(result.contents).toHaveLength(1);
+      });
+    });
+
+    describe('Category C: Nested Resource Paths', () => {
+      it('should extract goal_id from variables parameter for aha_goal_epics', async () => {
+        const handler = resourceHandlers.get('aha_goal_epics');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://goal/GOAL-123/epics');
+        const variables = { goal_id: 'GOAL-123' };
+        const result = await handler!(uri, variables);
+
+        expect(mockAhaService.getGoalEpics).toHaveBeenCalledWith('GOAL-123');
+        expect(result.contents).toHaveLength(1);
+      });
+
+      it('should extract release_id from variables parameter for aha_release_features', async () => {
+        const handler = resourceHandlers.get('aha_release_features');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://release/REL-456/features');
+        const variables = { release_id: 'REL-456' };
+        const result = await handler!(uri, variables);
+
+        expect(mockAhaService.getReleaseFeatures).toHaveBeenCalledWith('REL-456');
+        expect(result.contents).toHaveLength(1);
+      });
+
+      it('should extract id from variables parameter for aha_custom_field_options', async () => {
+        const handler = resourceHandlers.get('aha_custom_field_options');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://custom-field/CF-789/options');
+        const variables = { id: 'CF-789' };
+        const result = await handler!(uri, variables);
+
+        expect(mockAhaService.listCustomFieldOptions).toHaveBeenCalledWith('CF-789');
+        expect(result.contents).toHaveLength(1);
+      });
+    });
+
+    describe('Category D: Comment Resources', () => {
+      it('should extract epic_id from variables parameter for aha_epic_comments', async () => {
+        const handler = resourceHandlers.get('aha_epic_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://comments/epic/EPIC-123');
+        const variables = { epic_id: 'EPIC-123' };
+        const result = await handler!(uri, variables);
+
+        expect(mockAhaService.getEpicComments).toHaveBeenCalledWith('EPIC-123');
+        expect(result.contents).toHaveLength(1);
+      });
+
+      it('should extract idea_id from variables parameter for aha_idea_comments', async () => {
+        const handler = resourceHandlers.get('aha_idea_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://comments/idea/IDEA-456');
+        const variables = { idea_id: 'IDEA-456' };
+        const result = await handler!(uri, variables);
+
+        expect(mockAhaService.getIdeaComments).toHaveBeenCalledWith('IDEA-456');
+        expect(result.contents).toHaveLength(1);
+      });
+
+      it('should extract product_id from variables parameter for aha_product_comments', async () => {
+        const handler = resourceHandlers.get('aha_product_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://comments/product/PROD-789');
+        const variables = { product_id: 'PROD-789' };
+        const result = await handler!(uri, variables);
+
+        expect(mockAhaService.getProductComments).toHaveBeenCalledWith('PROD-789');
+        expect(result.contents).toHaveLength(1);
+      });
+    });
+
+    describe('Fallback to URI Parsing', () => {
+      it('should fall back to URI parsing when variables not provided for aha_product', async () => {
+        const handler = resourceHandlers.get('aha_product');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://product/PROD-999');
+        // Call without variables parameter - should use fallback
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getProduct).toHaveBeenCalledWith('PROD-999');
+        expect(result.contents).toHaveLength(1);
+      });
+
+      it('should fall back to URI parsing when variables not provided for aha_goal_epics', async () => {
+        const handler = resourceHandlers.get('aha_goal_epics');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://goal/GOAL-999/epics');
+        // Call without variables parameter - should use fallback
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getGoalEpics).toHaveBeenCalledWith('GOAL-999');
+        expect(result.contents).toHaveLength(1);
+      });
+
+      it('should fall back to URI parsing when variables not provided for aha_epic_comments', async () => {
+        const handler = resourceHandlers.get('aha_epic_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://comments/epic/EPIC-999');
+        // Call without variables parameter - should use fallback
+        const result = await handler!(uri);
+
+        expect(mockAhaService.getEpicComments).toHaveBeenCalledWith('EPIC-999');
+        expect(result.contents).toHaveLength(1);
+      });
+    });
+  });
 });
