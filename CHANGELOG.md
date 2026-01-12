@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.6.2...aha-mcp-v0.7.0) (2026-01-12)
+
+
+### Features
+
+* add comprehensive filtering and pagination parameters to ideas resources ([#201](https://github.com/cedricziel/aha-mcp/issues/201)) ([d3a7d24](https://github.com/cedricziel/aha-mcp/commit/d3a7d24097dc6b351c57cb0dd8f3447fcf7153b7))
+
 ## [0.6.2](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.6.1...aha-mcp-v0.6.2) (2026-01-12)
 
 
