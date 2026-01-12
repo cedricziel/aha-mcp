@@ -1917,12 +1917,25 @@ export class AhaService {
   /**
    * Get endorsements for an idea
    * @param ideaId The ID of the idea
+   * @param proxy If set to true, only returns proxy votes (optional)
+   * @param page Page number for pagination (optional)
+   * @param perPage Number of endorsements per page (optional)
    * @returns The endorsements for the idea
    */
-  public static async getIdeaEndorsements(ideaId: string): Promise<IdeasGetEndorsements200Response> {
+  public static async getIdeaEndorsements(
+    ideaId: string,
+    proxy?: boolean,
+    page?: number,
+    perPage?: number
+  ): Promise<IdeasGetEndorsements200Response> {
     const ideasApi = this.getIdeasApi();
     try {
-      const response = await ideasApi.ideasGetEndorsements({ id: ideaId });
+      const response = await ideasApi.ideasGetEndorsements({
+        id: ideaId,
+        proxy,
+        page,
+        perPage
+      });
       return response.data;
     } catch (error) {
       log.error('Error getting endorsements for idea', error as Error, { operation: 'getIdeaEndorsements', idea_id: ideaId });
@@ -1933,12 +1946,22 @@ export class AhaService {
   /**
    * Get votes for an idea
    * @param ideaId The ID of the idea
+   * @param page Page number for pagination (optional)
+   * @param perPage Number of votes per page (optional)
    * @returns The votes for the idea
    */
-  public static async getIdeaVotes(ideaId: string): Promise<IdeasGetVotes200Response> {
+  public static async getIdeaVotes(
+    ideaId: string,
+    page?: number,
+    perPage?: number
+  ): Promise<IdeasGetVotes200Response> {
     const ideasApi = this.getIdeasApi();
     try {
-      const response = await ideasApi.ideasGetVotes({ id: ideaId });
+      const response = await ideasApi.ideasGetVotes({
+        id: ideaId,
+        page,
+        perPage
+      });
       return response.data;
     } catch (error) {
       log.error('Error getting votes for idea', error as Error, { operation: 'getIdeaVotes', idea_id: ideaId });
@@ -1973,6 +1996,16 @@ export class AhaService {
    * @param fields Comma-separated list of fields to include (optional)
    * @param page Page number for pagination (optional)
    * @param perPage Number of items per page (max 200) (optional)
+   * @param productId Filter ideas by product ID (optional)
+   * @param ideaPortalId Filter ideas by idea portal ID (optional)
+   * @param spam Show/hide spam ideas (optional)
+   * @param workflowStatus Filter by workflow status ID or name (optional)
+   * @param sort Sorting option: recent, trending, or popular (optional)
+   * @param createdBefore Filter by creation date before (optional)
+   * @param createdSince Filter by creation date after (optional)
+   * @param tag Filter by tag value (optional)
+   * @param userId Filter by user who created the idea (optional)
+   * @param ideaUserId Filter by idea user who created the idea (optional)
    * @returns The list of ideas
    */
   public static async listIdeas(
@@ -1983,7 +2016,17 @@ export class AhaService {
     category?: string,
     fields?: string,
     page?: number,
-    perPage?: number
+    perPage?: number,
+    productId?: string,
+    ideaPortalId?: string,
+    spam?: boolean,
+    workflowStatus?: string,
+    sort?: 'recent' | 'trending' | 'popular',
+    createdBefore?: string,
+    createdSince?: string,
+    tag?: string,
+    userId?: string,
+    ideaUserId?: string
   ): Promise<IdeasListResponse> {
     const ideasApi = this.getIdeasApi();
     try {
@@ -1995,7 +2038,17 @@ export class AhaService {
         assignedToUser,
         status,
         category,
-        fields
+        fields,
+        productId,
+        ideaPortalId,
+        spam,
+        workflowStatus,
+        sort,
+        createdBefore,
+        createdSince,
+        tag,
+        userId,
+        ideaUserId
       });
       return response.data;
     } catch (error) {

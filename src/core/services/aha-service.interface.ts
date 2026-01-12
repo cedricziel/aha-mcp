@@ -143,7 +143,17 @@ export interface IAhaService {
     category?: string,
     fields?: string,
     page?: number,
-    perPage?: number
+    perPage?: number,
+    productId?: string,
+    ideaPortalId?: string,
+    spam?: boolean,
+    workflowStatus?: string,
+    sort?: 'recent' | 'trending' | 'popular',
+    createdBefore?: string,
+    createdSince?: string,
+    tag?: string,
+    userId?: string,
+    ideaUserId?: string
   ): Promise<IdeasListResponse>;
   getIdea(ideaId: string): Promise<IdeaResponse>;
 
@@ -212,8 +222,17 @@ export interface IAhaService {
   getPendingTasks(): Promise<MePendingTasksResponse>;
 
   // Idea Endorsements/Votes
-  getIdeaEndorsements(ideaId: string): Promise<IdeasGetEndorsements200Response>;
-  getIdeaVotes(ideaId: string): Promise<IdeasGetVotes200Response>;
+  getIdeaEndorsements(
+    ideaId: string,
+    proxy?: boolean,
+    page?: number,
+    perPage?: number
+  ): Promise<IdeasGetEndorsements200Response>;
+  getIdeaVotes(
+    ideaId: string,
+    page?: number,
+    perPage?: number
+  ): Promise<IdeasGetVotes200Response>;
   getIdeaWatchers(ideaId: string): Promise<IdeasGetWatchers200Response>;
 
   // Requirements
