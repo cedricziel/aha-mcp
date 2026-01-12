@@ -20,16 +20,16 @@ The server supports runtime configuration through three key parameters:
 
 - **Company**: Aha.io company subdomain (e.g., "mycompany" for mycompany.aha.io)
 - **Token**: Aha.io API token for authentication
-- **Mode**: Transport mode - either "stdio" or "sse"
+- **Mode**: Transport mode - "stdio", "streamable-http" (recommended), or "sse" (deprecated)
 
 ### Configuration Sources (Priority Order)
 
 1. **Environment Variables** (highest priority)
    - `AHA_COMPANY` - Company subdomain
    - `AHA_TOKEN` - API token
-   - `MCP_TRANSPORT_MODE` - Transport mode
-   - `MCP_PORT` - Port for SSE mode (default: 3001)
-   - `MCP_HOST` - Host for SSE mode (default: 0.0.0.0)
+   - `MCP_TRANSPORT_MODE` - Transport mode (stdio, streamable-http, sse)
+   - `MCP_PORT` - Port for HTTP-based transports (default: 3001)
+   - `MCP_HOST` - Host for HTTP-based transports (default: 0.0.0.0)
 
 2. **Configuration File**
    - Located at `~/.aha-mcp-config.json`
@@ -47,14 +47,17 @@ The server supports runtime configuration through three key parameters:
 # Use configuration settings
 aha-mcp
 
-# Force stdio mode
+# Force stdio mode (default, for local MCP clients)
 aha-mcp --mode stdio
 
-# Force SSE mode
+# Force Streamable HTTP mode (recommended for remote/web clients)
+aha-mcp --mode streamable-http
+
+# Force SSE mode (deprecated, use streamable-http instead)
 aha-mcp --mode sse
 
-# Custom SSE configuration
-aha-mcp --mode sse --port 3000 --host localhost
+# Custom Streamable HTTP configuration
+aha-mcp --mode streamable-http --port 3000 --host localhost
 
 # Show help
 aha-mcp --help
@@ -69,7 +72,7 @@ The server includes three MCP tools for runtime configuration:
    {
      "company": "mycompany",
      "token": "your-api-token",
-     "mode": "sse",
+     "mode": "streamable-http",
      "port": 3000,
      "host": "localhost"
    }
@@ -102,10 +105,19 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
 
 ### Transport Layer
 
-The server supports dual transport modes from a unified entry point:
+The server supports three transport modes from a unified entry point:
 
-- **Stdio**: Primary mode for MCP client integration (default)
-- **SSE**: HTTP-based Server-Sent Events transport with Express.js and CORS support
+- **Stdio**: Primary mode for local MCP client integration (default)
+- **Streamable HTTP**: Modern HTTP-based transport (recommended for remote/web clients)
+  - Protocol version: 2025-06-18
+  - Single `/mcp` endpoint for all communication
+  - Supports both POST (client → server) and GET (SSE streaming)
+  - Origin validation for security
+  - Session management with cryptographic session IDs
+- **SSE**: Legacy HTTP-based Server-Sent Events transport (deprecated)
+  - Deprecated as of MCP spec 2025-03-26
+  - Will be removed in a future version
+  - Users should migrate to Streamable HTTP
 
 ### Configuration Management
 
@@ -152,6 +164,37 @@ When working with this MCP server, follow these key principles from the Model Co
 
 - Use the official MCP TypeScript SDK (`@modelcontextprotocol/sdk`)
 - Follow JSON-RPC 2.0 message format for all communications
-- Support both stdio and HTTP transports for flexibility
+- Support multiple transports (stdio, streamable-http) for flexibility
+- Prefer Streamable HTTP over deprecated SSE for new HTTP-based implementations
 - Log usage appropriately for debugging and monitoring
 - Design for human oversight and control of AI interactions
+
+## Transport Migration Guide
+
+### Migrating from SSE to Streamable HTTP
+
+The SSE transport is deprecated and will be removed in a future version. If you're currently using SSE mode, follow these steps to migrate:
+
+1. **Update Configuration**
+   ```bash
+   # Change environment variable
+   export MCP_TRANSPORT_MODE=streamable-http  # instead of sse
+
+   # Or update config file ~/.aha-mcp-config.json
+   {
+     "mode": "streamable-http"
+   }
+   ```
+
+2. **Update Client Code** (if using HTTP directly)
+   - Old SSE: Two endpoints (`/sse` for GET, `/messages` for POST)
+   - New Streamable HTTP: Single `/mcp` endpoint for both GET and POST
+   - Add `MCP-Protocol-Version: 2025-06-18` header
+   - Use session IDs from response headers
+
+3. **Benefits of Streamable HTTP**
+   - Single endpoint simplifies architecture
+   - Better scalability and resource efficiency
+   - Enhanced error handling and recovery
+   - Modern protocol support (HTTP/2, HTTP/3)
+   - Active maintenance and future improvements

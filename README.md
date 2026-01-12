@@ -74,7 +74,10 @@ export AHA_TOKEN="your-api-token"   # Your Aha.io API token
 # Run in stdio mode (default)
 docker run --rm -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TOKEN" ghcr.io/cedricziel/aha-mcp
 
-# Run in SSE mode
+# Run in Streamable HTTP mode (recommended for remote access)
+docker run --rm -p 3001:3001 -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TOKEN" ghcr.io/cedricziel/aha-mcp --mode streamable-http
+
+# Run in SSE mode (deprecated)
 docker run --rm -p 3001:3001 -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TOKEN" ghcr.io/cedricziel/aha-mcp --mode sse
 ```
 
@@ -98,10 +101,13 @@ docker run --rm -p 3001:3001 -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TO
 
 4. Start the server:
    ```bash
-   # Start the stdio server (for MCP clients)
+   # Start the stdio server (for MCP clients - default)
    bun start
 
-   # Or start the HTTP server
+   # Or start with Streamable HTTP (recommended for remote access)
+   bun start -- --mode streamable-http
+
+   # Or start the HTTP server (legacy entry point)
    bun run start:http
    ```
 
@@ -110,7 +116,10 @@ docker run --rm -p 3001:3001 -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TO
    # Development mode with stdio
    bun run dev
 
-   # Development mode with HTTP
+   # Development mode with Streamable HTTP
+   bun run dev -- --mode streamable-http
+
+   # Development mode with HTTP (legacy)
    bun run dev:http
    ```
 
@@ -139,10 +148,33 @@ The Aha.io integration can be configured using multiple methods, with the follow
 - `AHA_COMPANY`: Your Aha.io subdomain (e.g., `mycompany` for `mycompany.aha.io`)
 - `AHA_TOKEN`: Your Aha.io API token (for API token authentication)
 - `AHA_ACCESS_TOKEN`: Your OAuth 2.0 access token (for OAuth authentication)
-- `MCP_TRANSPORT_MODE`: Transport mode (`stdio` or `sse`)
-- `MCP_PORT`: Port number for SSE mode (default: 3001)
-- `MCP_HOST`: Host address for SSE mode (default: 0.0.0.0)
-- `MCP_AUTH_TOKEN`: Authentication token for SSE mode (optional)
+- `MCP_TRANSPORT_MODE`: Transport mode (`stdio`, `streamable-http`, or `sse`)
+- `MCP_PORT`: Port number for HTTP-based modes (default: 3001)
+- `MCP_HOST`: Host address for HTTP-based modes (default: 0.0.0.0)
+- `MCP_AUTH_TOKEN`: Authentication token for HTTP-based modes (optional)
+
+#### Transport Modes
+
+The server supports three transport modes:
+
+1. **stdio** (default) - Standard input/output for local MCP clients
+   ```bash
+   aha-mcp --mode stdio
+   ```
+
+2. **streamable-http** (recommended for remote access) - Modern HTTP transport
+   ```bash
+   aha-mcp --mode streamable-http --port 3001 --host localhost
+   ```
+   - Protocol version: 2025-06-18
+   - Single `/mcp` endpoint for all communication
+   - Better scalability and performance
+   - Origin validation for security
+
+3. **sse** (deprecated) - Legacy SSE transport
+   - Deprecated as of MCP spec 2025-03-26
+   - Will be removed in a future version
+   - Use `streamable-http` instead
 
 #### Authentication Methods
 
