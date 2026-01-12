@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.5.0...aha-mcp-v0.5.1) (2026-01-12)
+
+
+### Bug Fixes
+
+* convert 39 resources to ResourceTemplate for proper URI matching ([#190](https://github.com/cedricziel/aha-mcp/issues/190)) ([6cdbfaf](https://github.com/cedricziel/aha-mcp/commit/6cdbfafeb165b64f03eb4b7037f9b8b761b6a31e))
+
 ## [0.5.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.4.0...aha-mcp-v0.5.0) (2025-09-30)
 
 
