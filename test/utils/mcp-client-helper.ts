@@ -90,7 +90,7 @@ export class TestMCPClient {
 
     // Create transport
     this.transport = new StdioClientTransport({
-      command: '/Users/cedricziel/.bun/bin/bun',
+      command: 'bun',
       args: ['run', this.serverCommand, '--mode', mode],
       env: {
         ...process.env,
