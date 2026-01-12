@@ -93,8 +93,11 @@ describe('E2E MCP Client - Smoke Test', () => {
         expect(messages.length).toBeGreaterThan(0);
 
         const message = messages[0];
+        expect(message).toBeDefined();
         expect(message.role).toBe('user');
-        expect(message.content.text).toContain('workspace');
+        expect(message.content).toBeDefined();
+        expect(message.content.text).toBeDefined();
+        expect(message.content.text!).toContain('workspace');
       } catch (error) {
         console.error('Full error:', error);
         console.error('Error code:', (error as any).code);
