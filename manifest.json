@@ -2,7 +2,7 @@
   "dxt_version": "0.1",
   "name": "aha-mcp",
   "display_name": "Aha.io MCP Server",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Model Context Protocol server for Aha.io product management platform",
   "long_description": "A comprehensive MCP server that provides seamless integration with Aha.io's API. This extension enables AI assistants to interact with Aha.io workspaces, manage features, ideas, requirements, and more. It includes 40+ tools for CRUD operations, resource access, and workflow automation.",
   "author": {

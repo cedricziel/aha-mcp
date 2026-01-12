@@ -2,7 +2,7 @@
   "name": "@cedricziel/aha-mcp",
   "module": "src/index.ts",
   "type": "module",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Model Context Protocol (MCP) Server for Aha",
   "private": false,
   "main": "./build/index.js",

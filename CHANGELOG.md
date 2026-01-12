@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.6.1...aha-mcp-v0.6.2) (2026-01-12)
+
+
+### Bug Fixes
+
+* add test setup preload to release-please workflow ([#199](https://github.com/cedricziel/aha-mcp/issues/199)) ([3c60476](https://github.com/cedricziel/aha-mcp/commit/3c60476d7ddfc064efecb8630dc2925bf9955d41))
+
 ## [0.6.1](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.6.0...aha-mcp-v0.6.1) (2026-01-12)
 
 
