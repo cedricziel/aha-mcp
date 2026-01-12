@@ -6,14 +6,14 @@
       "name": "@cedricziel/aha-mcp",
       "dependencies": {
         "@cedricziel/aha-js": "1.2.5",
-        "@modelcontextprotocol/sdk": "^1.18.2",
+        "@modelcontextprotocol/sdk": "1.25.2",
         "axios": "^1.12.2",
         "cors": "^2.8.5",
         "express": "^4.21.2",
         "sqlite": "^5.1.1",
         "sqlite-vec": "^0.1.6",
         "sqlite3": "^5.1.7",
-        "zod": "^4.3.5",
+        "zod": "4.3.5",
       },
       "devDependencies": {
         "@commitlint/cli": "^20.3.1",

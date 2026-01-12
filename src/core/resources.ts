@@ -1,4 +1,7 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { ServerRequest, ServerNotification } from "@modelcontextprotocol/sdk/types.js";
+import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
+import type { Variables } from "@modelcontextprotocol/sdk/shared/uriTemplate.js";
 import * as services from "./services/index.js";
 
 /**
@@ -33,7 +36,7 @@ const RESOURCE_SYNONYMS = {
  */
 export function registerResources(server: McpServer) {
   // Meta-resource for resource discovery and synonym mapping
-  server.resource(
+  server.registerResource(
     "aha_resource_guide",
     new ResourceTemplate("aha://resources", { list: undefined, complete: {} }),
     {
@@ -41,7 +44,7 @@ export function registerResources(server: McpServer) {
       description: "Discover available resources and terminology mappings. Use this to find the right resource when searching by synonym (e.g., 'workspace' → 'product', 'Product Area' → shows not available, 'workstream' → 'release').",
       mimeType: "application/json"
     },
-    async (uri: URL) => {
+    async (uri: URL, _variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       return {
         contents: [{
           uri: uri.toString(),
@@ -65,7 +68,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha idea resource with path variable
-  server.resource(
+  server.registerResource(
     "aha_idea",
     new ResourceTemplate(
       "aha://idea/{id}",
@@ -81,9 +84,9 @@ export function registerResources(server: McpServer) {
       description: "Get a specific idea by ID",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       // Support both direct URI calls (from tests) and ResourceTemplate calls
-      const id = variables?.id || uri.pathname.split('/').pop();
+      const id = variables.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid idea ID: ID is missing from URI');
       }
@@ -104,7 +107,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha feature resource with path variable
-  server.resource(
+  server.registerResource(
     "aha_feature",
     new ResourceTemplate(
       "aha://feature/{id}",
@@ -120,9 +123,9 @@ export function registerResources(server: McpServer) {
       description: "Get a specific feature by ID",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       // Support both direct URI calls (from tests) and ResourceTemplate calls
-      const id = variables?.id || uri.pathname.split('/').pop();
+      const id = variables.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid feature ID: ID is missing from URI');
       }
@@ -143,7 +146,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha user resource
-  server.resource(
+  server.registerResource(
     "aha_user",
     new ResourceTemplate(
       "aha://user/{id}",
@@ -159,8 +162,8 @@ export function registerResources(server: McpServer) {
       description: "Get a specific user by ID",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
-      const id = variables?.id || uri.pathname.split('/').pop();
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const id = variables.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid user ID: ID is missing from URI');
       }
@@ -181,7 +184,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha epic resource
-  server.resource(
+  server.registerResource(
     "aha_epic",
     new ResourceTemplate(
       "aha://epic/{id}",
@@ -197,8 +200,8 @@ export function registerResources(server: McpServer) {
       description: "Get a specific epic by ID",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
-      const id = variables?.id || uri.pathname.split('/').pop();
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const id = variables.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid epic ID: ID is missing from URI');
       }
@@ -219,7 +222,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha features list resource with pagination and filter parameters
-  server.resource(
+  server.registerResource(
     "aha_features",
     new ResourceTemplate(
       "aha://features{?query,updatedSince,tag,assignedToUser,page,perPage}",
@@ -236,7 +239,7 @@ export function registerResources(server: McpServer) {
       description: "List features with optional filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
         const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
@@ -265,7 +268,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha users list resource
-  server.resource(
+  server.registerResource(
     "aha_users",
     "aha://users",
     async (uri: URL) => {
@@ -286,7 +289,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha epics list resource
-  server.resource(
+  server.registerResource(
     "aha_epics",
     new ResourceTemplate(
       "aha://epics/{product_id}",
@@ -302,9 +305,9 @@ export function registerResources(server: McpServer) {
       description: "List epics for a specific product",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const productId = variables?.product_id || pathParts[pathParts.length - 1];
+      const productId = variables.product_id || pathParts[pathParts.length - 1];
 
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
@@ -328,7 +331,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha product resource
-  server.resource(
+  server.registerResource(
     "aha_product",
     new ResourceTemplate(
       "aha://product/{id}",
@@ -344,8 +347,8 @@ export function registerResources(server: McpServer) {
       description: "Get a specific product/workspace by ID. In Aha.io, products and workspaces are synonymous - use this to retrieve workspace details.",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
-      const id = variables?.id || uri.pathname.split('/').pop();
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const id = variables.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid product ID: ID is missing from URI');
       }
@@ -366,7 +369,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha products list resource with pagination parameters
-  server.resource(
+  server.registerResource(
     "aha_products",
     new ResourceTemplate(
       "aha://products{?updatedSince,page,perPage}",
@@ -383,7 +386,7 @@ export function registerResources(server: McpServer) {
       description: "List all products/workspaces with optional date filter and pagination. In Aha.io, products and workspaces are synonymous - use this to list all workspaces.",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
         const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
@@ -409,7 +412,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha initiative resource
-  server.resource(
+  server.registerResource(
     "aha_initiative",
     new ResourceTemplate(
       "aha://initiative/{id}",
@@ -425,8 +428,8 @@ export function registerResources(server: McpServer) {
       description: "Get a specific initiative by ID",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
-      const id = variables?.id || uri.pathname.split('/').pop();
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const id = variables.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid initiative ID: ID is missing from URI');
       }
@@ -447,7 +450,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha initiatives list resource with advanced filters and pagination
-  server.resource(
+  server.registerResource(
     "aha_initiatives",
     new ResourceTemplate(
       "aha://initiatives{?query,updatedSince,assignedToUser,onlyActive,page,perPage}",
@@ -465,7 +468,7 @@ export function registerResources(server: McpServer) {
       description: "List initiatives with optional filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const onlyActive = variables?.onlyActive === 'true' ? true : 
                           variables?.onlyActive === 'false' ? false : 
@@ -498,7 +501,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha ideas by product resource
-  server.resource(
+  server.registerResource(
     "aha_ideas_by_product",
     new ResourceTemplate(
       "aha://ideas/{product_id}",
@@ -514,9 +517,9 @@ export function registerResources(server: McpServer) {
       description: "List ideas for a specific product with optional filters",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const productId = variables?.product_id || pathParts[pathParts.length - 1];
+      const productId = variables.product_id || pathParts[pathParts.length - 1];
 
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
@@ -565,7 +568,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha epic comments resource
-  server.resource(
+  server.registerResource(
     "aha_epic_comments",
     new ResourceTemplate(
       "aha://comments/epic/{epic_id}",
@@ -581,7 +584,7 @@ export function registerResources(server: McpServer) {
       description: "Get comments for a specific epic",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
       const epicId = variables?.epic_id || pathParts[pathParts.length - 1];
 
@@ -607,7 +610,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha idea comments resource
-  server.resource(
+  server.registerResource(
     "aha_idea_comments",
     new ResourceTemplate(
       "aha://comments/idea/{idea_id}",
@@ -623,9 +626,9 @@ export function registerResources(server: McpServer) {
       description: "Get comments for a specific idea",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const ideaId = variables?.idea_id || pathParts[pathParts.length - 1];
+      const ideaId = variables.idea_id || pathParts[pathParts.length - 1];
 
       if (!ideaId) {
         throw new Error('Invalid idea ID: Idea ID is missing from URI');
@@ -649,7 +652,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha initiative comments resource
-  server.resource(
+  server.registerResource(
     "aha_initiative_comments",
     new ResourceTemplate(
       "aha://comments/initiative/{initiative_id}",
@@ -665,7 +668,7 @@ export function registerResources(server: McpServer) {
       description: "Get comments for a specific initiative",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
       const initiativeId = variables?.initiative_id || pathParts[pathParts.length - 1];
 
@@ -691,7 +694,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha product comments resource
-  server.resource(
+  server.registerResource(
     "aha_product_comments",
     new ResourceTemplate(
       "aha://comments/product/{product_id}",
@@ -707,9 +710,9 @@ export function registerResources(server: McpServer) {
       description: "Get comments for a specific product",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const productId = variables?.product_id || pathParts[pathParts.length - 1];
+      const productId = variables.product_id || pathParts[pathParts.length - 1];
 
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
@@ -733,7 +736,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha goal comments resource
-  server.resource(
+  server.registerResource(
     "aha_goal_comments",
     new ResourceTemplate(
       "aha://comments/goal/{goal_id}",
@@ -749,7 +752,7 @@ export function registerResources(server: McpServer) {
       description: "Get comments for a specific goal",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
       const goalId = variables?.goal_id || pathParts[pathParts.length - 1];
 
@@ -775,7 +778,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha release comments resource
-  server.resource(
+  server.registerResource(
     "aha_release_comments",
     new ResourceTemplate(
       "aha://comments/release/{release_id}",
@@ -791,7 +794,7 @@ export function registerResources(server: McpServer) {
       description: "Get comments for a specific release",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
       const releaseId = variables?.release_id || pathParts[pathParts.length - 1];
 
@@ -817,7 +820,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha release phase comments resource
-  server.resource(
+  server.registerResource(
     "aha_release_phase_comments",
     new ResourceTemplate(
       "aha://comments/release-phase/{release_phase_id}",
@@ -833,7 +836,7 @@ export function registerResources(server: McpServer) {
       description: "Get comments for a specific release phase",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
       const releasePhaseId = variables?.release_phase_id || pathParts[pathParts.length - 1];
 
@@ -859,7 +862,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha requirement comments resource
-  server.resource(
+  server.registerResource(
     "aha_requirement_comments",
     new ResourceTemplate(
       "aha://comments/requirement/{requirement_id}",
@@ -875,7 +878,7 @@ export function registerResources(server: McpServer) {
       description: "Get comments for a specific requirement",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
       const requirementId = variables?.requirement_id || pathParts[pathParts.length - 1];
 
@@ -901,7 +904,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha todo comments resource
-  server.resource(
+  server.registerResource(
     "aha_todo_comments",
     new ResourceTemplate(
       "aha://comments/todo/{todo_id}",
@@ -917,7 +920,7 @@ export function registerResources(server: McpServer) {
       description: "Get comments for a specific todo",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
       const todoId = variables?.todo_id || pathParts[pathParts.length - 1];
 
@@ -943,7 +946,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha goal resource
-  server.resource(
+  server.registerResource(
     "aha_goal",
     new ResourceTemplate(
       "aha://goal/{id}",
@@ -959,8 +962,8 @@ export function registerResources(server: McpServer) {
       description: "Get a specific goal by ID",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
-      const id = variables?.id || uri.pathname.split('/').pop();
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const id = variables.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid goal ID: ID is missing from URI');
       }
@@ -981,7 +984,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha goals list resource with filters and pagination
-  server.resource(
+  server.registerResource(
     "aha_goals",
     new ResourceTemplate(
       "aha://goals{?query,updatedSince,assignedToUser,status,page,perPage}",
@@ -998,7 +1001,7 @@ export function registerResources(server: McpServer) {
       description: "List goals with optional filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
         const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
@@ -1027,7 +1030,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha goal epics resource
-  server.resource(
+  server.registerResource(
     "aha_goal_epics",
     new ResourceTemplate(
       "aha://goal/{goal_id}/epics",
@@ -1043,7 +1046,7 @@ export function registerResources(server: McpServer) {
       description: "Get epics for a specific goal",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
       const goalId = variables?.goal_id || pathParts[pathParts.length - 2]; // goal_id is before /epics
 
@@ -1069,7 +1072,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha release resource
-  server.resource(
+  server.registerResource(
     "aha_release",
     new ResourceTemplate(
       "aha://release/{id}",
@@ -1085,8 +1088,8 @@ export function registerResources(server: McpServer) {
       description: "Get a specific release by ID",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
-      const id = variables?.id || uri.pathname.split('/').pop();
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const id = variables.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid release ID: ID is missing from URI');
       }
@@ -1107,7 +1110,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha releases list resource with filters and pagination
-  server.resource(
+  server.registerResource(
     "aha_releases",
     new ResourceTemplate(
       "aha://releases{?query,updatedSince,assignedToUser,status,parkingLot,page,perPage}",
@@ -1125,7 +1128,7 @@ export function registerResources(server: McpServer) {
       description: "List releases with optional filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const parkingLot = variables?.parkingLot === 'true' ? true :
                           variables?.parkingLot === 'false' ? false :
@@ -1159,7 +1162,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha release features resource
-  server.resource(
+  server.registerResource(
     "aha_release_features",
     new ResourceTemplate(
       "aha://release/{release_id}/features",
@@ -1175,7 +1178,7 @@ export function registerResources(server: McpServer) {
       description: "Get features for a specific release",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
       const releaseId = variables?.release_id || pathParts[pathParts.length - 2]; // release_id is before /features
 
@@ -1201,7 +1204,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha release epics resource
-  server.resource(
+  server.registerResource(
     "aha_release_epics",
     new ResourceTemplate(
       "aha://release/{release_id}/epics",
@@ -1217,7 +1220,7 @@ export function registerResources(server: McpServer) {
       description: "Get epics for a specific release",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
       const releaseId = variables?.release_id || pathParts[pathParts.length - 2]; // release_id is before /epics
 
@@ -1243,7 +1246,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha release phase resource
-  server.resource(
+  server.registerResource(
     "aha_release_phase",
     new ResourceTemplate(
       "aha://release-phase/{id}",
@@ -1259,8 +1262,8 @@ export function registerResources(server: McpServer) {
       description: "Get a specific release phase by ID",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
-      const id = variables?.id || uri.pathname.split('/').pop();
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const id = variables.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid release phase ID: ID is missing from URI');
       }
@@ -1281,7 +1284,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha release phases list resource
-  server.resource(
+  server.registerResource(
     "aha_release_phases",
     "aha://release-phases",
     async (uri: URL) => {
@@ -1302,7 +1305,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha requirement resource
-  server.resource(
+  server.registerResource(
     "aha_requirement",
     new ResourceTemplate(
       "aha://requirement/{id}",
@@ -1318,8 +1321,8 @@ export function registerResources(server: McpServer) {
       description: "Get a specific requirement by ID",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
-      const id = variables?.id || uri.pathname.split('/').pop();
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const id = variables.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid requirement ID: ID is missing from URI');
       }
@@ -1340,7 +1343,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha competitor resource
-  server.resource(
+  server.registerResource(
     "aha_competitor",
     new ResourceTemplate(
       "aha://competitor/{id}",
@@ -1356,8 +1359,8 @@ export function registerResources(server: McpServer) {
       description: "Get a specific competitor by ID",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
-      const id = variables?.id || uri.pathname.split('/').pop();
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const id = variables.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid competitor ID: ID is missing from URI');
       }
@@ -1378,7 +1381,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha todo resource
-  server.resource(
+  server.registerResource(
     "aha_todo",
     new ResourceTemplate(
       "aha://todo/{id}",
@@ -1394,8 +1397,8 @@ export function registerResources(server: McpServer) {
       description: "Get a specific todo by ID",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
-      const id = variables?.id || uri.pathname.split('/').pop();
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const id = variables.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid todo ID: ID is missing from URI');
       }
@@ -1416,7 +1419,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha competitors list resource
-  server.resource(
+  server.registerResource(
     "aha_competitors",
     new ResourceTemplate(
       "aha://competitors/{product_id}",
@@ -1432,8 +1435,8 @@ export function registerResources(server: McpServer) {
       description: "List competitors for a specific product",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
-      const productId = variables?.product_id || uri.pathname.split('/').pop();
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const productId = variables.product_id || uri.pathname.split('/').pop();
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
       }
@@ -1454,7 +1457,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha strategic model resource
-  server.resource(
+  server.registerResource(
     "aha_strategic_model",
     new ResourceTemplate(
       "aha://strategic-model/{id}",
@@ -1470,8 +1473,8 @@ export function registerResources(server: McpServer) {
       description: "Get a specific strategic model by ID",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
-      const id = variables?.id || uri.pathname.split('/').pop();
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const id = variables.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid strategic model ID: ID is missing from URI');
       }
@@ -1492,7 +1495,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha strategic models list resource with filters and pagination
-  server.resource(
+  server.registerResource(
     "aha_strategic_models",
     new ResourceTemplate(
       "aha://strategic-models{?query,type,updatedSince,page,perPage}",
@@ -1509,7 +1512,7 @@ export function registerResources(server: McpServer) {
       description: "List strategic models with optional filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
         const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
@@ -1536,7 +1539,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha todos list resource
-  server.resource(
+  server.registerResource(
     "aha_todos",
     "aha://todos",
     async (uri: URL) => {
@@ -1556,7 +1559,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha idea organization resource
-  server.resource(
+  server.registerResource(
     "aha_idea_organization",
     new ResourceTemplate(
       "aha://idea-organization/{id}",
@@ -1572,8 +1575,8 @@ export function registerResources(server: McpServer) {
       description: "Get a specific idea organization by ID",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
-      const id = variables?.id || uri.pathname.split('/').pop();
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const id = variables.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid idea organization ID: ID is missing from URI');
       }
@@ -1594,7 +1597,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha idea organizations list resource with filters and pagination
-  server.resource(
+  server.registerResource(
     "aha_idea_organizations",
     new ResourceTemplate(
       "aha://idea-organizations{?query,emailDomain,page,perPage}",
@@ -1611,7 +1614,7 @@ export function registerResources(server: McpServer) {
       description: "List idea organizations with optional filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
         const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
@@ -1637,7 +1640,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha me/current user profile resource
-  server.resource(
+  server.registerResource(
     "aha_me_profile",
     "aha://me/profile",
     async (uri: URL) => {
@@ -1657,7 +1660,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha me/current user assigned records resource
-  server.resource(
+  server.registerResource(
     "aha_me_assigned_records",
     "aha://me/assigned-records",
     async (uri: URL) => {
@@ -1677,7 +1680,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha me/current user pending tasks resource
-  server.resource(
+  server.registerResource(
     "aha_me_pending_tasks",
     "aha://me/pending-tasks",
     async (uri: URL) => {
@@ -1697,7 +1700,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha idea endorsements resource
-  server.resource(
+  server.registerResource(
     "aha_idea_endorsements",
     new ResourceTemplate(
       "aha://idea/{id}/endorsements",
@@ -1713,9 +1716,9 @@ export function registerResources(server: McpServer) {
       description: "Get endorsements for a specific idea",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const ideaId = variables?.id || pathParts[pathParts.length - 2]; // idea_id is before /endorsements
+      const ideaId = variables.id || pathParts[pathParts.length - 2]; // idea_id is before /endorsements
 
       if (!ideaId) {
         throw new Error('Invalid idea ID: Idea ID is missing from URI');
@@ -1738,7 +1741,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha idea votes resource
-  server.resource(
+  server.registerResource(
     "aha_idea_votes",
     new ResourceTemplate(
       "aha://idea/{id}/votes",
@@ -1754,9 +1757,9 @@ export function registerResources(server: McpServer) {
       description: "Get votes for a specific idea",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const ideaId = variables?.id || pathParts[pathParts.length - 2]; // idea_id is before /votes
+      const ideaId = variables.id || pathParts[pathParts.length - 2]; // idea_id is before /votes
 
       if (!ideaId) {
         throw new Error('Invalid idea ID: Idea ID is missing from URI');
@@ -1779,7 +1782,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha idea watchers resource
-  server.resource(
+  server.registerResource(
     "aha_idea_watchers",
     new ResourceTemplate(
       "aha://idea/{id}/watchers",
@@ -1795,9 +1798,9 @@ export function registerResources(server: McpServer) {
       description: "Get watchers for a specific idea",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const ideaId = variables?.id || pathParts[pathParts.length - 2]; // idea_id is before /watchers
+      const ideaId = variables.id || pathParts[pathParts.length - 2]; // idea_id is before /watchers
 
       if (!ideaId) {
         throw new Error('Invalid idea ID: Idea ID is missing from URI');
@@ -1820,7 +1823,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha global ideas list resource with advanced filters and pagination
-  server.resource(
+  server.registerResource(
     "aha_ideas",
     new ResourceTemplate(
       "aha://ideas{?query,updatedSince,assignedToUser,status,category,page,perPage}",
@@ -1837,7 +1840,7 @@ export function registerResources(server: McpServer) {
       description: "List all ideas across products with optional filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
         const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
@@ -1871,7 +1874,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha product releases resource with path variable and pagination
-  server.resource(
+  server.registerResource(
     "aha_product_releases",
     new ResourceTemplate(
       "aha://releases/{product_id}{?query,updatedSince,status,parkingLot,page,perPage}",
@@ -1889,8 +1892,8 @@ export function registerResources(server: McpServer) {
       description: "List releases for a specific product with optional filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
-      const productId = variables?.product_id || uri.pathname.split('/').pop();
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const productId = variables.product_id || uri.pathname.split('/').pop();
       
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
@@ -1927,7 +1930,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha initiative epics resource
-  server.resource(
+  server.registerResource(
     "aha_initiative_epics",
     new ResourceTemplate(
       "aha://initiative/{initiative_id}/epics",
@@ -1943,7 +1946,7 @@ export function registerResources(server: McpServer) {
       description: "Get epics for a specific initiative",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
       const initiativeId = variables?.initiative_id || pathParts[pathParts.length - 2]; // initiative_id is before /epics
 
@@ -1969,7 +1972,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha custom fields list resource
-  server.resource(
+  server.registerResource(
     "aha_custom_fields",
     "aha://custom-fields",
     async (uri: URL) => {
@@ -1990,7 +1993,7 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha custom field options resource
-  server.resource(
+  server.registerResource(
     "aha_custom_field_options",
     new ResourceTemplate(
       "aha://custom-field/{id}/options",
@@ -2006,9 +2009,9 @@ export function registerResources(server: McpServer) {
       description: "Get options for a specific custom field",
       mimeType: "application/json"
     },
-    async (uri: URL, variables?: Record<string, string>) => {
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const customFieldId = variables?.id || pathParts[pathParts.length - 2]; // custom_field_id is before /options
+      const customFieldId = variables.id || pathParts[pathParts.length - 2]; // custom_field_id is before /options
 
       if (!customFieldId) {
         throw new Error('Invalid custom field ID: Custom field ID is missing from URI');

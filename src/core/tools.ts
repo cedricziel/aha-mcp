@@ -1,5 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
+import * as z from "zod/v4";
 import * as services from "./services/index.js";
 import { databaseService } from './database/database.js';
 import { registerSyncTools } from "./tools/sync-tools.js";
