@@ -5,6 +5,17 @@ import type { Variables } from "@modelcontextprotocol/sdk/shared/uriTemplate.js"
 import * as services from "./services/index.js";
 
 /**
+ * Helper function to normalize variable values to strings
+ * ResourceTemplate variables can be string | string[], but service methods expect string
+ */
+function normalizeVar(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) {
+    return value[0]; // Take first element if array
+  }
+  return value;
+}
+
+/**
  * Resource terminology and synonym mappings
  */
 const RESOURCE_SYNONYMS = {
@@ -86,7 +97,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       // Support both direct URI calls (from tests) and ResourceTemplate calls
-      const id = variables.id || uri.pathname.split('/').pop();
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid idea ID: ID is missing from URI');
       }
@@ -125,7 +136,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       // Support both direct URI calls (from tests) and ResourceTemplate calls
-      const id = variables.id || uri.pathname.split('/').pop();
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid feature ID: ID is missing from URI');
       }
@@ -163,7 +174,7 @@ export function registerResources(server: McpServer) {
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const id = variables.id || uri.pathname.split('/').pop();
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid user ID: ID is missing from URI');
       }
@@ -201,7 +212,7 @@ export function registerResources(server: McpServer) {
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const id = variables.id || uri.pathname.split('/').pop();
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid epic ID: ID is missing from URI');
       }
@@ -241,14 +252,14 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
-        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const features = await services.AhaService.listFeatures(
-          variables?.query || uri.searchParams.get('query') || undefined,
-          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
-          variables?.tag || uri.searchParams.get('tag') || undefined,
-          variables?.assignedToUser || uri.searchParams.get('assignedToUser') || undefined,
+          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
+          normalizeVar(variables?.tag) || uri.searchParams.get('tag') || undefined,
+          normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
           page,
           perPage
         );
@@ -312,7 +323,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const productId = variables.product_id || pathParts[pathParts.length - 1];
+      const productId = normalizeVar(variables.product_id) || pathParts[pathParts.length - 1];
 
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
@@ -353,7 +364,7 @@ export function registerResources(server: McpServer) {
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const id = variables.id || uri.pathname.split('/').pop();
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid product ID: ID is missing from URI');
       }
@@ -393,11 +404,11 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
-        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const products = await services.AhaService.listProducts(
-          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
+          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
           page,
           perPage
         );
@@ -434,7 +445,7 @@ export function registerResources(server: McpServer) {
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const id = variables.id || uri.pathname.split('/').pop();
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid initiative ID: ID is missing from URI');
       }
@@ -479,13 +490,13 @@ export function registerResources(server: McpServer) {
                           variables?.onlyActive === 'false' ? false : 
                           uri.searchParams.get('onlyActive') === 'true' ? true :
                           uri.searchParams.get('onlyActive') === 'false' ? false : undefined;
-        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const initiatives = await services.AhaService.listInitiatives(
-          variables?.query || uri.searchParams.get('query') || undefined,
-          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
-          variables?.assignedToUser || uri.searchParams.get('assignedToUser') || undefined,
+          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
+          normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
           onlyActive,
           page,
           perPage
@@ -524,7 +535,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const productId = variables.product_id || pathParts[pathParts.length - 1];
+      const productId = normalizeVar(variables.product_id) || pathParts[pathParts.length - 1];
 
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
@@ -591,7 +602,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const epicId = variables?.epic_id || pathParts[pathParts.length - 1];
+      const epicId = normalizeVar(variables?.epic_id) || pathParts[pathParts.length - 1];
 
       if (!epicId) {
         throw new Error('Invalid epic ID: Epic ID is missing from URI');
@@ -633,7 +644,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const ideaId = variables.idea_id || pathParts[pathParts.length - 1];
+      const ideaId = normalizeVar(variables.idea_id) || pathParts[pathParts.length - 1];
 
       if (!ideaId) {
         throw new Error('Invalid idea ID: Idea ID is missing from URI');
@@ -675,7 +686,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const initiativeId = variables?.initiative_id || pathParts[pathParts.length - 1];
+      const initiativeId = normalizeVar(variables?.initiative_id) || pathParts[pathParts.length - 1];
 
       if (!initiativeId) {
         throw new Error('Invalid initiative ID: Initiative ID is missing from URI');
@@ -717,7 +728,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const productId = variables.product_id || pathParts[pathParts.length - 1];
+      const productId = normalizeVar(variables.product_id) || pathParts[pathParts.length - 1];
 
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
@@ -759,7 +770,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const goalId = variables?.goal_id || pathParts[pathParts.length - 1];
+      const goalId = normalizeVar(variables?.goal_id) || pathParts[pathParts.length - 1];
 
       if (!goalId) {
         throw new Error('Invalid goal ID: Goal ID is missing from URI');
@@ -801,7 +812,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const releaseId = variables?.release_id || pathParts[pathParts.length - 1];
+      const releaseId = normalizeVar(variables?.release_id) || pathParts[pathParts.length - 1];
 
       if (!releaseId) {
         throw new Error('Invalid release ID: Release ID is missing from URI');
@@ -843,7 +854,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const releasePhaseId = variables?.release_phase_id || pathParts[pathParts.length - 1];
+      const releasePhaseId = normalizeVar(variables?.release_phase_id) || pathParts[pathParts.length - 1];
 
       if (!releasePhaseId) {
         throw new Error('Invalid release phase ID: Release phase ID is missing from URI');
@@ -885,7 +896,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const requirementId = variables?.requirement_id || pathParts[pathParts.length - 1];
+      const requirementId = normalizeVar(variables?.requirement_id) || pathParts[pathParts.length - 1];
 
       if (!requirementId) {
         throw new Error('Invalid requirement ID: Requirement ID is missing from URI');
@@ -927,7 +938,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const todoId = variables?.todo_id || pathParts[pathParts.length - 1];
+      const todoId = normalizeVar(variables?.todo_id) || pathParts[pathParts.length - 1];
 
       if (!todoId) {
         throw new Error('Invalid todo ID: Todo ID is missing from URI');
@@ -968,7 +979,7 @@ export function registerResources(server: McpServer) {
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const id = variables.id || uri.pathname.split('/').pop();
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid goal ID: ID is missing from URI');
       }
@@ -1008,14 +1019,14 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
-        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const goals = await services.AhaService.listGoals(
-          variables?.query || uri.searchParams.get('query') || undefined,
-          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
-          variables?.assignedToUser || uri.searchParams.get('assignedToUser') || undefined,
-          variables?.status || uri.searchParams.get('status') || undefined,
+          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
+          normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
+          normalizeVar(variables?.status) || uri.searchParams.get('status') || undefined,
           page,
           perPage
         );
@@ -1053,7 +1064,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const goalId = variables?.goal_id || pathParts[pathParts.length - 2]; // goal_id is before /epics
+      const goalId = normalizeVar(variables?.goal_id) || pathParts[pathParts.length - 2]; // goal_id is before /epics
 
       if (!goalId) {
         throw new Error('Invalid goal ID: Goal ID is missing from URI');
@@ -1094,7 +1105,7 @@ export function registerResources(server: McpServer) {
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const id = variables.id || uri.pathname.split('/').pop();
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid release ID: ID is missing from URI');
       }
@@ -1139,14 +1150,14 @@ export function registerResources(server: McpServer) {
                           variables?.parkingLot === 'false' ? false :
                           uri.searchParams.get('parkingLot') === 'true' ? true :
                           uri.searchParams.get('parkingLot') === 'false' ? false : undefined;
-        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const releases = await services.AhaService.listReleases(
-          variables?.query || uri.searchParams.get('query') || undefined,
-          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
-          variables?.assignedToUser || uri.searchParams.get('assignedToUser') || undefined,
-          variables?.status || uri.searchParams.get('status') || undefined,
+          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
+          normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
+          normalizeVar(variables?.status) || uri.searchParams.get('status') || undefined,
           parkingLot,
           page,
           perPage
@@ -1185,7 +1196,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const releaseId = variables?.release_id || pathParts[pathParts.length - 2]; // release_id is before /features
+      const releaseId = normalizeVar(variables?.release_id) || pathParts[pathParts.length - 2]; // release_id is before /features
 
       if (!releaseId) {
         throw new Error('Invalid release ID: Release ID is missing from URI');
@@ -1227,7 +1238,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const releaseId = variables?.release_id || pathParts[pathParts.length - 2]; // release_id is before /epics
+      const releaseId = normalizeVar(variables?.release_id) || pathParts[pathParts.length - 2]; // release_id is before /epics
 
       if (!releaseId) {
         throw new Error('Invalid release ID: Release ID is missing from URI');
@@ -1268,7 +1279,7 @@ export function registerResources(server: McpServer) {
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const id = variables.id || uri.pathname.split('/').pop();
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid release phase ID: ID is missing from URI');
       }
@@ -1297,7 +1308,7 @@ export function registerResources(server: McpServer) {
       description: "List all release phases in your Aha.io account",
       mimeType: "application/json"
     },
-    async (uri: URL, _variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const releasePhases = await services.AhaService.listReleasePhases();
 
@@ -1332,7 +1343,7 @@ export function registerResources(server: McpServer) {
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const id = variables.id || uri.pathname.split('/').pop();
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid requirement ID: ID is missing from URI');
       }
@@ -1370,7 +1381,7 @@ export function registerResources(server: McpServer) {
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const id = variables.id || uri.pathname.split('/').pop();
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid competitor ID: ID is missing from URI');
       }
@@ -1408,7 +1419,7 @@ export function registerResources(server: McpServer) {
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const id = variables.id || uri.pathname.split('/').pop();
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid todo ID: ID is missing from URI');
       }
@@ -1446,7 +1457,7 @@ export function registerResources(server: McpServer) {
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const productId = variables.product_id || uri.pathname.split('/').pop();
+      const productId = normalizeVar(variables.product_id) || uri.pathname.split('/').pop();
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
       }
@@ -1484,7 +1495,7 @@ export function registerResources(server: McpServer) {
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const id = variables.id || uri.pathname.split('/').pop();
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid strategic model ID: ID is missing from URI');
       }
@@ -1524,13 +1535,13 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
-        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const strategicModels = await services.AhaService.listStrategicModels(
-          variables?.query || uri.searchParams.get('query') || undefined,
-          variables?.type || uri.searchParams.get('type') || undefined,
-          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
+          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+          normalizeVar(variables?.type) || uri.searchParams.get('type') || undefined,
+          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
           page,
           perPage
         );
@@ -1591,7 +1602,7 @@ export function registerResources(server: McpServer) {
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const id = variables.id || uri.pathname.split('/').pop();
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid idea organization ID: ID is missing from URI');
       }
@@ -1631,12 +1642,12 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
-        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const ideaOrganizations = await services.AhaService.listIdeaOrganizations(
-          variables?.query || uri.searchParams.get('query') || undefined,
-          variables?.emailDomain || uri.searchParams.get('emailDomain') || undefined,
+          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+          normalizeVar(variables?.emailDomain) || uri.searchParams.get('emailDomain') || undefined,
           page,
           perPage
         );
@@ -1748,7 +1759,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const ideaId = variables.id || pathParts[pathParts.length - 2]; // idea_id is before /endorsements
+      const ideaId = normalizeVar(variables.id) || pathParts[pathParts.length - 2]; // idea_id is before /endorsements
 
       if (!ideaId) {
         throw new Error('Invalid idea ID: Idea ID is missing from URI');
@@ -1789,7 +1800,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const ideaId = variables.id || pathParts[pathParts.length - 2]; // idea_id is before /votes
+      const ideaId = normalizeVar(variables.id) || pathParts[pathParts.length - 2]; // idea_id is before /votes
 
       if (!ideaId) {
         throw new Error('Invalid idea ID: Idea ID is missing from URI');
@@ -1830,7 +1841,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const ideaId = variables.id || pathParts[pathParts.length - 2]; // idea_id is before /watchers
+      const ideaId = normalizeVar(variables.id) || pathParts[pathParts.length - 2]; // idea_id is before /watchers
 
       if (!ideaId) {
         throw new Error('Invalid idea ID: Idea ID is missing from URI');
@@ -1872,18 +1883,18 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
-        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
         
         // Include custom_fields in the fields parameter to get custom fields in response
         const fields = 'custom_fields';
 
         const ideas = await services.AhaService.listIdeas(
-          variables?.query || uri.searchParams.get('query') || undefined,
-          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
-          variables?.assignedToUser || uri.searchParams.get('assignedToUser') || undefined,
-          variables?.status || uri.searchParams.get('status') || undefined,
-          variables?.category || uri.searchParams.get('category') || undefined,
+          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
+          normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
+          normalizeVar(variables?.status) || uri.searchParams.get('status') || undefined,
+          normalizeVar(variables?.category) || uri.searchParams.get('category') || undefined,
           fields,
           page,
           perPage
@@ -1923,23 +1934,23 @@ export function registerResources(server: McpServer) {
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const productId = variables.product_id || uri.pathname.split('/').pop();
+      const productId = normalizeVar(variables.product_id) || uri.pathname.split('/').pop();
       
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
       }
       
       try {
-        const parkingLot = variables.parkingLot === 'true' ? true : 
-                          variables.parkingLot === 'false' ? false : undefined;
-        const page = variables?.page ? parseInt(variables.page) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(variables.perPage) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+        const parkingLot = normalizeVar(variables.parkingLot) === 'true' ? true :
+                          normalizeVar(variables.parkingLot) === 'false' ? false : undefined;
+        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const releases = await services.AhaService.listReleasesByProduct(
           productId,
-          variables?.query || uri.searchParams.get('query') || undefined,
-          variables?.updatedSince || uri.searchParams.get('updatedSince') || undefined,
-          variables?.status || uri.searchParams.get('status') || undefined,
+          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
+          normalizeVar(variables?.status) || uri.searchParams.get('status') || undefined,
           parkingLot,
           page,
           perPage
@@ -1978,7 +1989,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const initiativeId = variables?.initiative_id || pathParts[pathParts.length - 2]; // initiative_id is before /epics
+      const initiativeId = normalizeVar(variables?.initiative_id) || pathParts[pathParts.length - 2]; // initiative_id is before /epics
 
       if (!initiativeId) {
         throw new Error('Invalid initiative ID: Initiative ID is missing from URI');
@@ -2010,7 +2021,7 @@ export function registerResources(server: McpServer) {
       description: "List all custom fields in your Aha.io account",
       mimeType: "application/json"
     },
-    async (uri: URL, _variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const customFields = await services.AhaService.listCustomFields();
 
@@ -2046,7 +2057,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
-      const customFieldId = variables.id || pathParts[pathParts.length - 2]; // custom_field_id is before /options
+      const customFieldId = normalizeVar(variables.id) || pathParts[pathParts.length - 2]; // custom_field_id is before /options
 
       if (!customFieldId) {
         throw new Error('Invalid custom field ID: Custom field ID is missing from URI');
