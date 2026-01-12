@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as services from "./services/index.js";
+import { getSamplingPrimer } from "./sampling.js";
 
 /**
  * Helper function to fetch context from Aha.io resources
@@ -674,6 +675,94 @@ Please provide:
 7. **Related Topics**: Suggested related topics to explore
 
 Focus on providing specific, actionable search queries and analysis approaches.`
+          }
+        }]
+      };
+    }
+  );
+
+  // Resource Discovery with Sampling Primer
+  server.prompt(
+    "aha_resource_discovery",
+    {
+      name: "aha_resource_discovery",
+      description: "Get guidance on discovering and using Aha.io resources with terminology mapping and synonym support. Provides primers for common questions about workspaces, Product Areas, and workstreams.",
+      arguments: [
+        {
+          name: "search_query",
+          description: "What you're looking for (e.g., 'workspaces', 'Product Areas', 'how do I find features')",
+          required: true
+        }
+      ]
+    },
+    async (params: { search_query: string }) => {
+      // Try to generate a sampling primer for this query
+      const primer = getSamplingPrimer(params.search_query);
+
+      if (primer) {
+        // Return the primer as the prompt response
+        return {
+          messages: [{
+            role: "user",
+            content: {
+              type: "text",
+              text: `# Resource Discovery Guidance
+
+${primer}
+
+**Additional Help:**
+- Use \`aha://resources\` to view the complete resource guide with all terminology mappings
+- Check resource titles and descriptions - they include common synonyms
+- Start with top-level resources (products, features, ideas, releases) and navigate down
+
+**Common Terminology:**
+- **Workspace** = **Product** (they're the same thing in Aha.io)
+- **Product Area** = Subdivision within a product (not currently available as a resource)
+- **Workstream** ≈ **Release** (releases organize features and epics)
+
+What would you like to explore?`
+            }
+          }]
+        };
+      }
+
+      // No specific primer, return general discovery guidance
+      return {
+        messages: [{
+          role: "user",
+          content: {
+            type: "text",
+            text: `# Aha.io Resource Discovery
+
+I can help you find and use Aha.io resources. Here's how to get started:
+
+**Quick Start Resources:**
+- \`aha://resources\` - **Start here!** Complete guide with terminology and synonyms
+- \`aha://products\` - List all products/workspaces
+- \`aha://features\` - Search features globally
+- \`aha://ideas\` - Search ideas and feedback
+- \`aha://releases\` - List releases/workstreams
+
+**Common Questions:**
+
+**Q: "How do I find workspaces?"**
+A: Use \`aha://products\` - in Aha.io, products and workspaces are the same thing.
+
+**Q: "Where are Product Areas?"**
+A: Product Areas are not currently exposed as resources. Use \`aha://products\` to access products, which may include area information in the response.
+
+**Q: "How do I find workstreams?"**
+A: Use \`aha://releases\` - releases function as workstreams for organizing work.
+
+**Resource Navigation Pattern:**
+1. Start with top-level resources (products, features, ideas, releases)
+2. Get IDs from the results
+3. Navigate to nested resources using those IDs
+4. Example: \`aha://products\` → get product ID → \`aha://releases/{product_id}\`
+
+**Your Query:** "${params.search_query}"
+
+What specific resources would you like to explore?`
           }
         }]
       };

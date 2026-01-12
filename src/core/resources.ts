@@ -2,10 +2,68 @@ import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mc
 import * as services from "./services/index.js";
 
 /**
+ * Resource terminology and synonym mappings
+ */
+const RESOURCE_SYNONYMS = {
+  workspace: {
+    canonical: "product",
+    resources: ["aha_product", "aha_products"],
+    note: "In Aha.io, products and workspaces are synonymous terms for the same entity"
+  },
+  "Product Area": {
+    canonical: "product_area",
+    resources: [],
+    note: "Product Areas are organizational subdivisions within products/workspaces. Currently not exposed as resources."
+  },
+  area: {
+    canonical: "product_area",
+    resources: [],
+    note: "Product areas (subdivisions within products/workspaces) are currently not exposed as resources."
+  },
+  workstream: {
+    canonical: "release",
+    resources: ["aha_release", "aha_releases"],
+    note: "Releases can function as workstreams for organizing features and epics"
+  }
+};
+
+/**
  * Register all resources with the MCP server
  * @param server The MCP server instance
  */
 export function registerResources(server: McpServer) {
+  // Meta-resource for resource discovery and synonym mapping
+  server.resource(
+    "aha_resource_guide",
+    new ResourceTemplate("aha://resources", { list: undefined, complete: {} }),
+    {
+      title: "Aha Resource Guide",
+      description: "Discover available resources and terminology mappings. Use this to find the right resource when searching by synonym (e.g., 'workspace' → 'product', 'Product Area' → shows not available, 'workstream' → 'release').",
+      mimeType: "application/json"
+    },
+    async (uri: URL) => {
+      return {
+        contents: [{
+          uri: uri.toString(),
+          text: JSON.stringify({
+            synonyms: RESOURCE_SYNONYMS,
+            terminology_guide: {
+              product_workspace: "Products and workspaces are the same in Aha.io. Use aha://products or aha://product/{id}",
+              product_areas: "Product Areas are subdivisions within products. Not currently available as resources.",
+              releases_workstreams: "Releases can be used as workstreams. Use aha://releases or aha://release/{id}"
+            },
+            common_questions: {
+              "How do I find workspaces?": "Use aha://products - products and workspaces are synonymous",
+              "How do I find Product Areas?": "Product Areas are not currently exposed as resources. Use products instead.",
+              "Where are workstreams?": "Releases can function as workstreams - use aha://releases"
+            }
+          }, null, 2),
+          mimeType: "application/json"
+        }]
+      };
+    }
+  );
+
   // Aha idea resource with path variable
   server.resource(
     "aha_idea",
@@ -282,8 +340,8 @@ export function registerResources(server: McpServer) {
       }
     ),
     {
-      title: "Aha Product",
-      description: "Get a specific product by ID",
+      title: "Aha Product (Workspace)",
+      description: "Get a specific product/workspace by ID. In Aha.io, products and workspaces are synonymous - use this to retrieve workspace details.",
       mimeType: "application/json"
     },
     async (uri: URL, variables?: Record<string, string>) => {
@@ -321,8 +379,8 @@ export function registerResources(server: McpServer) {
       }
     ),
     {
-      title: "Aha Products",
-      description: "List products with optional date filter and pagination",
+      title: "Aha Products (Workspaces)",
+      description: "List all products/workspaces with optional date filter and pagination. In Aha.io, products and workspaces are synonymous - use this to list all workspaces.",
       mimeType: "application/json"
     },
     async (uri: URL, variables?: Record<string, string>) => {

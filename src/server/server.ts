@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerResources } from "../core/resources.js";
 import { registerTools } from "../core/tools.js";
 import { registerPrompts } from "../core/prompts.js";
+import { registerSampling } from "../core/sampling.js";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -295,10 +296,11 @@ async function startServer() {
       }
     );
 
-    // Register all resources, tools, and prompts
+    // Register all resources, tools, prompts, and sampling
     registerResources(server);
     registerTools(server);
     registerPrompts(server);
+    registerSampling(server);
     
     // Log comprehensive server information
     log.info('Aha.io MCP Server initialized successfully', {
