@@ -1870,17 +1870,20 @@ export function registerResources(server: McpServer) {
   server.registerResource(
     "aha_idea_endorsements",
     new ResourceTemplate(
-      "aha://idea/{id}/endorsements",
+      "aha://idea/{id}/endorsements{?proxy,page,perPage}",
       {
         list: undefined,
         complete: {
-          id: async () => []
+          id: async () => [],
+          proxy: async () => ['true', 'false'],
+          page: async () => ['1', '2', '3', '4', '5'],
+          perPage: async () => ['20', '50', '100', '200']
         }
       }
     ),
     {
       title: "Aha Idea Endorsements",
-      description: "Get endorsements for a specific idea",
+      description: "Get endorsements for a specific idea with optional pagination and proxy filter",
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
@@ -1892,7 +1895,15 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const endorsements = await getAhaService().getIdeaEndorsements(ideaId);
+        // Extract pagination parameters
+        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+
+        // Extract proxy parameter (boolean)
+        const proxyParam = normalizeVar(variables?.proxy) || uri.searchParams.get('proxy');
+        const proxy = proxyParam === 'true' ? true : proxyParam === 'false' ? false : undefined;
+
+        const endorsements = await getAhaService().getIdeaEndorsements(ideaId, proxy, page, perPage);
         return {
           contents: [{
             uri: uri.toString(),
@@ -1911,17 +1922,19 @@ export function registerResources(server: McpServer) {
   server.registerResource(
     "aha_idea_votes",
     new ResourceTemplate(
-      "aha://idea/{id}/votes",
+      "aha://idea/{id}/votes{?page,perPage}",
       {
         list: undefined,
         complete: {
-          id: async () => []
+          id: async () => [],
+          page: async () => ['1', '2', '3', '4', '5'],
+          perPage: async () => ['20', '50', '100', '200']
         }
       }
     ),
     {
       title: "Aha Idea Votes",
-      description: "Get votes for a specific idea",
+      description: "Get votes for a specific idea with optional pagination",
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
@@ -1933,7 +1946,11 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const votes = await getAhaService().getIdeaVotes(ideaId);
+        // Extract pagination parameters
+        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+
+        const votes = await getAhaService().getIdeaVotes(ideaId, page, perPage);
         return {
           contents: [{
             uri: uri.toString(),
@@ -1996,8 +2013,12 @@ export function registerResources(server: McpServer) {
       const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
       const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
-      // Include custom_fields in the fields parameter to get custom fields in response
-      const fields = 'custom_fields';
+      // Make fields parameter configurable instead of hardcoded
+      const fields = normalizeVar(variables?.fields) || uri.searchParams.get('fields') || 'custom_fields';
+
+      // Extract spam parameter (boolean)
+      const spamParam = normalizeVar(variables?.spam) || uri.searchParams.get('spam');
+      const spam = spamParam === 'true' ? true : spamParam === 'false' ? false : undefined;
 
       const ideas = await getAhaService().listIdeas(
         normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
@@ -2007,7 +2028,17 @@ export function registerResources(server: McpServer) {
         normalizeVar(variables?.category) || uri.searchParams.get('category') || undefined,
         fields,
         page,
-        perPage
+        perPage,
+        normalizeVar(variables?.productId) || uri.searchParams.get('productId') || undefined,
+        normalizeVar(variables?.ideaPortalId) || uri.searchParams.get('ideaPortalId') || undefined,
+        spam,
+        normalizeVar(variables?.workflowStatus) || uri.searchParams.get('workflowStatus') || undefined,
+        (normalizeVar(variables?.sort) || uri.searchParams.get('sort') || undefined) as 'recent' | 'trending' | 'popular' | undefined,
+        normalizeVar(variables?.createdBefore) || uri.searchParams.get('createdBefore') || undefined,
+        normalizeVar(variables?.createdSince) || uri.searchParams.get('createdSince') || undefined,
+        normalizeVar(variables?.tag) || uri.searchParams.get('tag') || undefined,
+        normalizeVar(variables?.userId) || uri.searchParams.get('userId') || undefined,
+        normalizeVar(variables?.ideaUserId) || uri.searchParams.get('ideaUserId') || undefined
       );
 
       return {
@@ -2041,18 +2072,20 @@ export function registerResources(server: McpServer) {
   server.registerResource(
     "aha_ideas_filtered",
     new ResourceTemplate(
-      "aha://ideas{?query,updatedSince,assignedToUser,status,category,page,perPage}",
+      "aha://ideas{?query,updatedSince,assignedToUser,status,category,page,perPage,productId,ideaPortalId,spam,workflowStatus,sort,createdBefore,createdSince,tag,userId,ideaUserId,fields}",
       {
         list: undefined,
         complete: {
           page: async () => ['1', '2', '3', '4', '5'],
-          perPage: async () => ['20', '50', '100', '200']
+          perPage: async () => ['20', '50', '100', '200'],
+          spam: async () => ['true', 'false'],
+          sort: async () => ['recent', 'trending', 'popular']
         }
       }
     ),
     {
       title: "Aha Ideas (Global, Filtered)",
-      description: "List ideas with filters and pagination",
+      description: "List ideas with comprehensive filters and pagination. Supports filtering by product, portal, tags, dates, workflow status, spam, sort order, and more.",
       mimeType: "application/json"
     },
     handleIdeas
