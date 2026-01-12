@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.6.0...aha-mcp-v0.6.1) (2026-01-12)
+
+
+### Bug Fixes
+
+* ResourceTemplate URI matching with SDK PR[#1083](https://github.com/cedricziel/aha-mcp/issues/1083) for query parameters ([#197](https://github.com/cedricziel/aha-mcp/issues/197)) ([2e4b8df](https://github.com/cedricziel/aha-mcp/commit/2e4b8df7420e09f1fe2744a91c8ba7e0b425c80f))
+
 ## [0.6.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.5.1...aha-mcp-v0.6.0) (2026-01-12)
 
 
