@@ -66,7 +66,7 @@
   },
   "dependencies": {
     "@cedricziel/aha-js": "1.2.5",
-    "@modelcontextprotocol/sdk": "1.25.2",
+    "@modelcontextprotocol/sdk": "github:mgyarmathy/modelcontextprotocol--typescript-sdk#6ec58add67a5d9731620f80685abce0da379533b",
     "axios": "^1.12.2",
     "cors": "^2.8.5",
     "express": "^4.21.2",
