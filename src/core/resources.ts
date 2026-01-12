@@ -271,7 +271,12 @@ export function registerResources(server: McpServer) {
   server.registerResource(
     "aha_users",
     "aha://users",
-    async (uri: URL) => {
+    {
+      title: "Aha Users",
+      description: "List all users in your Aha.io account",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const users = await services.AhaService.listUsers();
 
@@ -1287,7 +1292,12 @@ export function registerResources(server: McpServer) {
   server.registerResource(
     "aha_release_phases",
     "aha://release-phases",
-    async (uri: URL) => {
+    {
+      title: "Aha Release Phases",
+      description: "List all release phases in your Aha.io account",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const releasePhases = await services.AhaService.listReleasePhases();
 
@@ -1542,7 +1552,12 @@ export function registerResources(server: McpServer) {
   server.registerResource(
     "aha_todos",
     "aha://todos",
-    async (uri: URL) => {
+    {
+      title: "Aha Todos",
+      description: "List all todos in your Aha.io account",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const todos = await services.AhaService.listTodos();
         return {
@@ -1643,7 +1658,12 @@ export function registerResources(server: McpServer) {
   server.registerResource(
     "aha_me_profile",
     "aha://me/profile",
-    async (uri: URL) => {
+    {
+      title: "My Profile",
+      description: "Get the current user's profile information",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const profile = await services.AhaService.getMe();
         return {
@@ -1663,7 +1683,12 @@ export function registerResources(server: McpServer) {
   server.registerResource(
     "aha_me_assigned_records",
     "aha://me/assigned-records",
-    async (uri: URL) => {
+    {
+      title: "My Assigned Records",
+      description: "Get records assigned to the current user",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const assignedRecords = await services.AhaService.getAssignedRecords();
         return {
@@ -1683,7 +1708,12 @@ export function registerResources(server: McpServer) {
   server.registerResource(
     "aha_me_pending_tasks",
     "aha://me/pending-tasks",
-    async (uri: URL) => {
+    {
+      title: "My Pending Tasks",
+      description: "Get pending tasks for the current user",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const pendingTasks = await services.AhaService.getPendingTasks();
         return {
@@ -1975,7 +2005,12 @@ export function registerResources(server: McpServer) {
   server.registerResource(
     "aha_custom_fields",
     "aha://custom-fields",
-    async (uri: URL) => {
+    {
+      title: "Aha Custom Fields",
+      description: "List all custom fields in your Aha.io account",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const customFields = await services.AhaService.listCustomFields();
 
