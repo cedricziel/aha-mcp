@@ -121,6 +121,7 @@ describe('Resources', () => {
     // Create a mock server that captures resource registrations
     resourceHandlers = new Map();
     server = {
+      // Support deprecated resource() method for backward compatibility
       resource: (name: string, templateOrUri: any, handlerOrMetadata?: any, possibleHandler?: Function) => {
         // Handle both old signature (string, handler) and new signature (ResourceTemplate, metadata, handler)
         let handler: Function;
@@ -136,6 +137,10 @@ describe('Resources', () => {
         } else {
           handler = handlerOrMetadata;
         }
+        resourceHandlers.set(name, handler);
+      },
+      // New registerResource() method (SDK 1.25.2+)
+      registerResource: (name: string, templateOrUri: any, config: any, handler: Function) => {
         resourceHandlers.set(name, handler);
       }
     } as any;
