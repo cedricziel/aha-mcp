@@ -63,24 +63,13 @@ describe('E2E: Resource Discovery Workflows', () => {
     promptHandlers = new Map();
 
     server = {
-      resource: (name: string, templateOrUri: any, handlerOrMetadata?: any, possibleHandler?: Function) => {
-        let handler: Function;
-        if (typeof templateOrUri === 'string' && typeof handlerOrMetadata === 'function') {
-          handler = handlerOrMetadata;
-        } else if (typeof templateOrUri === 'object' && typeof possibleHandler === 'function') {
-          handler = possibleHandler;
-        } else if (typeof templateOrUri === 'object' && typeof handlerOrMetadata === 'function') {
-          handler = handlerOrMetadata;
-        } else {
-          handler = handlerOrMetadata;
-        }
+      registerResource: (name: string, _templateOrUri: any, _config: any, handler: Function) => {
         resourceHandlers.set(name, handler);
       },
-      prompt: (name: string, argsOrHandler: any, handler?: Function) => {
-        const actualHandler = typeof handler === 'function' ? handler : argsOrHandler;
-        promptHandlers.set(name, actualHandler);
+      registerPrompt: (name: string, _config: any, handler: Function) => {
+        promptHandlers.set(name, handler);
       }
-    };
+    } as any;
 
     registerResources(server);
     registerPrompts(server);
