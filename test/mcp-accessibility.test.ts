@@ -76,6 +76,7 @@ describe('MCP Server Accessibility', () => {
     promptHandlers = new Map();
     
     server = {
+      // Support deprecated resource() method for backward compatibility
       resource: (name: string, templateOrUri: any, handlerOrMetadata?: any, possibleHandler?: Function) => {
         // Handle both old signature (string, handler) and new signature (ResourceTemplate, metadata, handler)
         let handler: Function;
@@ -93,7 +94,16 @@ describe('MCP Server Accessibility', () => {
         }
         resourceHandlers.set(name, handler);
       },
+      // New registerResource() method (SDK 1.25.2+)
+      registerResource: (name: string, templateOrUri: any, config: any, handler: Function) => {
+        resourceHandlers.set(name, handler);
+      },
+      // Support deprecated prompt() method for backward compatibility
       prompt: (name: string, _description: string, _schema: any, handler: Function) => {
+        promptHandlers.set(name, handler);
+      },
+      // New registerPrompt() method (SDK 1.25.2+)
+      registerPrompt: (name: string, config: any, handler: Function) => {
         promptHandlers.set(name, handler);
       }
     } as any;
@@ -236,7 +246,7 @@ describe('MCP Server Accessibility', () => {
 
       // Test invalid URI (missing ID)
       const invalidUri = new URL('aha://idea/');
-      await expect(handler!(invalidUri)).rejects.toThrow('Invalid idea ID: ID is missing from URI');
+      await expect(handler!(invalidUri, {}, {} as any)).rejects.toThrow('Invalid idea ID: ID is missing from URI');
     });
   });
 
@@ -369,7 +379,7 @@ describe('MCP Server Accessibility', () => {
       const handler = resourceHandlers.get('aha_idea');
       const uri = new URL('aha://idea/IDEA-123');
 
-      await expect(handler!(uri)).rejects.toThrow('Service unavailable');
+      await expect(handler!(uri, { id: 'IDEA-123' }, {} as any)).rejects.toThrow('Service unavailable');
     });
 
     it('should handle context fetch errors gracefully in prompts', async () => {
@@ -379,7 +389,7 @@ describe('MCP Server Accessibility', () => {
       const handler = promptHandlers.get('feature_analysis');
 
       // Should still return a prompt, but without specific context
-      const result = await handler!({ feature_id: 'FEAT-999' });
+      const result = await handler!({ feature_name: 'Test Feature', feature_id: 'FEAT-999' }, {} as any);
       expect(result).toBeDefined();
       expect(result.messages).toBeDefined();
     });
