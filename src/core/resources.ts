@@ -87,9 +87,22 @@ export function registerResources(server: McpServer) {
   // Aha user resource
   server.resource(
     "aha_user",
-    "aha://user/{id}",
-    async (uri: URL) => {
-      const id = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://user/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha User",
+      description: "Get a specific user by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      const id = variables?.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid user ID: ID is missing from URI');
       }
@@ -98,7 +111,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(user, null, 2)
+            text: JSON.stringify(user, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -111,9 +125,22 @@ export function registerResources(server: McpServer) {
   // Aha epic resource
   server.resource(
     "aha_epic",
-    "aha://epic/{id}",
-    async (uri: URL) => {
-      const id = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://epic/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Epic",
+      description: "Get a specific epic by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      const id = variables?.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid epic ID: ID is missing from URI');
       }
@@ -122,7 +149,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(epic, null, 2)
+            text: JSON.stringify(epic, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -202,22 +230,36 @@ export function registerResources(server: McpServer) {
   // Aha epics list resource
   server.resource(
     "aha_epics",
-    "aha://epics/{product_id}",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://epics/{product_id}",
+      {
+        list: undefined,
+        complete: {
+          product_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Epics by Product",
+      description: "List epics for a specific product",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const productId = pathParts[pathParts.length - 1];
-      
+      const productId = variables?.product_id || pathParts[pathParts.length - 1];
+
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
       }
-      
+
       try {
         const epics = await services.AhaService.listEpics(productId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(epics, null, 2)
+            text: JSON.stringify(epics, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -230,9 +272,22 @@ export function registerResources(server: McpServer) {
   // Aha product resource
   server.resource(
     "aha_product",
-    "aha://product/{id}",
-    async (uri: URL) => {
-      const id = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://product/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Product",
+      description: "Get a specific product by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      const id = variables?.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid product ID: ID is missing from URI');
       }
@@ -241,7 +296,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(product, null, 2)
+            text: JSON.stringify(product, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -297,9 +353,22 @@ export function registerResources(server: McpServer) {
   // Aha initiative resource
   server.resource(
     "aha_initiative",
-    "aha://initiative/{id}",
-    async (uri: URL) => {
-      const id = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://initiative/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Initiative",
+      description: "Get a specific initiative by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      const id = variables?.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid initiative ID: ID is missing from URI');
       }
@@ -308,7 +377,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(initiative, null, 2)
+            text: JSON.stringify(initiative, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -372,19 +442,32 @@ export function registerResources(server: McpServer) {
   // Aha ideas by product resource
   server.resource(
     "aha_ideas_by_product",
-    "aha://ideas/{product_id}",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://ideas/{product_id}",
+      {
+        list: undefined,
+        complete: {
+          product_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Ideas by Product",
+      description: "List ideas for a specific product with optional filters",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const productId = pathParts[pathParts.length - 1];
-      
+      const productId = variables?.product_id || pathParts[pathParts.length - 1];
+
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
       }
-      
+
       try {
         // Extract query parameters for advanced filtering
         const query = uri.searchParams.get('query') || undefined;
-        const spam = uri.searchParams.get('spam') === 'true' ? true : 
+        const spam = uri.searchParams.get('spam') === 'true' ? true :
                     uri.searchParams.get('spam') === 'false' ? false : undefined;
         const workflowStatus = uri.searchParams.get('workflowStatus') || undefined;
         const sort = uri.searchParams.get('sort') || undefined;
@@ -412,7 +495,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(ideas, null, 2)
+            text: JSON.stringify(ideas, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -425,22 +509,36 @@ export function registerResources(server: McpServer) {
   // Aha epic comments resource
   server.resource(
     "aha_epic_comments",
-    "aha://comments/epic/{epic_id}",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://comments/epic/{epic_id}",
+      {
+        list: undefined,
+        complete: {
+          epic_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Epic Comments",
+      description: "Get comments for a specific epic",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const epicId = pathParts[pathParts.length - 1];
-      
+      const epicId = variables?.epic_id || pathParts[pathParts.length - 1];
+
       if (!epicId) {
         throw new Error('Invalid epic ID: Epic ID is missing from URI');
       }
-      
+
       try {
         const comments = await services.AhaService.getEpicComments(epicId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(comments, null, 2)
+            text: JSON.stringify(comments, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -453,22 +551,36 @@ export function registerResources(server: McpServer) {
   // Aha idea comments resource
   server.resource(
     "aha_idea_comments",
-    "aha://comments/idea/{idea_id}",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://comments/idea/{idea_id}",
+      {
+        list: undefined,
+        complete: {
+          idea_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Idea Comments",
+      description: "Get comments for a specific idea",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const ideaId = pathParts[pathParts.length - 1];
-      
+      const ideaId = variables?.idea_id || pathParts[pathParts.length - 1];
+
       if (!ideaId) {
         throw new Error('Invalid idea ID: Idea ID is missing from URI');
       }
-      
+
       try {
         const comments = await services.AhaService.getIdeaComments(ideaId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(comments, null, 2)
+            text: JSON.stringify(comments, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -481,22 +593,36 @@ export function registerResources(server: McpServer) {
   // Aha initiative comments resource
   server.resource(
     "aha_initiative_comments",
-    "aha://comments/initiative/{initiative_id}",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://comments/initiative/{initiative_id}",
+      {
+        list: undefined,
+        complete: {
+          initiative_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Initiative Comments",
+      description: "Get comments for a specific initiative",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const initiativeId = pathParts[pathParts.length - 1];
-      
+      const initiativeId = variables?.initiative_id || pathParts[pathParts.length - 1];
+
       if (!initiativeId) {
         throw new Error('Invalid initiative ID: Initiative ID is missing from URI');
       }
-      
+
       try {
         const comments = await services.AhaService.getInitiativeComments(initiativeId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(comments, null, 2)
+            text: JSON.stringify(comments, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -509,22 +635,36 @@ export function registerResources(server: McpServer) {
   // Aha product comments resource
   server.resource(
     "aha_product_comments",
-    "aha://comments/product/{product_id}",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://comments/product/{product_id}",
+      {
+        list: undefined,
+        complete: {
+          product_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Product Comments",
+      description: "Get comments for a specific product",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const productId = pathParts[pathParts.length - 1];
-      
+      const productId = variables?.product_id || pathParts[pathParts.length - 1];
+
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
       }
-      
+
       try {
         const comments = await services.AhaService.getProductComments(productId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(comments, null, 2)
+            text: JSON.stringify(comments, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -537,22 +677,36 @@ export function registerResources(server: McpServer) {
   // Aha goal comments resource
   server.resource(
     "aha_goal_comments",
-    "aha://comments/goal/{goal_id}",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://comments/goal/{goal_id}",
+      {
+        list: undefined,
+        complete: {
+          goal_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Goal Comments",
+      description: "Get comments for a specific goal",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const goalId = pathParts[pathParts.length - 1];
-      
+      const goalId = variables?.goal_id || pathParts[pathParts.length - 1];
+
       if (!goalId) {
         throw new Error('Invalid goal ID: Goal ID is missing from URI');
       }
-      
+
       try {
         const comments = await services.AhaService.getGoalComments(goalId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(comments, null, 2)
+            text: JSON.stringify(comments, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -565,22 +719,36 @@ export function registerResources(server: McpServer) {
   // Aha release comments resource
   server.resource(
     "aha_release_comments",
-    "aha://comments/release/{release_id}",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://comments/release/{release_id}",
+      {
+        list: undefined,
+        complete: {
+          release_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Release Comments",
+      description: "Get comments for a specific release",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const releaseId = pathParts[pathParts.length - 1];
-      
+      const releaseId = variables?.release_id || pathParts[pathParts.length - 1];
+
       if (!releaseId) {
         throw new Error('Invalid release ID: Release ID is missing from URI');
       }
-      
+
       try {
         const comments = await services.AhaService.getReleaseComments(releaseId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(comments, null, 2)
+            text: JSON.stringify(comments, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -593,22 +761,36 @@ export function registerResources(server: McpServer) {
   // Aha release phase comments resource
   server.resource(
     "aha_release_phase_comments",
-    "aha://comments/release-phase/{release_phase_id}",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://comments/release-phase/{release_phase_id}",
+      {
+        list: undefined,
+        complete: {
+          release_phase_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Release Phase Comments",
+      description: "Get comments for a specific release phase",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const releasePhaseId = pathParts[pathParts.length - 1];
-      
+      const releasePhaseId = variables?.release_phase_id || pathParts[pathParts.length - 1];
+
       if (!releasePhaseId) {
         throw new Error('Invalid release phase ID: Release phase ID is missing from URI');
       }
-      
+
       try {
         const comments = await services.AhaService.getReleasePhaseComments(releasePhaseId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(comments, null, 2)
+            text: JSON.stringify(comments, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -621,22 +803,36 @@ export function registerResources(server: McpServer) {
   // Aha requirement comments resource
   server.resource(
     "aha_requirement_comments",
-    "aha://comments/requirement/{requirement_id}",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://comments/requirement/{requirement_id}",
+      {
+        list: undefined,
+        complete: {
+          requirement_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Requirement Comments",
+      description: "Get comments for a specific requirement",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const requirementId = pathParts[pathParts.length - 1];
-      
+      const requirementId = variables?.requirement_id || pathParts[pathParts.length - 1];
+
       if (!requirementId) {
         throw new Error('Invalid requirement ID: Requirement ID is missing from URI');
       }
-      
+
       try {
         const comments = await services.AhaService.getRequirementComments(requirementId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(comments, null, 2)
+            text: JSON.stringify(comments, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -649,22 +845,36 @@ export function registerResources(server: McpServer) {
   // Aha todo comments resource
   server.resource(
     "aha_todo_comments",
-    "aha://comments/todo/{todo_id}",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://comments/todo/{todo_id}",
+      {
+        list: undefined,
+        complete: {
+          todo_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Todo Comments",
+      description: "Get comments for a specific todo",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const todoId = pathParts[pathParts.length - 1];
-      
+      const todoId = variables?.todo_id || pathParts[pathParts.length - 1];
+
       if (!todoId) {
         throw new Error('Invalid todo ID: Todo ID is missing from URI');
       }
-      
+
       try {
         const comments = await services.AhaService.getTodoComments(todoId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(comments, null, 2)
+            text: JSON.stringify(comments, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -677,9 +887,22 @@ export function registerResources(server: McpServer) {
   // Aha goal resource
   server.resource(
     "aha_goal",
-    "aha://goal/{id}",
-    async (uri: URL) => {
-      const id = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://goal/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Goal",
+      description: "Get a specific goal by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      const id = variables?.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid goal ID: ID is missing from URI');
       }
@@ -688,7 +911,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(goal, null, 2)
+            text: JSON.stringify(goal, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -747,22 +971,36 @@ export function registerResources(server: McpServer) {
   // Aha goal epics resource
   server.resource(
     "aha_goal_epics",
-    "aha://goal/{goal_id}/epics",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://goal/{goal_id}/epics",
+      {
+        list: undefined,
+        complete: {
+          goal_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Goal Epics",
+      description: "Get epics for a specific goal",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const goalId = pathParts[pathParts.length - 2]; // goal_id is before /epics
-      
+      const goalId = variables?.goal_id || pathParts[pathParts.length - 2]; // goal_id is before /epics
+
       if (!goalId) {
         throw new Error('Invalid goal ID: Goal ID is missing from URI');
       }
-      
+
       try {
         const epics = await services.AhaService.getGoalEpics(goalId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(epics, null, 2)
+            text: JSON.stringify(epics, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -775,9 +1013,22 @@ export function registerResources(server: McpServer) {
   // Aha release resource
   server.resource(
     "aha_release",
-    "aha://release/{id}",
-    async (uri: URL) => {
-      const id = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://release/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Release",
+      description: "Get a specific release by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      const id = variables?.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid release ID: ID is missing from URI');
       }
@@ -786,7 +1037,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(release, null, 2)
+            text: JSON.stringify(release, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -851,22 +1103,36 @@ export function registerResources(server: McpServer) {
   // Aha release features resource
   server.resource(
     "aha_release_features",
-    "aha://release/{release_id}/features",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://release/{release_id}/features",
+      {
+        list: undefined,
+        complete: {
+          release_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Release Features",
+      description: "Get features for a specific release",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const releaseId = pathParts[pathParts.length - 2]; // release_id is before /features
-      
+      const releaseId = variables?.release_id || pathParts[pathParts.length - 2]; // release_id is before /features
+
       if (!releaseId) {
         throw new Error('Invalid release ID: Release ID is missing from URI');
       }
-      
+
       try {
         const features = await services.AhaService.getReleaseFeatures(releaseId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(features, null, 2)
+            text: JSON.stringify(features, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -879,22 +1145,36 @@ export function registerResources(server: McpServer) {
   // Aha release epics resource
   server.resource(
     "aha_release_epics",
-    "aha://release/{release_id}/epics",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://release/{release_id}/epics",
+      {
+        list: undefined,
+        complete: {
+          release_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Release Epics",
+      description: "Get epics for a specific release",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const releaseId = pathParts[pathParts.length - 2]; // release_id is before /epics
-      
+      const releaseId = variables?.release_id || pathParts[pathParts.length - 2]; // release_id is before /epics
+
       if (!releaseId) {
         throw new Error('Invalid release ID: Release ID is missing from URI');
       }
-      
+
       try {
         const epics = await services.AhaService.getReleaseEpics(releaseId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(epics, null, 2)
+            text: JSON.stringify(epics, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -907,9 +1187,22 @@ export function registerResources(server: McpServer) {
   // Aha release phase resource
   server.resource(
     "aha_release_phase",
-    "aha://release-phase/{id}",
-    async (uri: URL) => {
-      const id = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://release-phase/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Release Phase",
+      description: "Get a specific release phase by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      const id = variables?.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid release phase ID: ID is missing from URI');
       }
@@ -918,7 +1211,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(releasePhase, null, 2)
+            text: JSON.stringify(releasePhase, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -952,9 +1246,22 @@ export function registerResources(server: McpServer) {
   // Aha requirement resource
   server.resource(
     "aha_requirement",
-    "aha://requirement/{id}",
-    async (uri: URL) => {
-      const id = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://requirement/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Requirement",
+      description: "Get a specific requirement by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      const id = variables?.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid requirement ID: ID is missing from URI');
       }
@@ -963,7 +1270,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(requirement, null, 2)
+            text: JSON.stringify(requirement, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -976,9 +1284,22 @@ export function registerResources(server: McpServer) {
   // Aha competitor resource
   server.resource(
     "aha_competitor",
-    "aha://competitor/{id}",
-    async (uri: URL) => {
-      const id = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://competitor/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Competitor",
+      description: "Get a specific competitor by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      const id = variables?.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid competitor ID: ID is missing from URI');
       }
@@ -987,7 +1308,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(competitor, null, 2)
+            text: JSON.stringify(competitor, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -1000,9 +1322,22 @@ export function registerResources(server: McpServer) {
   // Aha todo resource
   server.resource(
     "aha_todo",
-    "aha://todo/{id}",
-    async (uri: URL) => {
-      const id = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://todo/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Todo",
+      description: "Get a specific todo by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      const id = variables?.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid todo ID: ID is missing from URI');
       }
@@ -1011,7 +1346,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(todo, null, 2)
+            text: JSON.stringify(todo, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -1024,9 +1360,22 @@ export function registerResources(server: McpServer) {
   // Aha competitors list resource
   server.resource(
     "aha_competitors",
-    "aha://competitors/{product_id}",
-    async (uri: URL) => {
-      const productId = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://competitors/{product_id}",
+      {
+        list: undefined,
+        complete: {
+          product_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Competitors by Product",
+      description: "List competitors for a specific product",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      const productId = variables?.product_id || uri.pathname.split('/').pop();
       if (!productId) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
       }
@@ -1035,7 +1384,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(competitors, null, 2)
+            text: JSON.stringify(competitors, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -1048,9 +1398,22 @@ export function registerResources(server: McpServer) {
   // Aha strategic model resource
   server.resource(
     "aha_strategic_model",
-    "aha://strategic-model/{id}",
-    async (uri: URL) => {
-      const id = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://strategic-model/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Strategic Model",
+      description: "Get a specific strategic model by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      const id = variables?.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid strategic model ID: ID is missing from URI');
       }
@@ -1059,7 +1422,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(strategicModel, null, 2)
+            text: JSON.stringify(strategicModel, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -1136,9 +1500,22 @@ export function registerResources(server: McpServer) {
   // Aha idea organization resource
   server.resource(
     "aha_idea_organization",
-    "aha://idea-organization/{id}",
-    async (uri: URL) => {
-      const id = uri.pathname.split('/').pop();
+    new ResourceTemplate(
+      "aha://idea-organization/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Idea Organization",
+      description: "Get a specific idea organization by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
+      const id = variables?.id || uri.pathname.split('/').pop();
       if (!id) {
         throw new Error('Invalid idea organization ID: ID is missing from URI');
       }
@@ -1147,7 +1524,8 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(ideaOrganization, null, 2)
+            text: JSON.stringify(ideaOrganization, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -1263,21 +1641,35 @@ export function registerResources(server: McpServer) {
   // Aha idea endorsements resource
   server.resource(
     "aha_idea_endorsements",
-    "aha://idea/{id}/endorsements",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://idea/{id}/endorsements",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Idea Endorsements",
+      description: "Get endorsements for a specific idea",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const ideaId = pathParts[pathParts.length - 2]; // idea_id is before /endorsements
-      
+      const ideaId = variables?.id || pathParts[pathParts.length - 2]; // idea_id is before /endorsements
+
       if (!ideaId) {
         throw new Error('Invalid idea ID: Idea ID is missing from URI');
       }
-      
+
       try {
         const endorsements = await services.AhaService.getIdeaEndorsements(ideaId);
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(endorsements, null, 2)
+            text: JSON.stringify(endorsements, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -1290,21 +1682,35 @@ export function registerResources(server: McpServer) {
   // Aha idea votes resource
   server.resource(
     "aha_idea_votes",
-    "aha://idea/{id}/votes",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://idea/{id}/votes",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Idea Votes",
+      description: "Get votes for a specific idea",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const ideaId = pathParts[pathParts.length - 2]; // idea_id is before /votes
-      
+      const ideaId = variables?.id || pathParts[pathParts.length - 2]; // idea_id is before /votes
+
       if (!ideaId) {
         throw new Error('Invalid idea ID: Idea ID is missing from URI');
       }
-      
+
       try {
         const votes = await services.AhaService.getIdeaVotes(ideaId);
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(votes, null, 2)
+            text: JSON.stringify(votes, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -1317,21 +1723,35 @@ export function registerResources(server: McpServer) {
   // Aha idea watchers resource
   server.resource(
     "aha_idea_watchers",
-    "aha://idea/{id}/watchers",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://idea/{id}/watchers",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Idea Watchers",
+      description: "Get watchers for a specific idea",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const ideaId = pathParts[pathParts.length - 2]; // idea_id is before /watchers
-      
+      const ideaId = variables?.id || pathParts[pathParts.length - 2]; // idea_id is before /watchers
+
       if (!ideaId) {
         throw new Error('Invalid idea ID: Idea ID is missing from URI');
       }
-      
+
       try {
         const watchers = await services.AhaService.getIdeaWatchers(ideaId);
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(watchers, null, 2)
+            text: JSON.stringify(watchers, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -1451,22 +1871,36 @@ export function registerResources(server: McpServer) {
   // Aha initiative epics resource
   server.resource(
     "aha_initiative_epics",
-    "aha://initiative/{initiative_id}/epics",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://initiative/{initiative_id}/epics",
+      {
+        list: undefined,
+        complete: {
+          initiative_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Initiative Epics",
+      description: "Get epics for a specific initiative",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const initiativeId = pathParts[pathParts.length - 2]; // initiative_id is before /epics
-      
+      const initiativeId = variables?.initiative_id || pathParts[pathParts.length - 2]; // initiative_id is before /epics
+
       if (!initiativeId) {
         throw new Error('Invalid initiative ID: Initiative ID is missing from URI');
       }
-      
+
       try {
         const epics = await services.AhaService.getInitiativeEpics(initiativeId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(epics, null, 2)
+            text: JSON.stringify(epics, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
@@ -1500,22 +1934,36 @@ export function registerResources(server: McpServer) {
   // Aha custom field options resource
   server.resource(
     "aha_custom_field_options",
-    "aha://custom-field/{id}/options",
-    async (uri: URL) => {
+    new ResourceTemplate(
+      "aha://custom-field/{id}/options",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Custom Field Options",
+      description: "Get options for a specific custom field",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables?: Record<string, string>) => {
       const pathParts = uri.pathname.split('/');
-      const customFieldId = pathParts[pathParts.length - 2]; // custom_field_id is before /options
-      
+      const customFieldId = variables?.id || pathParts[pathParts.length - 2]; // custom_field_id is before /options
+
       if (!customFieldId) {
         throw new Error('Invalid custom field ID: Custom field ID is missing from URI');
       }
-      
+
       try {
         const options = await services.AhaService.listCustomFieldOptions(customFieldId);
 
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(options, null, 2)
+            text: JSON.stringify(options, null, 2),
+            mimeType: "application/json"
           }]
         };
       } catch (error) {
