@@ -45,6 +45,7 @@
     "test:watch": "bun test --watch --preload ./test/setup.ts",
     "prepublishOnly": "bun run build",
     "prepare": "husky",
+    "postinstall": "if [ -d node_modules/@modelcontextprotocol/sdk ] && [ ! -d node_modules/@modelcontextprotocol/sdk/dist/esm ]; then cd node_modules/@modelcontextprotocol/sdk && npm run build:esm 2>/dev/null; fi || true",
     "dxt:pack": "dxt pack",
     "docker:build": "docker build -t ghcr.io/cedricziel/aha-mcp .",
     "docker:run": "docker run --rm -e AHA_COMPANY=${AHA_COMPANY} -e AHA_TOKEN=${AHA_TOKEN} ghcr.io/cedricziel/aha-mcp",
@@ -66,7 +67,7 @@
   },
   "dependencies": {
     "@cedricziel/aha-js": "1.2.5",
-    "@modelcontextprotocol/sdk": "1.25.2",
+    "@modelcontextprotocol/sdk": "github:mgyarmathy/modelcontextprotocol--typescript-sdk#6ec58add67a5d9731620f80685abce0da379533b",
     "axios": "^1.12.2",
     "cors": "^2.8.5",
     "express": "^4.21.2",

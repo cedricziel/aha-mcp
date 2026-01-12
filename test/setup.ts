@@ -11,6 +11,10 @@ process.env.AHA_TOKEN = 'test-token';
 // Disable telemetry console output during tests
 process.env.OTEL_EXPORTER_OTLP_ENDPOINT = '';
 
-console.log('Test environment configured');
+// Enable mock AhaService for all tests
+import { useMockAhaService } from '../src/core/services/index.js';
+useMockAhaService();
+
+console.log('Test environment configured with mocked AhaService');
 console.log(`AHA_COMPANY: ${process.env.AHA_COMPANY}`);
 console.log(`AHA_TOKEN: ${process.env.AHA_TOKEN ? 'configured' : 'not configured'}`);

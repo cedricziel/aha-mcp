@@ -2,7 +2,7 @@ import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mc
 import type { ServerRequest, ServerNotification } from "@modelcontextprotocol/sdk/types.js";
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { Variables } from "@modelcontextprotocol/sdk/shared/uriTemplate.js";
-import * as services from "./services/index.js";
+import { getAhaService } from "./services/index.js";
 
 /**
  * Helper function to normalize variable values to strings
@@ -102,7 +102,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid idea ID: ID is missing from URI');
       }
       try {
-        const idea = await services.AhaService.getIdea(id);
+        const idea = await getAhaService().getIdea(id);
         return {
           contents: [{
             uri: uri.toString(),
@@ -141,7 +141,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid feature ID: ID is missing from URI');
       }
       try {
-        const feature = await services.AhaService.getFeature(id);
+        const feature = await getAhaService().getFeature(id);
         return {
           contents: [{
             uri: uri.toString(),
@@ -179,7 +179,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid user ID: ID is missing from URI');
       }
       try {
-        const user = await services.AhaService.getUser(id);
+        const user = await getAhaService().getUser(id);
         return {
           contents: [{
             uri: uri.toString(),
@@ -217,7 +217,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid epic ID: ID is missing from URI');
       }
       try {
-        const epic = await services.AhaService.getEpic(id);
+        const epic = await getAhaService().getEpic(id);
         return {
           contents: [{
             uri: uri.toString(),
@@ -233,12 +233,55 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha features list resource with pagination and filter parameters
+  // Shared handler for both base URI and template URI
+  const handleFeatures = async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+    try {
+      const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+      const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+
+      const features = await getAhaService().listFeatures(
+        normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+        normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
+        normalizeVar(variables?.tag) || uri.searchParams.get('tag') || undefined,
+        normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
+        page,
+        perPage
+      );
+
+      return {
+        contents: [{
+          uri: uri.toString(),
+          text: JSON.stringify(features, null, 2),
+          mimeType: "application/json"
+        }]
+      };
+    } catch (error) {
+      console.error(`Error retrieving features list:`, error);
+      throw error;
+    }
+  };
+
+  // Base URI registration - matches aha://features
   server.registerResource(
     "aha_features",
+    "aha://features",
+    {
+      title: "Aha Features",
+      description: "List all features",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      return handleFeatures(uri, {}, _extra);
+    }
+  );
+
+  // Template URI registration - matches aha://features?query=...
+  server.registerResource(
+    "aha_features_filtered",
     new ResourceTemplate(
       "aha://features{?query,updatedSince,tag,assignedToUser,page,perPage}",
       {
-        list: undefined, // Not listing all instances, just defining the template
+        list: undefined,
         complete: {
           page: async () => ['1', '2', '3', '4', '5'],
           perPage: async () => ['20', '50', '100', '200']
@@ -246,36 +289,11 @@ export function registerResources(server: McpServer) {
       }
     ),
     {
-      title: "Aha Features",
-      description: "List features with optional filters and pagination",
+      title: "Aha Features (Filtered)",
+      description: "List features with filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      try {
-        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
-
-        const features = await services.AhaService.listFeatures(
-          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
-          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
-          normalizeVar(variables?.tag) || uri.searchParams.get('tag') || undefined,
-          normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
-          page,
-          perPage
-        );
-
-        return {
-          contents: [{
-            uri: uri.toString(),
-            text: JSON.stringify(features, null, 2),
-            mimeType: "application/json"
-          }]
-        };
-      } catch (error) {
-        console.error(`Error retrieving features list:`, error);
-        throw error;
-      }
-    }
+    handleFeatures
   );
 
   // Aha users list resource
@@ -289,7 +307,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
-        const users = await services.AhaService.listUsers();
+        const users = await getAhaService().listUsers();
 
         return {
           contents: [{
@@ -330,7 +348,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const epics = await services.AhaService.listEpics(productId);
+        const epics = await getAhaService().listEpics(productId);
 
         return {
           contents: [{
@@ -369,7 +387,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid product ID: ID is missing from URI');
       }
       try {
-        const product = await services.AhaService.getProduct(id);
+        const product = await getAhaService().getProduct(id);
         return {
           contents: [{
             uri: uri.toString(),
@@ -385,8 +403,48 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha products list resource with pagination parameters
+  // Shared handler for both base URI and template URI
+  const handleProducts = async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+    try {
+      const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+      const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+
+      const products = await getAhaService().listProducts(
+        normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
+        page,
+        perPage
+      );
+
+      return {
+        contents: [{
+          uri: uri.toString(),
+          text: JSON.stringify(products, null, 2),
+          mimeType: "application/json"
+        }]
+      };
+    } catch (error) {
+      console.error(`Error retrieving products list:`, error);
+      throw error;
+    }
+  };
+
+  // Base URI registration - matches aha://products
   server.registerResource(
     "aha_products",
+    "aha://products",
+    {
+      title: "Aha Products (Workspaces)",
+      description: "List all products/workspaces. In Aha.io, products and workspaces are synonymous.",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      return handleProducts(uri, {}, _extra);
+    }
+  );
+
+  // Template URI registration - matches aha://products?updatedSince=...
+  server.registerResource(
+    "aha_products_filtered",
     new ResourceTemplate(
       "aha://products{?updatedSince,page,perPage}",
       {
@@ -398,33 +456,11 @@ export function registerResources(server: McpServer) {
       }
     ),
     {
-      title: "Aha Products (Workspaces)",
-      description: "List all products/workspaces with optional date filter and pagination. In Aha.io, products and workspaces are synonymous - use this to list all workspaces.",
+      title: "Aha Products (Workspaces, Filtered)",
+      description: "List products/workspaces with filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      try {
-        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
-
-        const products = await services.AhaService.listProducts(
-          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
-          page,
-          perPage
-        );
-
-        return {
-          contents: [{
-            uri: uri.toString(),
-            text: JSON.stringify(products, null, 2),
-            mimeType: "application/json"
-          }]
-        };
-      } catch (error) {
-        console.error(`Error retrieving products list:`, error);
-        throw error;
-      }
-    }
+    handleProducts
   );
 
   // Aha initiative resource
@@ -450,7 +486,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid initiative ID: ID is missing from URI');
       }
       try {
-        const initiative = await services.AhaService.getInitiative(id);
+        const initiative = await getAhaService().getInitiative(id);
         return {
           contents: [{
             uri: uri.toString(),
@@ -466,8 +502,55 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha initiatives list resource with advanced filters and pagination
+  // Shared handler for both base URI and template URI
+  const handleInitiatives = async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+    try {
+      const onlyActive = variables?.onlyActive === 'true' ? true :
+                        variables?.onlyActive === 'false' ? false :
+                        uri.searchParams.get('onlyActive') === 'true' ? true :
+                        uri.searchParams.get('onlyActive') === 'false' ? false : undefined;
+      const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+      const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+
+      const initiatives = await getAhaService().listInitiatives(
+        normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+        normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
+        normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
+        onlyActive,
+        page,
+        perPage
+      );
+
+      return {
+        contents: [{
+          uri: uri.toString(),
+          text: JSON.stringify(initiatives, null, 2),
+          mimeType: "application/json"
+        }]
+      };
+    } catch (error) {
+      console.error(`Error retrieving initiatives list:`, error);
+      throw error;
+    }
+  };
+
+  // Base URI registration - matches aha://initiatives
   server.registerResource(
     "aha_initiatives",
+    "aha://initiatives",
+    {
+      title: "Aha Initiatives",
+      description: "List all initiatives",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      return handleInitiatives(uri, {}, _extra);
+    }
+  );
+
+  // Template URI registration - matches aha://initiatives?query=...
+  server.registerResource(
+    "aha_initiatives_filtered",
     new ResourceTemplate(
       "aha://initiatives{?query,updatedSince,assignedToUser,onlyActive,page,perPage}",
       {
@@ -480,40 +563,11 @@ export function registerResources(server: McpServer) {
       }
     ),
     {
-      title: "Aha Initiatives",
-      description: "List initiatives with optional filters and pagination",
+      title: "Aha Initiatives (Filtered)",
+      description: "List initiatives with filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      try {
-        const onlyActive = variables?.onlyActive === 'true' ? true : 
-                          variables?.onlyActive === 'false' ? false : 
-                          uri.searchParams.get('onlyActive') === 'true' ? true :
-                          uri.searchParams.get('onlyActive') === 'false' ? false : undefined;
-        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
-
-        const initiatives = await services.AhaService.listInitiatives(
-          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
-          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
-          normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
-          onlyActive,
-          page,
-          perPage
-        );
-
-        return {
-          contents: [{
-            uri: uri.toString(),
-            text: JSON.stringify(initiatives, null, 2),
-            mimeType: "application/json"
-          }]
-        };
-      } catch (error) {
-        console.error(`Error retrieving initiatives list:`, error);
-        throw error;
-      }
-    }
+    handleInitiatives
   );
 
   // Aha ideas by product resource
@@ -555,7 +609,7 @@ export function registerResources(server: McpServer) {
         const userId = uri.searchParams.get('userId') || undefined;
         const ideaUserId = uri.searchParams.get('ideaUserId') || undefined;
 
-        const ideas = await services.AhaService.listIdeasByProduct(
+        const ideas = await getAhaService().listIdeasByProduct(
           productId,
           query,
           spam,
@@ -609,7 +663,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const comments = await services.AhaService.getEpicComments(epicId);
+        const comments = await getAhaService().getEpicComments(epicId);
 
         return {
           contents: [{
@@ -651,7 +705,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const comments = await services.AhaService.getIdeaComments(ideaId);
+        const comments = await getAhaService().getIdeaComments(ideaId);
 
         return {
           contents: [{
@@ -693,7 +747,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const comments = await services.AhaService.getInitiativeComments(initiativeId);
+        const comments = await getAhaService().getInitiativeComments(initiativeId);
 
         return {
           contents: [{
@@ -735,7 +789,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const comments = await services.AhaService.getProductComments(productId);
+        const comments = await getAhaService().getProductComments(productId);
 
         return {
           contents: [{
@@ -777,7 +831,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const comments = await services.AhaService.getGoalComments(goalId);
+        const comments = await getAhaService().getGoalComments(goalId);
 
         return {
           contents: [{
@@ -819,7 +873,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const comments = await services.AhaService.getReleaseComments(releaseId);
+        const comments = await getAhaService().getReleaseComments(releaseId);
 
         return {
           contents: [{
@@ -861,7 +915,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const comments = await services.AhaService.getReleasePhaseComments(releasePhaseId);
+        const comments = await getAhaService().getReleasePhaseComments(releasePhaseId);
 
         return {
           contents: [{
@@ -903,7 +957,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const comments = await services.AhaService.getRequirementComments(requirementId);
+        const comments = await getAhaService().getRequirementComments(requirementId);
 
         return {
           contents: [{
@@ -945,7 +999,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const comments = await services.AhaService.getTodoComments(todoId);
+        const comments = await getAhaService().getTodoComments(todoId);
 
         return {
           contents: [{
@@ -984,7 +1038,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid goal ID: ID is missing from URI');
       }
       try {
-        const goal = await services.AhaService.getGoal(id);
+        const goal = await getAhaService().getGoal(id);
         return {
           contents: [{
             uri: uri.toString(),
@@ -1000,8 +1054,51 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha goals list resource with filters and pagination
+  // Shared handler for both base URI and template URI
+  const handleGoals = async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+    try {
+      const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+      const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+
+      const goals = await getAhaService().listGoals(
+        normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+        normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
+        normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
+        normalizeVar(variables?.status) || uri.searchParams.get('status') || undefined,
+        page,
+        perPage
+      );
+
+      return {
+        contents: [{
+          uri: uri.toString(),
+          text: JSON.stringify(goals, null, 2),
+          mimeType: "application/json"
+        }]
+      };
+    } catch (error) {
+      console.error(`Error retrieving goals list:`, error);
+      throw error;
+    }
+  };
+
+  // Base URI registration - matches aha://goals
   server.registerResource(
     "aha_goals",
+    "aha://goals",
+    {
+      title: "Aha Goals",
+      description: "List all goals",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      return handleGoals(uri, {}, _extra);
+    }
+  );
+
+  // Template URI registration - matches aha://goals?query=...
+  server.registerResource(
+    "aha_goals_filtered",
     new ResourceTemplate(
       "aha://goals{?query,updatedSince,assignedToUser,status,page,perPage}",
       {
@@ -1013,36 +1110,11 @@ export function registerResources(server: McpServer) {
       }
     ),
     {
-      title: "Aha Goals",
-      description: "List goals with optional filters and pagination",
+      title: "Aha Goals (Filtered)",
+      description: "List goals with filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      try {
-        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
-
-        const goals = await services.AhaService.listGoals(
-          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
-          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
-          normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
-          normalizeVar(variables?.status) || uri.searchParams.get('status') || undefined,
-          page,
-          perPage
-        );
-
-        return {
-          contents: [{
-            uri: uri.toString(),
-            text: JSON.stringify(goals, null, 2),
-            mimeType: "application/json"
-          }]
-        };
-      } catch (error) {
-        console.error(`Error retrieving goals list:`, error);
-        throw error;
-      }
-    }
+    handleGoals
   );
 
   // Aha goal epics resource
@@ -1071,7 +1143,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const epics = await services.AhaService.getGoalEpics(goalId);
+        const epics = await getAhaService().getGoalEpics(goalId);
 
         return {
           contents: [{
@@ -1110,7 +1182,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid release ID: ID is missing from URI');
       }
       try {
-        const release = await services.AhaService.getRelease(id);
+        const release = await getAhaService().getRelease(id);
         return {
           contents: [{
             uri: uri.toString(),
@@ -1126,8 +1198,56 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha releases list resource with filters and pagination
+  // Shared handler for both base URI and template URI
+  const handleReleases = async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+    try {
+      const parkingLot = variables?.parkingLot === 'true' ? true :
+                        variables?.parkingLot === 'false' ? false :
+                        uri.searchParams.get('parkingLot') === 'true' ? true :
+                        uri.searchParams.get('parkingLot') === 'false' ? false : undefined;
+      const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+      const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+
+      const releases = await getAhaService().listReleases(
+        normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+        normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
+        normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
+        normalizeVar(variables?.status) || uri.searchParams.get('status') || undefined,
+        parkingLot,
+        page,
+        perPage
+      );
+
+      return {
+        contents: [{
+          uri: uri.toString(),
+          text: JSON.stringify(releases, null, 2),
+          mimeType: "application/json"
+        }]
+      };
+    } catch (error) {
+      console.error(`Error retrieving releases list:`, error);
+      throw error;
+    }
+  };
+
+  // Base URI registration - matches aha://releases
   server.registerResource(
     "aha_releases",
+    "aha://releases",
+    {
+      title: "Aha Releases",
+      description: "List all releases",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      return handleReleases(uri, {}, _extra);
+    }
+  );
+
+  // Template URI registration - matches aha://releases?query=...
+  server.registerResource(
+    "aha_releases_filtered",
     new ResourceTemplate(
       "aha://releases{?query,updatedSince,assignedToUser,status,parkingLot,page,perPage}",
       {
@@ -1140,41 +1260,11 @@ export function registerResources(server: McpServer) {
       }
     ),
     {
-      title: "Aha Releases",
-      description: "List releases with optional filters and pagination",
+      title: "Aha Releases (Filtered)",
+      description: "List releases with filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      try {
-        const parkingLot = variables?.parkingLot === 'true' ? true :
-                          variables?.parkingLot === 'false' ? false :
-                          uri.searchParams.get('parkingLot') === 'true' ? true :
-                          uri.searchParams.get('parkingLot') === 'false' ? false : undefined;
-        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
-
-        const releases = await services.AhaService.listReleases(
-          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
-          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
-          normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
-          normalizeVar(variables?.status) || uri.searchParams.get('status') || undefined,
-          parkingLot,
-          page,
-          perPage
-        );
-
-        return {
-          contents: [{
-            uri: uri.toString(),
-            text: JSON.stringify(releases, null, 2),
-            mimeType: "application/json"
-          }]
-        };
-      } catch (error) {
-        console.error(`Error retrieving releases list:`, error);
-        throw error;
-      }
-    }
+    handleReleases
   );
 
   // Aha release features resource
@@ -1203,7 +1293,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const features = await services.AhaService.getReleaseFeatures(releaseId);
+        const features = await getAhaService().getReleaseFeatures(releaseId);
 
         return {
           contents: [{
@@ -1245,7 +1335,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const epics = await services.AhaService.getReleaseEpics(releaseId);
+        const epics = await getAhaService().getReleaseEpics(releaseId);
 
         return {
           contents: [{
@@ -1284,7 +1374,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid release phase ID: ID is missing from URI');
       }
       try {
-        const releasePhase = await services.AhaService.getReleasePhase(id);
+        const releasePhase = await getAhaService().getReleasePhase(id);
         return {
           contents: [{
             uri: uri.toString(),
@@ -1310,7 +1400,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
-        const releasePhases = await services.AhaService.listReleasePhases();
+        const releasePhases = await getAhaService().listReleasePhases();
 
         return {
           contents: [{
@@ -1348,7 +1438,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid requirement ID: ID is missing from URI');
       }
       try {
-        const requirement = await services.AhaService.getRequirement(id);
+        const requirement = await getAhaService().getRequirement(id);
         return {
           contents: [{
             uri: uri.toString(),
@@ -1386,7 +1476,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid competitor ID: ID is missing from URI');
       }
       try {
-        const competitor = await services.AhaService.getCompetitor(id);
+        const competitor = await getAhaService().getCompetitor(id);
         return {
           contents: [{
             uri: uri.toString(),
@@ -1424,7 +1514,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid todo ID: ID is missing from URI');
       }
       try {
-        const todo = await services.AhaService.getTodo(id);
+        const todo = await getAhaService().getTodo(id);
         return {
           contents: [{
             uri: uri.toString(),
@@ -1462,7 +1552,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid product ID: Product ID is missing from URI');
       }
       try {
-        const competitors = await services.AhaService.listCompetitors(productId);
+        const competitors = await getAhaService().listCompetitors(productId);
         return {
           contents: [{
             uri: uri.toString(),
@@ -1500,7 +1590,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid strategic model ID: ID is missing from URI');
       }
       try {
-        const strategicModel = await services.AhaService.getStrategicModel(id);
+        const strategicModel = await getAhaService().getStrategicModel(id);
         return {
           contents: [{
             uri: uri.toString(),
@@ -1516,8 +1606,49 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha strategic models list resource with filters and pagination
+  // Shared handler for both base URI and template URI
+  const handleStrategicModels = async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+    try {
+      const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+      const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+
+      const strategicModels = await getAhaService().listStrategicModels(
+        normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+        normalizeVar(variables?.type) || uri.searchParams.get('type') || undefined,
+        normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
+        page,
+        perPage
+      );
+      return {
+        contents: [{
+          uri: uri.toString(),
+          text: JSON.stringify(strategicModels, null, 2),
+          mimeType: "application/json"
+        }]
+      };
+    } catch (error) {
+      console.error('Error retrieving strategic models list:', error);
+      throw error;
+    }
+  };
+
+  // Base URI registration - matches aha://strategic-models
   server.registerResource(
     "aha_strategic_models",
+    "aha://strategic-models",
+    {
+      title: "Aha Strategic Models",
+      description: "List all strategic models",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      return handleStrategicModels(uri, {}, _extra);
+    }
+  );
+
+  // Template URI registration - matches aha://strategic-models?query=...
+  server.registerResource(
+    "aha_strategic_models_filtered",
     new ResourceTemplate(
       "aha://strategic-models{?query,type,updatedSince,page,perPage}",
       {
@@ -1529,34 +1660,11 @@ export function registerResources(server: McpServer) {
       }
     ),
     {
-      title: "Aha Strategic Models",
-      description: "List strategic models with optional filters and pagination",
+      title: "Aha Strategic Models (Filtered)",
+      description: "List strategic models with filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      try {
-        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
-
-        const strategicModels = await services.AhaService.listStrategicModels(
-          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
-          normalizeVar(variables?.type) || uri.searchParams.get('type') || undefined,
-          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
-          page,
-          perPage
-        );
-        return {
-          contents: [{
-            uri: uri.toString(),
-            text: JSON.stringify(strategicModels, null, 2),
-            mimeType: "application/json"
-          }]
-        };
-      } catch (error) {
-        console.error('Error retrieving strategic models list:', error);
-        throw error;
-      }
-    }
+    handleStrategicModels
   );
 
   // Aha todos list resource
@@ -1570,7 +1678,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
-        const todos = await services.AhaService.listTodos();
+        const todos = await getAhaService().listTodos();
         return {
           contents: [{
             uri: uri.toString(),
@@ -1607,7 +1715,7 @@ export function registerResources(server: McpServer) {
         throw new Error('Invalid idea organization ID: ID is missing from URI');
       }
       try {
-        const ideaOrganization = await services.AhaService.getIdeaOrganization(id);
+        const ideaOrganization = await getAhaService().getIdeaOrganization(id);
         return {
           contents: [{
             uri: uri.toString(),
@@ -1623,8 +1731,48 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha idea organizations list resource with filters and pagination
+  // Shared handler for both base URI and template URI
+  const handleIdeaOrganizations = async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+    try {
+      const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+      const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+
+      const ideaOrganizations = await getAhaService().listIdeaOrganizations(
+        normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+        normalizeVar(variables?.emailDomain) || uri.searchParams.get('emailDomain') || undefined,
+        page,
+        perPage
+      );
+      return {
+        contents: [{
+          uri: uri.toString(),
+          text: JSON.stringify(ideaOrganizations, null, 2),
+          mimeType: "application/json"
+        }]
+      };
+    } catch (error) {
+      console.error('Error retrieving idea organizations list:', error);
+      throw error;
+    }
+  };
+
+  // Base URI registration - matches aha://idea-organizations
   server.registerResource(
     "aha_idea_organizations",
+    "aha://idea-organizations",
+    {
+      title: "Aha Idea Organizations",
+      description: "List all idea organizations",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      return handleIdeaOrganizations(uri, {}, _extra);
+    }
+  );
+
+  // Template URI registration - matches aha://idea-organizations?query=...
+  server.registerResource(
+    "aha_idea_organizations_filtered",
     new ResourceTemplate(
       "aha://idea-organizations{?query,emailDomain,page,perPage}",
       {
@@ -1636,33 +1784,11 @@ export function registerResources(server: McpServer) {
       }
     ),
     {
-      title: "Aha Idea Organizations",
-      description: "List idea organizations with optional filters and pagination",
+      title: "Aha Idea Organizations (Filtered)",
+      description: "List idea organizations with filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      try {
-        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
-
-        const ideaOrganizations = await services.AhaService.listIdeaOrganizations(
-          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
-          normalizeVar(variables?.emailDomain) || uri.searchParams.get('emailDomain') || undefined,
-          page,
-          perPage
-        );
-        return {
-          contents: [{
-            uri: uri.toString(),
-            text: JSON.stringify(ideaOrganizations, null, 2),
-            mimeType: "application/json"
-          }]
-        };
-      } catch (error) {
-        console.error('Error retrieving idea organizations list:', error);
-        throw error;
-      }
-    }
+    handleIdeaOrganizations
   );
 
   // Aha me/current user profile resource
@@ -1676,7 +1802,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
-        const profile = await services.AhaService.getMe();
+        const profile = await getAhaService().getMe();
         return {
           contents: [{
             uri: uri.toString(),
@@ -1701,7 +1827,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
-        const assignedRecords = await services.AhaService.getAssignedRecords();
+        const assignedRecords = await getAhaService().getAssignedRecords();
         return {
           contents: [{
             uri: uri.toString(),
@@ -1726,7 +1852,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
-        const pendingTasks = await services.AhaService.getPendingTasks();
+        const pendingTasks = await getAhaService().getPendingTasks();
         return {
           contents: [{
             uri: uri.toString(),
@@ -1766,7 +1892,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const endorsements = await services.AhaService.getIdeaEndorsements(ideaId);
+        const endorsements = await getAhaService().getIdeaEndorsements(ideaId);
         return {
           contents: [{
             uri: uri.toString(),
@@ -1807,7 +1933,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const votes = await services.AhaService.getIdeaVotes(ideaId);
+        const votes = await getAhaService().getIdeaVotes(ideaId);
         return {
           contents: [{
             uri: uri.toString(),
@@ -1848,7 +1974,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const watchers = await services.AhaService.getIdeaWatchers(ideaId);
+        const watchers = await getAhaService().getIdeaWatchers(ideaId);
         return {
           contents: [{
             uri: uri.toString(),
@@ -1864,8 +1990,56 @@ export function registerResources(server: McpServer) {
   );
 
   // Aha global ideas list resource with advanced filters and pagination
+  // Shared handler for both base URI and template URI
+  const handleIdeas = async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+    try {
+      const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
+      const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
+
+      // Include custom_fields in the fields parameter to get custom fields in response
+      const fields = 'custom_fields';
+
+      const ideas = await getAhaService().listIdeas(
+        normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
+        normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
+        normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
+        normalizeVar(variables?.status) || uri.searchParams.get('status') || undefined,
+        normalizeVar(variables?.category) || uri.searchParams.get('category') || undefined,
+        fields,
+        page,
+        perPage
+      );
+
+      return {
+        contents: [{
+          uri: uri.toString(),
+          text: JSON.stringify(ideas, null, 2),
+          mimeType: "application/json"
+        }]
+      };
+    } catch (error) {
+      console.error('Error retrieving global ideas list:', error);
+      throw error;
+    }
+  };
+
+  // Base URI registration - matches aha://ideas
   server.registerResource(
     "aha_ideas",
+    "aha://ideas",
+    {
+      title: "Aha Ideas (Global)",
+      description: "List all ideas across products",
+      mimeType: "application/json"
+    },
+    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      return handleIdeas(uri, {}, _extra);
+    }
+  );
+
+  // Template URI registration - matches aha://ideas?query=...
+  server.registerResource(
+    "aha_ideas_filtered",
     new ResourceTemplate(
       "aha://ideas{?query,updatedSince,assignedToUser,status,category,page,perPage}",
       {
@@ -1877,41 +2051,11 @@ export function registerResources(server: McpServer) {
       }
     ),
     {
-      title: "Aha Ideas (Global)",
-      description: "List all ideas across products with optional filters and pagination",
+      title: "Aha Ideas (Global, Filtered)",
+      description: "List ideas with filters and pagination",
       mimeType: "application/json"
     },
-    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      try {
-        const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-        const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
-        
-        // Include custom_fields in the fields parameter to get custom fields in response
-        const fields = 'custom_fields';
-
-        const ideas = await services.AhaService.listIdeas(
-          normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
-          normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
-          normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
-          normalizeVar(variables?.status) || uri.searchParams.get('status') || undefined,
-          normalizeVar(variables?.category) || uri.searchParams.get('category') || undefined,
-          fields,
-          page,
-          perPage
-        );
-
-        return {
-          contents: [{
-            uri: uri.toString(),
-            text: JSON.stringify(ideas, null, 2),
-            mimeType: "application/json"
-          }]
-        };
-      } catch (error) {
-        console.error('Error retrieving global ideas list:', error);
-        throw error;
-      }
-    }
+    handleIdeas
   );
 
   // Aha product releases resource with path variable and pagination
@@ -1946,7 +2090,7 @@ export function registerResources(server: McpServer) {
         const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
         const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
-        const releases = await services.AhaService.listReleasesByProduct(
+        const releases = await getAhaService().listReleasesByProduct(
           productId,
           normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
           normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
@@ -1996,7 +2140,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const epics = await services.AhaService.getInitiativeEpics(initiativeId);
+        const epics = await getAhaService().getInitiativeEpics(initiativeId);
 
         return {
           contents: [{
@@ -2023,7 +2167,7 @@ export function registerResources(server: McpServer) {
     },
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
-        const customFields = await services.AhaService.listCustomFields();
+        const customFields = await getAhaService().listCustomFields();
 
         return {
           contents: [{
@@ -2064,7 +2208,7 @@ export function registerResources(server: McpServer) {
       }
 
       try {
-        const options = await services.AhaService.listCustomFieldOptions(customFieldId);
+        const options = await getAhaService().listCustomFieldOptions(customFieldId);
 
         return {
           contents: [{
