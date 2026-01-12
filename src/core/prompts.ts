@@ -1,5 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
+import * as z from "zod/v4";
 import * as services from "./services/index.js";
 import { getSamplingPrimer } from "./sampling.js";
 
@@ -77,16 +77,18 @@ async function fetchResourceContext(resourceId: string, resourceType: string): P
 export function registerPrompts(server: McpServer) {
 
   // 1. Feature Analysis Prompt
-  server.prompt(
+  server.registerPrompt(
     "feature_analysis",
-    "Analyze feature requirements, dependencies, and implementation strategies",
     {
-      feature_name: z.string().describe("Name of the feature to analyze"),
-      feature_description: z.string().optional().describe("Description of the feature"),
-      product_context: z.string().optional().describe("Product context and goals"),
-      existing_features: z.string().optional().describe("Comma-separated list of related existing features"),
-      target_users: z.string().optional().describe("Target user segments"),
-      feature_id: z.string().optional().describe("Existing feature ID from Aha.io for context (e.g., PROJ-123)")
+      description: "Analyze feature requirements, dependencies, and implementation strategies",
+      argsSchema: {
+        feature_name: z.string().describe("Name of the feature to analyze"),
+        feature_description: z.string().optional().describe("Description of the feature"),
+        product_context: z.string().optional().describe("Product context and goals"),
+        existing_features: z.string().optional().describe("Comma-separated list of related existing features"),
+        target_users: z.string().optional().describe("Target user segments"),
+        feature_id: z.string().optional().describe("Existing feature ID from Aha.io for context (e.g., PROJ-123)")
+      }
     },
     async (params: { feature_name: string; feature_description?: string; product_context?: string; existing_features?: string; target_users?: string; feature_id?: string }) => {
       // Fetch existing feature context if feature_id is provided
@@ -126,17 +128,19 @@ Format your response with clear sections and actionable recommendations.`
   );
 
   // 2. Product Roadmap Prompt
-  server.prompt(
+  server.registerPrompt(
     "product_roadmap",
-    "Generate product roadmap recommendations and strategic planning",
     {
-      product_name: z.string().describe("Name of the product"),
-      current_version: z.string().optional().describe("Current product version"),
-      business_goals: z.string().describe("Business goals and objectives"),
-      time_horizon: z.string().describe("Roadmap time horizon (quarter, half-year, year)"),
-      key_features: z.string().optional().describe("Comma-separated list of key features to consider"),
-      market_constraints: z.string().optional().describe("Market constraints and competitive landscape"),
-      product_id: z.string().optional().describe("Existing product ID from Aha.io for context (e.g., PROJ)")
+      description: "Generate product roadmap recommendations and strategic planning",
+      argsSchema: {
+        product_name: z.string().describe("Name of the product"),
+        current_version: z.string().optional().describe("Current product version"),
+        business_goals: z.string().describe("Business goals and objectives"),
+        time_horizon: z.string().describe("Roadmap time horizon (quarter, half-year, year)"),
+        key_features: z.string().optional().describe("Comma-separated list of key features to consider"),
+        market_constraints: z.string().optional().describe("Market constraints and competitive landscape"),
+        product_id: z.string().optional().describe("Existing product ID from Aha.io for context (e.g., PROJ)")
+      }
     },
     async (params: { product_name: string; current_version?: string; business_goals: string; time_horizon: string; key_features?: string; market_constraints?: string; product_id?: string }) => {
       // Fetch existing product context if product_id is provided
@@ -177,16 +181,18 @@ Structure as a actionable roadmap with clear timelines and dependencies.`
   );
 
   // 3. Release Planning Prompt
-  server.prompt(
+  server.registerPrompt(
     "release_planning",
-    "Create comprehensive release planning strategies and execution plans",
     {
-      release_name: z.string().describe("Name of the release"),
-      release_goals: z.string().describe("Primary goals for this release"),
-      features_list: z.string().describe("Comma-separated list of features to include"),
-      timeline: z.string().describe("Target timeline or deadline"),
-      team_capacity: z.string().optional().describe("Team capacity and constraints"),
-      dependencies: z.string().optional().describe("Comma-separated list of external dependencies")
+      description: "Create comprehensive release planning strategies and execution plans",
+      argsSchema: {
+        release_name: z.string().describe("Name of the release"),
+        release_goals: z.string().describe("Primary goals for this release"),
+        features_list: z.string().describe("Comma-separated list of features to include"),
+        timeline: z.string().describe("Target timeline or deadline"),
+        team_capacity: z.string().optional().describe("Team capacity and constraints"),
+        dependencies: z.string().optional().describe("Comma-separated list of external dependencies")
+      }
     },
     (params: { release_name: string; release_goals: string; features_list: string; timeline: string; team_capacity?: string; dependencies?: string }) => ({
       messages: [{
@@ -218,15 +224,17 @@ Format as a comprehensive release plan with clear action items.`
   );
 
   // 4. Competitor Analysis Prompt
-  server.prompt(
+  server.registerPrompt(
     "competitor_analysis",
-    "Analyze competitor features, positioning, and strategic implications",
     {
-      competitor_name: z.string().describe("Name of the competitor"),
-      product_category: z.string().describe("Product category or market segment"),
-      focus_areas: z.string().optional().describe("Comma-separated list of specific areas to analyze"),
-      our_product: z.string().optional().describe("Our product for comparison"),
-      analysis_purpose: z.string().describe("Purpose of the analysis (e.g., feature gap, positioning, strategy)")
+      description: "Analyze competitor features, positioning, and strategic implications",
+      argsSchema: {
+        competitor_name: z.string().describe("Name of the competitor"),
+        product_category: z.string().describe("Product category or market segment"),
+        focus_areas: z.string().optional().describe("Comma-separated list of specific areas to analyze"),
+        our_product: z.string().optional().describe("Our product for comparison"),
+        analysis_purpose: z.string().describe("Purpose of the analysis (e.g., feature gap, positioning, strategy)")
+      }
     },
     (params: { competitor_name: string; product_category: string; focus_areas?: string; our_product?: string; analysis_purpose: string }) => ({
       messages: [{
@@ -257,15 +265,17 @@ Focus on actionable insights that can inform our product decisions.`
   );
 
   // 5. User Story Generation Prompt
-  server.prompt(
+  server.registerPrompt(
     "user_story_generation",
-    "Generate comprehensive user stories from requirements and acceptance criteria",
     {
-      feature_name: z.string().describe("Name of the feature"),
-      user_personas: z.string().describe("Comma-separated list of target user personas"),
-      requirements: z.string().describe("High-level requirements or epic description"),
-      acceptance_criteria: z.string().optional().describe("Specific acceptance criteria"),
-      constraints: z.string().optional().describe("Technical or business constraints")
+      description: "Generate comprehensive user stories from requirements and acceptance criteria",
+      argsSchema: {
+        feature_name: z.string().describe("Name of the feature"),
+        user_personas: z.string().describe("Comma-separated list of target user personas"),
+        requirements: z.string().describe("High-level requirements or epic description"),
+        acceptance_criteria: z.string().optional().describe("Specific acceptance criteria"),
+        constraints: z.string().optional().describe("Technical or business constraints")
+      }
     },
     (params: { feature_name: string; user_personas: string; requirements: string; acceptance_criteria?: string; constraints?: string }) => ({
       messages: [{
@@ -296,16 +306,18 @@ Format each story following best practices with clear, actionable descriptions.`
   );
 
   // 6. Sprint Planning Prompt
-  server.prompt(
+  server.registerPrompt(
     "sprint_planning",
-    "Create sprint planning recommendations and capacity allocation",
     {
-      sprint_duration: z.string().describe("Sprint duration (e.g., 2 weeks)"),
-      team_capacity: z.string().describe("Team capacity and availability"),
-      backlog_items: z.string().describe("Comma-separated list of prioritized backlog items"),
-      sprint_goals: z.string().describe("Sprint goals and objectives"),
-      previous_velocity: z.string().optional().describe("Previous sprint velocity data"),
-      constraints: z.string().optional().describe("Sprint constraints or dependencies")
+      description: "Create sprint planning recommendations and capacity allocation",
+      argsSchema: {
+        sprint_duration: z.string().describe("Sprint duration (e.g., 2 weeks)"),
+        team_capacity: z.string().describe("Team capacity and availability"),
+        backlog_items: z.string().describe("Comma-separated list of prioritized backlog items"),
+        sprint_goals: z.string().describe("Sprint goals and objectives"),
+        previous_velocity: z.string().optional().describe("Previous sprint velocity data"),
+        constraints: z.string().optional().describe("Sprint constraints or dependencies")
+      }
     },
     (params: { sprint_duration: string; team_capacity: string; backlog_items: string; sprint_goals: string; previous_velocity?: string; constraints?: string }) => ({
       messages: [{
@@ -337,17 +349,19 @@ Format as a actionable sprint plan with clear assignments and timelines.`
   );
 
   // 7. Epic Breakdown Prompt
-  server.prompt(
+  server.registerPrompt(
     "epic_breakdown",
-    "Break down epics into manageable features and user stories",
     {
-      epic_name: z.string().describe("Name of the epic"),
-      epic_description: z.string().describe("Detailed epic description"),
-      business_value: z.string().describe("Business value and objectives"),
-      user_types: z.string().describe("Comma-separated list of user types affected"),
-      constraints: z.string().optional().describe("Technical or business constraints"),
-      timeline: z.string().optional().describe("Target timeline or deadline"),
-      epic_id: z.string().optional().describe("Existing epic ID from Aha.io for context (e.g., PROJ-E-123)")
+      description: "Break down epics into manageable features and user stories",
+      argsSchema: {
+        epic_name: z.string().describe("Name of the epic"),
+        epic_description: z.string().describe("Detailed epic description"),
+        business_value: z.string().describe("Business value and objectives"),
+        user_types: z.string().describe("Comma-separated list of user types affected"),
+        constraints: z.string().optional().describe("Technical or business constraints"),
+        timeline: z.string().optional().describe("Target timeline or deadline"),
+        epic_id: z.string().optional().describe("Existing epic ID from Aha.io for context (e.g., PROJ-E-123)")
+      }
     },
     async (params: { epic_name: string; epic_description: string; business_value: string; user_types: string; constraints?: string; timeline?: string; epic_id?: string }) => {
       // Fetch existing epic context if epic_id is provided
@@ -389,16 +403,18 @@ Structure as a hierarchical breakdown with clear relationships and dependencies.
   );
 
   // 8. Idea Prioritization Prompt
-  server.prompt(
+  server.registerPrompt(
     "idea_prioritization",
-    "Prioritize ideas based on strategic criteria and business value",
     {
-      ideas_list: z.string().describe("Comma-separated list of ideas to prioritize"),
-      business_goals: z.string().describe("Current business goals and strategy"),
-      evaluation_criteria: z.string().optional().describe("Comma-separated list of evaluation criteria"),
-      constraints: z.string().optional().describe("Resource or timeline constraints"),
-      market_context: z.string().optional().describe("Market context and competitive landscape"),
-      idea_ids: z.string().optional().describe("Comma-separated list of Aha.io idea IDs for context (e.g., PROJ-I-123,PROJ-I-456)")
+      description: "Prioritize ideas based on strategic criteria and business value",
+      argsSchema: {
+        ideas_list: z.string().describe("Comma-separated list of ideas to prioritize"),
+        business_goals: z.string().describe("Current business goals and strategy"),
+        evaluation_criteria: z.string().optional().describe("Comma-separated list of evaluation criteria"),
+        constraints: z.string().optional().describe("Resource or timeline constraints"),
+        market_context: z.string().optional().describe("Market context and competitive landscape"),
+        idea_ids: z.string().optional().describe("Comma-separated list of Aha.io idea IDs for context (e.g., PROJ-I-123,PROJ-I-456)")
+      }
     },
     async (params: { ideas_list: string; business_goals: string; evaluation_criteria?: string; constraints?: string; market_context?: string; idea_ids?: string }) => {
       // Fetch existing idea contexts if idea_ids is provided
@@ -443,16 +459,18 @@ Use a structured scoring approach with clear rationale for each decision.`
   );
 
   // 9. Stakeholder Communication Prompt
-  server.prompt(
+  server.registerPrompt(
     "stakeholder_communication",
-    "Generate stakeholder updates and communication materials",
     {
-      communication_type: z.string().describe("Type of communication (status_update, milestone_report, roadmap_presentation, issue_escalation)"),
-      audience: z.string().describe("Target audience (executives, team, customers, etc.)"),
-      project_status: z.string().describe("Current project or feature status"),
-      key_achievements: z.string().optional().describe("Comma-separated list of key achievements to highlight"),
-      challenges: z.string().optional().describe("Comma-separated list of current challenges or blockers"),
-      next_steps: z.string().optional().describe("Planned next steps")
+      description: "Generate stakeholder updates and communication materials",
+      argsSchema: {
+        communication_type: z.string().describe("Type of communication (status_update, milestone_report, roadmap_presentation, issue_escalation)"),
+        audience: z.string().describe("Target audience (executives, team, customers, etc.)"),
+        project_status: z.string().describe("Current project or feature status"),
+        key_achievements: z.string().optional().describe("Comma-separated list of key achievements to highlight"),
+        challenges: z.string().optional().describe("Comma-separated list of current challenges or blockers"),
+        next_steps: z.string().optional().describe("Planned next steps")
+      }
     },
     (params: { communication_type: string; audience: string; project_status: string; key_achievements?: string; challenges?: string; next_steps?: string }) => ({
       messages: [{
@@ -484,16 +502,18 @@ Format appropriately for the audience level and communication type.`
   );
 
   // 10. Feature Specification Prompt
-  server.prompt(
+  server.registerPrompt(
     "feature_specification",
-    "Create detailed feature specifications and technical requirements",
     {
-      feature_name: z.string().describe("Name of the feature"),
-      user_stories: z.string().describe("Comma-separated list of related user stories"),
-      functional_requirements: z.string().describe("Functional requirements"),
-      non_functional_requirements: z.string().optional().describe("Non-functional requirements"),
-      technical_constraints: z.string().optional().describe("Technical constraints"),
-      integration_points: z.string().optional().describe("Comma-separated list of integration points with other systems")
+      description: "Create detailed feature specifications and technical requirements",
+      argsSchema: {
+        feature_name: z.string().describe("Name of the feature"),
+        user_stories: z.string().describe("Comma-separated list of related user stories"),
+        functional_requirements: z.string().describe("Functional requirements"),
+        non_functional_requirements: z.string().optional().describe("Non-functional requirements"),
+        technical_constraints: z.string().optional().describe("Technical constraints"),
+        integration_points: z.string().optional().describe("Comma-separated list of integration points with other systems")
+      }
     },
     (params: { feature_name: string; user_stories: string; functional_requirements: string; non_functional_requirements?: string; technical_constraints?: string; integration_points?: string }) => ({
       messages: [{
@@ -526,16 +546,18 @@ Format as a comprehensive specification document with clear sections.`
   );
 
   // 11. Risk Assessment Prompt
-  server.prompt(
+  server.registerPrompt(
     "risk_assessment",
-    "Assess project and feature risks with mitigation strategies",
     {
-      project_name: z.string().describe("Name of the project or feature"),
-      project_scope: z.string().describe("Project scope and objectives"),
-      timeline: z.string().describe("Project timeline and key milestones"),
-      team_composition: z.string().optional().describe("Team composition and skills"),
-      dependencies: z.string().optional().describe("Comma-separated list of external dependencies"),
-      known_risks: z.string().optional().describe("Comma-separated list of already identified risks")
+      description: "Assess project and feature risks with mitigation strategies",
+      argsSchema: {
+        project_name: z.string().describe("Name of the project or feature"),
+        project_scope: z.string().describe("Project scope and objectives"),
+        timeline: z.string().describe("Project timeline and key milestones"),
+        team_composition: z.string().optional().describe("Team composition and skills"),
+        dependencies: z.string().optional().describe("Comma-separated list of external dependencies"),
+        known_risks: z.string().optional().describe("Comma-separated list of already identified risks")
+      }
     },
     (params: { project_name: string; project_scope: string; timeline: string; team_composition?: string; dependencies?: string; known_risks?: string }) => ({
       messages: [{
@@ -568,16 +590,18 @@ Use a structured risk assessment framework with clear action items.`
   );
 
   // 12. Success Metrics Prompt
-  server.prompt(
+  server.registerPrompt(
     "success_metrics",
-    "Define success metrics and KPIs for features and initiatives",
     {
-      initiative_name: z.string().describe("Name of the initiative or feature"),
-      business_objectives: z.string().describe("Business objectives and goals"),
-      user_impact: z.string().describe("Expected user impact and benefits"),
-      success_timeframe: z.string().describe("Timeframe for measuring success"),
-      current_baseline: z.string().optional().describe("Current baseline metrics"),
-      measurement_capabilities: z.string().optional().describe("Available measurement and analytics capabilities")
+      description: "Define success metrics and KPIs for features and initiatives",
+      argsSchema: {
+        initiative_name: z.string().describe("Name of the initiative or feature"),
+        business_objectives: z.string().describe("Business objectives and goals"),
+        user_impact: z.string().describe("Expected user impact and benefits"),
+        success_timeframe: z.string().describe("Timeframe for measuring success"),
+        current_baseline: z.string().optional().describe("Current baseline metrics"),
+        measurement_capabilities: z.string().optional().describe("Available measurement and analytics capabilities")
+      }
     },
     (params: { initiative_name: string; business_objectives: string; user_impact: string; success_timeframe: string; current_baseline?: string; measurement_capabilities?: string }) => ({
       messages: [{
@@ -610,16 +634,18 @@ Focus on actionable, measurable metrics that align with business objectives.`
   );
 
   // 13. Product Idea Discovery Prompt
-  server.prompt(
+  server.registerPrompt(
     "product_idea_discovery",
-    "Discover and analyze ideas within products/workspaces based on topics, themes, or keywords",
     {
-      search_topic: z.string().describe("The topic, theme, or keyword to search for (e.g., 'Node.js', 'mobile', 'API')"),
-      product_name: z.string().optional().describe("Name of the product/workspace to search in (e.g., 'VoC', 'Platform')"),
-      product_id: z.string().optional().describe("Specific product ID to search in (e.g., 'VOC-1')"),
-      analysis_focus: z.string().optional().describe("What aspect to focus on (e.g., 'customer pain points', 'feature gaps', 'enhancement opportunities')"),
-      time_filter: z.string().optional().describe("Time filter for ideas (e.g., 'last 6 months', 'recent', 'all time')"),
-      include_status: z.string().optional().describe("Comma-separated list of idea statuses to include (e.g., 'new,under review,planned')")
+      description: "Discover and analyze ideas within products/workspaces based on topics, themes, or keywords",
+      argsSchema: {
+        search_topic: z.string().describe("The topic, theme, or keyword to search for (e.g., 'Node.js', 'mobile', 'API')"),
+        product_name: z.string().optional().describe("Name of the product/workspace to search in (e.g., 'VoC', 'Platform')"),
+        product_id: z.string().optional().describe("Specific product ID to search in (e.g., 'VOC-1')"),
+        analysis_focus: z.string().optional().describe("What aspect to focus on (e.g., 'customer pain points', 'feature gaps', 'enhancement opportunities')"),
+        time_filter: z.string().optional().describe("Time filter for ideas (e.g., 'last 6 months', 'recent', 'all time')"),
+        include_status: z.string().optional().describe("Comma-separated list of idea statuses to include (e.g., 'new,under review,planned')")
+      }
     },
     async (params: { search_topic: string; product_name?: string; product_id?: string; analysis_focus?: string; time_filter?: string; include_status?: string }) => {
       // Fetch product context if product_id is provided
@@ -682,18 +708,13 @@ Focus on providing specific, actionable search queries and analysis approaches.`
   );
 
   // Resource Discovery with Sampling Primer
-  server.prompt(
+  server.registerPrompt(
     "aha_resource_discovery",
     {
-      name: "aha_resource_discovery",
       description: "Get guidance on discovering and using Aha.io resources with terminology mapping and synonym support. Provides primers for common questions about workspaces, Product Areas, and workstreams.",
-      arguments: [
-        {
-          name: "search_query",
-          description: "What you're looking for (e.g., 'workspaces', 'Product Areas', 'how do I find features')",
-          required: true
-        }
-      ]
+      argsSchema: {
+        search_query: z.string().describe("What you're looking for (e.g., 'workspaces', 'Product Areas', 'how do I find features')")
+      }
     },
     async (params: { search_query: string }) => {
       // Try to generate a sampling primer for this query

@@ -121,6 +121,7 @@ describe('Resources', () => {
     // Create a mock server that captures resource registrations
     resourceHandlers = new Map();
     server = {
+      // Support deprecated resource() method for backward compatibility
       resource: (name: string, templateOrUri: any, handlerOrMetadata?: any, possibleHandler?: Function) => {
         // Handle both old signature (string, handler) and new signature (ResourceTemplate, metadata, handler)
         let handler: Function;
@@ -136,6 +137,10 @@ describe('Resources', () => {
         } else {
           handler = handlerOrMetadata;
         }
+        resourceHandlers.set(name, handler);
+      },
+      // New registerResource() method (SDK 1.25.2+)
+      registerResource: (name: string, _templateOrUri: any, _config: any, handler: Function) => {
         resourceHandlers.set(name, handler);
       }
     } as any;
@@ -187,7 +192,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://idea/IDEA-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getIdea).toHaveBeenCalledWith('IDEA-123');
         expect(result.contents).toHaveLength(1);
@@ -199,7 +204,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_idea');
         const uri = new URL('aha://idea/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid idea ID: ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid idea ID: ID is missing from URI');
       });
     });
 
@@ -209,7 +214,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://feature/FEAT-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getFeature).toHaveBeenCalledWith('FEAT-123');
         expect(result.contents).toHaveLength(1);
@@ -221,7 +226,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_feature');
         const uri = new URL('aha://feature/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid feature ID: ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid feature ID: ID is missing from URI');
       });
     });
 
@@ -231,7 +236,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://user/USER-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getUser).toHaveBeenCalledWith('USER-123');
         expect(result.contents).toHaveLength(1);
@@ -243,7 +248,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_user');
         const uri = new URL('aha://user/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid user ID: ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid user ID: ID is missing from URI');
       });
     });
 
@@ -253,7 +258,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://epic/EPIC-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getEpic).toHaveBeenCalledWith('EPIC-123');
         expect(result.contents).toHaveLength(1);
@@ -265,7 +270,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_epic');
         const uri = new URL('aha://epic/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid epic ID: ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid epic ID: ID is missing from URI');
       });
     });
 
@@ -275,7 +280,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://product/PROD-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getProduct).toHaveBeenCalledWith('PROD-123');
         expect(result.contents).toHaveLength(1);
@@ -287,7 +292,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_product');
         const uri = new URL('aha://product/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid product ID: ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid product ID: ID is missing from URI');
       });
     });
 
@@ -297,7 +302,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://initiative/INIT-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getInitiative).toHaveBeenCalledWith('INIT-123');
         expect(result.contents).toHaveLength(1);
@@ -309,7 +314,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_initiative');
         const uri = new URL('aha://initiative/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid initiative ID: ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid initiative ID: ID is missing from URI');
       });
     });
   });
@@ -321,7 +326,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://features');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.listFeatures).toHaveBeenCalledWith(
           undefined,
@@ -339,7 +344,7 @@ describe('Resources', () => {
       it('should list features with query parameters', async () => {
         const handler = resourceHandlers.get('aha_features');
         const uri = new URL('aha://features?query=auth&tag=security&updatedSince=2023-01-01&assignedToUser=user123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.listFeatures).toHaveBeenCalledWith(
           'auth',
@@ -356,7 +361,7 @@ describe('Resources', () => {
       it('should handle partial query parameters', async () => {
         const handler = resourceHandlers.get('aha_features');
         const uri = new URL('aha://features?query=test&tag=bug');
-        await handler!(uri);
+        await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.listFeatures).toHaveBeenCalledWith(
           'test',
@@ -371,7 +376,7 @@ describe('Resources', () => {
       it('should handle pagination parameters', async () => {
         const handler = resourceHandlers.get('aha_features');
         const uri = new URL('aha://features?page=2&perPage=50');
-        await handler!(uri);
+        await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.listFeatures).toHaveBeenCalledWith(
           undefined,
@@ -390,7 +395,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://users');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.listUsers).toHaveBeenCalledWith();
         expect(result.contents).toHaveLength(1);
@@ -405,7 +410,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://epics/PROJ-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.listEpics).toHaveBeenCalledWith('PROJ-123');
         expect(result.contents).toHaveLength(1);
@@ -417,7 +422,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_epics');
         const uri = new URL('aha://epics/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid product ID: Product ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid product ID: Product ID is missing from URI');
       });
     });
 
@@ -427,7 +432,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://products');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.listProducts).toHaveBeenCalledWith(undefined, undefined, undefined);
         expect(result.contents).toHaveLength(1);
@@ -442,7 +447,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://initiatives');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.listInitiatives).toHaveBeenCalledWith(undefined, undefined, undefined, undefined, undefined, undefined);
         expect(result.contents).toHaveLength(1);
@@ -457,7 +462,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://ideas/PROJ-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.listIdeasByProduct).toHaveBeenCalledWith('PROJ-123', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined);
         expect(result.contents).toHaveLength(1);
@@ -469,7 +474,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_ideas_by_product');
         const uri = new URL('aha://ideas/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid product ID: Product ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid product ID: Product ID is missing from URI');
       });
     });
   });
@@ -481,7 +486,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://comments/epic/EPIC-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getEpicComments).toHaveBeenCalledWith('EPIC-123');
         expect(result.contents).toHaveLength(1);
@@ -493,7 +498,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_epic_comments');
         const uri = new URL('aha://comments/epic/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid epic ID: Epic ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid epic ID: Epic ID is missing from URI');
       });
     });
 
@@ -503,7 +508,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://comments/idea/IDEA-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getIdeaComments).toHaveBeenCalledWith('IDEA-123');
         expect(result.contents).toHaveLength(1);
@@ -515,7 +520,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_idea_comments');
         const uri = new URL('aha://comments/idea/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid idea ID: Idea ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid idea ID: Idea ID is missing from URI');
       });
     });
 
@@ -525,7 +530,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://comments/initiative/INIT-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getInitiativeComments).toHaveBeenCalledWith('INIT-123');
         expect(result.contents).toHaveLength(1);
@@ -537,7 +542,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_initiative_comments');
         const uri = new URL('aha://comments/initiative/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid initiative ID: Initiative ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid initiative ID: Initiative ID is missing from URI');
       });
     });
 
@@ -547,7 +552,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://comments/product/PROD-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getProductComments).toHaveBeenCalledWith('PROD-123');
         expect(result.contents).toHaveLength(1);
@@ -559,7 +564,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_product_comments');
         const uri = new URL('aha://comments/product/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid product ID: Product ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid product ID: Product ID is missing from URI');
       });
     });
 
@@ -569,7 +574,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://comments/goal/GOAL-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getGoalComments).toHaveBeenCalledWith('GOAL-123');
         expect(result.contents).toHaveLength(1);
@@ -581,7 +586,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_goal_comments');
         const uri = new URL('aha://comments/goal/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid goal ID: Goal ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid goal ID: Goal ID is missing from URI');
       });
     });
 
@@ -591,7 +596,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://comments/release/REL-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getReleaseComments).toHaveBeenCalledWith('REL-123');
         expect(result.contents).toHaveLength(1);
@@ -603,7 +608,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_release_comments');
         const uri = new URL('aha://comments/release/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid release ID: Release ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid release ID: Release ID is missing from URI');
       });
     });
 
@@ -613,7 +618,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://comments/release-phase/RP-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getReleasePhaseComments).toHaveBeenCalledWith('RP-123');
         expect(result.contents).toHaveLength(1);
@@ -625,7 +630,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_release_phase_comments');
         const uri = new URL('aha://comments/release-phase/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid release phase ID: Release phase ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid release phase ID: Release phase ID is missing from URI');
       });
     });
 
@@ -635,7 +640,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://comments/requirement/REQ-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getRequirementComments).toHaveBeenCalledWith('REQ-123');
         expect(result.contents).toHaveLength(1);
@@ -647,7 +652,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_requirement_comments');
         const uri = new URL('aha://comments/requirement/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid requirement ID: Requirement ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid requirement ID: Requirement ID is missing from URI');
       });
     });
 
@@ -657,7 +662,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://comments/todo/TODO-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getTodoComments).toHaveBeenCalledWith('TODO-123');
         expect(result.contents).toHaveLength(1);
@@ -669,7 +674,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_todo_comments');
         const uri = new URL('aha://comments/todo/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid todo ID: Todo ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid todo ID: Todo ID is missing from URI');
       });
     });
   });
@@ -681,7 +686,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://goal/GOAL-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getGoal).toHaveBeenCalledWith('GOAL-123');
         expect(result.contents).toHaveLength(1);
@@ -693,7 +698,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_goal');
         const uri = new URL('aha://goal/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid goal ID: ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid goal ID: ID is missing from URI');
       });
     });
 
@@ -703,7 +708,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://goals');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.listGoals).toHaveBeenCalledWith(
           undefined,
@@ -725,7 +730,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://goal/GOAL-123/epics');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getGoalEpics).toHaveBeenCalledWith('GOAL-123');
         expect(result.contents).toHaveLength(1);
@@ -737,7 +742,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_goal_epics');
         const uri = new URL('aha://goal//epics');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid goal ID: Goal ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid goal ID: Goal ID is missing from URI');
       });
     });
   });
@@ -750,7 +755,7 @@ describe('Resources', () => {
       const handler = resourceHandlers.get('aha_idea');
       const uri = new URL('aha://idea/IDEA-123');
 
-      await expect(handler!(uri)).rejects.toThrow(errorMessage);
+      await expect(handler!(uri, {}, {} as any)).rejects.toThrow(errorMessage);
     });
 
     it('should handle network errors gracefully', async () => {
@@ -759,7 +764,7 @@ describe('Resources', () => {
       const handler = resourceHandlers.get('aha_features');
       const uri = new URL('aha://features');
 
-      await expect(handler!(uri)).rejects.toThrow('Network error');
+      await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Network error');
     });
   });
 
@@ -813,7 +818,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://release/REL-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getRelease).toHaveBeenCalledWith('REL-123');
         expect(result.contents).toHaveLength(1);
@@ -825,7 +830,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_release');
         const uri = new URL('aha://release/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid release ID: ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid release ID: ID is missing from URI');
       });
     });
 
@@ -835,7 +840,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://releases');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.listReleases).toHaveBeenCalledWith(
           undefined,
@@ -858,7 +863,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://release/REL-123/features');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getReleaseFeatures).toHaveBeenCalledWith('REL-123');
         expect(result.contents).toHaveLength(1);
@@ -870,7 +875,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_release_features');
         const uri = new URL('aha://release//features');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid release ID: Release ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid release ID: Release ID is missing from URI');
       });
     });
 
@@ -880,7 +885,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://release/REL-123/epics');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getReleaseEpics).toHaveBeenCalledWith('REL-123');
         expect(result.contents).toHaveLength(1);
@@ -892,7 +897,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_release_epics');
         const uri = new URL('aha://release//epics');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid release ID: Release ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid release ID: Release ID is missing from URI');
       });
     });
 
@@ -902,7 +907,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://release-phase/RP-123');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getReleasePhase).toHaveBeenCalledWith('RP-123');
         expect(result.contents).toHaveLength(1);
@@ -914,7 +919,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_release_phase');
         const uri = new URL('aha://release-phase/');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid release phase ID: ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid release phase ID: ID is missing from URI');
       });
     });
 
@@ -924,7 +929,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://release-phases');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.listReleasePhases).toHaveBeenCalledWith();
         expect(result.contents).toHaveLength(1);
@@ -941,7 +946,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://custom-fields');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.listCustomFields).toHaveBeenCalledWith();
         expect(result.contents).toHaveLength(1);
@@ -957,7 +962,7 @@ describe('Resources', () => {
         expect(handler).toBeDefined();
 
         const uri = new URL('aha://custom-field/CF-123/options');
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.listCustomFieldOptions).toHaveBeenCalledWith('CF-123');
         expect(result.contents).toHaveLength(1);
@@ -970,7 +975,7 @@ describe('Resources', () => {
         const handler = resourceHandlers.get('aha_custom_field_options');
         const uri = new URL('aha://custom-field//options');
 
-        await expect(handler!(uri)).rejects.toThrow('Invalid custom field ID: Custom field ID is missing from URI');
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid custom field ID: Custom field ID is missing from URI');
       });
     });
   });
@@ -1112,7 +1117,7 @@ describe('Resources', () => {
 
         const uri = new URL('aha://product/PROD-999');
         // Call without variables parameter - should use fallback
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getProduct).toHaveBeenCalledWith('PROD-999');
         expect(result.contents).toHaveLength(1);
@@ -1124,7 +1129,7 @@ describe('Resources', () => {
 
         const uri = new URL('aha://goal/GOAL-999/epics');
         // Call without variables parameter - should use fallback
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getGoalEpics).toHaveBeenCalledWith('GOAL-999');
         expect(result.contents).toHaveLength(1);
@@ -1136,7 +1141,7 @@ describe('Resources', () => {
 
         const uri = new URL('aha://comments/epic/EPIC-999');
         // Call without variables parameter - should use fallback
-        const result = await handler!(uri);
+        const result = await handler!(uri, {}, {} as any);
 
         expect(mockAhaService.getEpicComments).toHaveBeenCalledWith('EPIC-999');
         expect(result.contents).toHaveLength(1);

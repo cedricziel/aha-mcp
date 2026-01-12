@@ -35,24 +35,13 @@ describe('Resource Discovery - Integration Tests', () => {
     promptHandlers = new Map();
 
     server = {
-      resource: (name: string, templateOrUri: any, handlerOrMetadata?: any, possibleHandler?: Function) => {
-        let handler: Function;
-        if (typeof templateOrUri === 'string' && typeof handlerOrMetadata === 'function') {
-          handler = handlerOrMetadata;
-        } else if (typeof templateOrUri === 'object' && typeof possibleHandler === 'function') {
-          handler = possibleHandler;
-        } else if (typeof templateOrUri === 'object' && typeof handlerOrMetadata === 'function') {
-          handler = handlerOrMetadata;
-        } else {
-          handler = handlerOrMetadata;
-        }
+      registerResource: (name: string, _templateOrUri: any, _config: any, handler: Function) => {
         resourceHandlers.set(name, handler);
       },
-      prompt: (name: string, argsOrHandler: any, handler?: Function) => {
-        const actualHandler = typeof handler === 'function' ? handler : argsOrHandler;
-        promptHandlers.set(name, actualHandler);
+      registerPrompt: (name: string, _config: any, handler: Function) => {
+        promptHandlers.set(name, handler);
       }
-    };
+    } as any;
 
     // Register all resources, prompts, and sampling
     registerResources(server);
@@ -216,42 +205,3 @@ describe('Resource Discovery - Integration Tests', () => {
   });
 });
 
-describe('Resource Discovery - Backward Compatibility', () => {
-  it('should not break existing resource registration', () => {
-    const resourceHandlers = new Map();
-    const mockServer = {
-      resource: (name: string, ...args: any[]) => {
-        resourceHandlers.set(name, true);
-      }
-    };
-
-    registerResources(mockServer as any);
-
-    // Verify existing resources still registered
-    const existingResources = [
-      'aha_idea',
-      'aha_feature',
-      'aha_epic',
-      'aha_release',
-      'aha_user'
-    ];
-
-    existingResources.forEach(resourceName => {
-      expect(resourceHandlers.has(resourceName)).toBe(true);
-    });
-  });
-
-  it('should not break existing prompt registration', () => {
-    const promptHandlers = new Map();
-    const mockServer = {
-      prompt: (name: string, ...args: any[]) => {
-        promptHandlers.set(name, true);
-      }
-    };
-
-    registerPrompts(mockServer as any);
-
-    // Verify at least some existing prompts registered
-    expect(promptHandlers.size).toBeGreaterThan(0);
-  });
-});

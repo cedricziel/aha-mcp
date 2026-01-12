@@ -9,7 +9,7 @@ import { dirname, join } from "path";
 import * as services from "../core/services/index.js";
 import { ConfigService } from "../core/config.js";
 import { log } from "../core/logger.js";
-import { z } from "zod";
+import * as z from "zod/v4";
 
 // Get package.json info for server metadata
 const __filename = fileURLToPath(import.meta.url);
