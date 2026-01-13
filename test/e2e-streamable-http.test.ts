@@ -25,7 +25,7 @@ describe('E2E Streamable HTTP Transport', () => {
       const version = client.getServerVersion();
       expect(version).toBeDefined();
       expect(version.name).toContain('Aha');
-    });
+    }, 20000); // Timeout for CI environments
 
     it('should handle multiple sequential requests', async () => {
       await withTestClient(async (client) => {
@@ -40,7 +40,7 @@ describe('E2E Streamable HTTP Transport', () => {
         // Should get same results
         expect(resources1.length).toBe(resources2.length);
       }, { mode: 'streamable-http', timeout: 15000 });
-    });
+    }, 20000); // Timeout for CI environments
   });
 
   describe('Resource Operations', () => {
@@ -54,7 +54,7 @@ describe('E2E Streamable HTTP Transport', () => {
         const ahaResource = resources.find(r => r.uri.startsWith('aha://'));
         expect(ahaResource).toBeDefined();
       }, { mode: 'streamable-http', timeout: 15000 });
-    });
+    }, 20000);
 
     it('should read the resource guide via HTTP', async () => {
       await withTestClient(async (client) => {
@@ -70,7 +70,7 @@ describe('E2E Streamable HTTP Transport', () => {
         expect(data.synonyms).toBeDefined();
         expect(data.terminology_guide).toBeDefined();
       }, { mode: 'streamable-http', timeout: 20000 });
-    });
+    }, 25000);
   });
 
   describe('Prompt Operations', () => {
@@ -84,7 +84,7 @@ describe('E2E Streamable HTTP Transport', () => {
         const discoveryPrompt = prompts.find(p => p.name === 'aha_resource_discovery');
         expect(discoveryPrompt).toBeDefined();
       }, { mode: 'streamable-http', timeout: 15000 });
-    });
+    }, 20000);
 
     it('should get a prompt via HTTP', async () => {
       await withTestClient(async (client) => {
@@ -96,7 +96,7 @@ describe('E2E Streamable HTTP Transport', () => {
         expect(Array.isArray(messages)).toBe(true);
         expect(messages.length).toBeGreaterThan(0);
       }, { mode: 'streamable-http', timeout: 15000 });
-    });
+    }, 20000);
   });
 
   describe('Tool Operations', () => {
@@ -111,7 +111,7 @@ describe('E2E Streamable HTTP Transport', () => {
         const createFeatureComment = tools.find(t => t.name === 'aha_create_feature_comment');
         expect(createFeatureComment).toBeDefined();
       }, { mode: 'streamable-http', timeout: 15000 });
-    });
+    }, 20000);
 
     it('should call a tool via HTTP', async () => {
       await withTestClient(async (client) => {
@@ -125,7 +125,7 @@ describe('E2E Streamable HTTP Transport', () => {
         expect(result.content).toBeDefined();
         expect(Array.isArray(result.content)).toBe(true);
       }, { mode: 'streamable-http', timeout: 15000 });
-    });
+    }, 20000);
   });
 
   describe('HTTP-Specific Features', () => {
@@ -143,7 +143,7 @@ describe('E2E Streamable HTTP Transport', () => {
       expect(data.status).toBe('healthy');
       expect(data.transport).toBe('streamable-http');
       expect(data.protocolVersion).toBe('2025-06-18');
-    });
+    }, 20000);
 
     it('should have correct status endpoint response', async () => {
       client = new TestMCPClient();
@@ -159,7 +159,7 @@ describe('E2E Streamable HTTP Transport', () => {
       expect(data.transport).toBe('streamable-http');
       expect(data.endpoints).toBeDefined();
       expect(data.endpoints.mcp).toBeDefined();
-    });
+    }, 20000);
 
     it('should support CORS headers', async () => {
       client = new TestMCPClient();
@@ -176,7 +176,7 @@ describe('E2E Streamable HTTP Transport', () => {
 
       expect(response.ok).toBe(true);
       expect(response.headers.get('Access-Control-Allow-Origin')).toBeTruthy();
-    });
+    }, 20000);
   });
 
   describe('Error Handling', () => {
@@ -187,7 +187,7 @@ describe('E2E Streamable HTTP Transport', () => {
       await expect(
         client.connect({ mode: 'streamable-http', timeout: 100 })
       ).rejects.toThrow();
-    });
+    }, 10000);
 
     it('should handle invalid requests', async () => {
       await withTestClient(async (client) => {
@@ -196,6 +196,6 @@ describe('E2E Streamable HTTP Transport', () => {
           client.readResource('aha://invalid-resource')
         ).rejects.toThrow();
       }, { mode: 'streamable-http', timeout: 15000 });
-    });
+    }, 20000);
   });
 });
