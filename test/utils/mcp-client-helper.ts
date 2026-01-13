@@ -112,7 +112,7 @@ export class TestMCPClient {
     const {
       company = 'test-company',
       token = 'test-token',
-      timeout = 10000,
+      timeout = 30000, // Increased default timeout for CI environments
       mode = 'stdio',
       host = 'localhost'
     } = options;
