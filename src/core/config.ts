@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-export type TransportMode = 'stdio' | 'sse';
+export type TransportMode = 'stdio' | 'sse' | 'streamable-http';
 
 export interface ServerConfig {
   company: string | null;
@@ -66,8 +66,8 @@ export class ConfigService {
     }
     if (process.env.MCP_TRANSPORT_MODE) {
       const mode = process.env.MCP_TRANSPORT_MODE.toLowerCase();
-      if (mode === 'stdio' || mode === 'sse') {
-        config.mode = mode;
+      if (mode === 'stdio' || mode === 'sse' || mode === 'streamable-http') {
+        config.mode = mode as TransportMode;
       }
     }
     if (process.env.MCP_PORT) {
@@ -168,21 +168,21 @@ export class ConfigService {
     }
 
     // Validate transport mode
-    if (!['stdio', 'sse'].includes(config.mode)) {
-      errors.push('Mode must be either "stdio" or "sse"');
+    if (!['stdio', 'sse', 'streamable-http'].includes(config.mode)) {
+      errors.push('Mode must be either "stdio", "sse", or "streamable-http"');
     }
 
-    // Validate port for SSE mode
-    if (config.mode === 'sse') {
+    // Validate port for HTTP-based modes (SSE and Streamable HTTP)
+    if (config.mode === 'sse' || config.mode === 'streamable-http') {
       if (!config.port || config.port < 1 || config.port > 65535) {
-        errors.push('Port must be between 1 and 65535 for SSE mode');
+        errors.push('Port must be between 1 and 65535 for HTTP-based transports');
       }
     }
 
-    // Validate host for SSE mode
-    if (config.mode === 'sse') {
+    // Validate host for HTTP-based modes (SSE and Streamable HTTP)
+    if (config.mode === 'sse' || config.mode === 'streamable-http') {
       if (!config.host || config.host.trim() === '') {
-        errors.push('Host must be specified for SSE mode');
+        errors.push('Host must be specified for HTTP-based transports');
       }
     }
 
