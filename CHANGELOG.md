@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.7.0...aha-mcp-v0.8.0) (2026-01-13)
+
+
+### Features
+
+* add Streamable HTTP transport with comprehensive e2e tests ([#203](https://github.com/cedricziel/aha-mcp/issues/203)) ([a179bd5](https://github.com/cedricziel/aha-mcp/commit/a179bd5518dc7efb3cc724ab7762a31aef0edfa6))
+
+
+### Bug Fixes
+
+* add test-level timeouts to Streamable HTTP e2e tests ([#207](https://github.com/cedricziel/aha-mcp/issues/207)) ([1d84a7a](https://github.com/cedricziel/aha-mcp/commit/1d84a7ab79db3a1a417cb0c30034879e93cc65ed))
+* increase default test client connection timeout for CI ([#206](https://github.com/cedricziel/aha-mcp/issues/206)) ([5f4eafd](https://github.com/cedricziel/aha-mcp/commit/5f4eafdb66f93251666f7193a2960d8a90f6bfb3))
+
 ## [0.7.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.6.2...aha-mcp-v0.7.0) (2026-01-12)
 
 
