@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Start both the Portal server (port 3000) and the MCP HTTP server (port 3001)
 # Uses the shell & operator to run both processes; tini handles signal forwarding.
 
