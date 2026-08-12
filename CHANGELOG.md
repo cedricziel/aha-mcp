@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.0.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v1.0.0...aha-mcp-v2.0.0) (2026-08-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* the `risk_assessment` and `success_metrics` prompts are removed. Their substance now lives in `feature_analysis`, which gained `known_risks` and `current_baseline` arguments and deeper risk and metrics sections. Anyone invoking either by name must switch to `feature_analysis`.
+
+### Features
+
+* add five account-workflow prompts, fold two redundant ones in ([#310](https://github.com/cedricziel/aha-mcp/issues/310)) ([68d4877](https://github.com/cedricziel/aha-mcp/commit/68d4877b603a56ed44eb0322ea2036e01ca66d73))
+* annotate every MCP tool with behaviour hints ([#302](https://github.com/cedricziel/aha-mcp/issues/302)) ([b2ee3b5](https://github.com/cedricziel/aha-mcp/commit/b2ee3b57230921507b34d507622e233efa9e4c82))
+* autocomplete prompt arguments that name an Aha record ([#309](https://github.com/cedricziel/aha-mcp/issues/309)) ([77bce16](https://github.com/cedricziel/aha-mcp/commit/77bce166bb27169634940c04c20a74bf38202a8b))
+* give every prompt a display title ([#308](https://github.com/cedricziel/aha-mcp/issues/308)) ([46cd11b](https://github.com/cedricziel/aha-mcp/commit/46cd11be83f7f287b70fc77303d91de7dcaa2931))
+* tell clients what this server is and to link the records it returns ([#307](https://github.com/cedricziel/aha-mcp/issues/307)) ([1bf07cc](https://github.com/cedricziel/aha-mcp/commit/1bf07cc8636379f6c97ba66ba32041f93e07c98d))
+
+
+### Bug Fixes
+
+* actually send custom field values when updating a feature ([#304](https://github.com/cedricziel/aha-mcp/issues/304)) ([0652cc2](https://github.com/cedricziel/aha-mcp/commit/0652cc2932ce3e2f2c9779a52965d3c80fc2e290))
+* return absolute record links from aha_search ([#306](https://github.com/cedricziel/aha-mcp/issues/306)) ([013d4d6](https://github.com/cedricziel/aha-mcp/commit/013d4d6394ab999a89f7cf88db923a7522ef0f3d))
+
 ## [1.0.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.9.0...aha-mcp-v1.0.0) (2026-08-12)
 
 
