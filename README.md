@@ -325,6 +325,14 @@ aha_embedding_status --jobId embed-xyz789
 
 ### Available Resources
 
+**Breaking change:** many collection resources (slim index lists like `aha_features`, and a
+few with a handful of scalar columns like `aha_ideas`) now return `text/markdown` - a link
+list or a table, depending on the record type - instead of a JSON array. Anything that used
+to parse those collections' contents as JSON needs to change. Collections with richer nested
+data (`aha_goals`, `aha_initiatives`, comment resources, and similar) are unaffected and, like
+every single-record resource (`aha://feature/{id}` and the like), still return
+`application/json`.
+
 #### Individual Entity Resources
 - `aha_idea`: Access individual ideas using `aha://idea/{id}`
 - `aha_feature`: Access individual features using `aha://feature/{id}`

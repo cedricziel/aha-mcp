@@ -243,7 +243,10 @@ export class MockAhaService implements IAhaService {
   ): Promise<InitiativesListResponse> {
     const count = Math.min(perPage || 20, 3);
     return {
-      initiatives: Array.from({ length: count }, (_, i) => generateMockInitiative(i + 1)),
+      // The generator wraps under `initiative` because `getInitiative` below needs that shape
+      // to match `InitiativeResponse` - a list entry does not, and `InitiativesListResponse`
+      // types `initiatives` as flat `Initiative[]`, so it is unwrapped here.
+      initiatives: Array.from({ length: count }, (_, i) => generateMockInitiative(i + 1).initiative),
       pagination: {
         total_records: count,
         total_pages: 1,
@@ -266,7 +269,9 @@ export class MockAhaService implements IAhaService {
   ): Promise<GoalsListResponse> {
     const count = Math.min(perPage || 20, 3);
     return {
-      goals: Array.from({ length: count }, (_, i) => generateMockGoal(i + 1)),
+      // Same reasoning as listInitiatives above: `GoalsListResponse.goals` is flat `Goal[]`,
+      // the `goal` wrapper is only correct for the single-record `getGoal` response.
+      goals: Array.from({ length: count }, (_, i) => generateMockGoal(i + 1).goal),
       pagination: {
         total_records: count,
         total_pages: 1,
@@ -336,7 +341,9 @@ export class MockAhaService implements IAhaService {
   ): Promise<StrategicModelsListResponse> {
     const count = Math.min(perPage || 20, 3);
     return {
-      strategic_models: Array.from({ length: count }, (_, i) => generateMockStrategicModel(i + 1)),
+      // Unwrapped for the same reason as listInitiatives/listGoals: `strategic_models` is a
+      // flat `StrategicModel[]`, matching what `getStrategicModel` below already unwraps to.
+      strategic_models: Array.from({ length: count }, (_, i) => generateMockStrategicModel(i + 1).strategic_model),
       pagination: {
         total_records: count,
         total_pages: 1,
@@ -357,7 +364,9 @@ export class MockAhaService implements IAhaService {
   ): Promise<IdeaOrganizationsListResponse> {
     const count = Math.min(perPage || 20, 3);
     return {
-      idea_organizations: Array.from({ length: count }, (_, i) => generateMockIdeaOrganization(i + 1)),
+      // Unwrapped for the same reason as the other list methods above: `idea_organizations`
+      // is a flat `IdeaOrganization[]`, matching what `getIdeaOrganization` unwraps to.
+      idea_organizations: Array.from({ length: count }, (_, i) => generateMockIdeaOrganization(i + 1).idea_organization),
       pagination: {
         total_records: count,
         total_pages: 1,
@@ -382,7 +391,9 @@ export class MockAhaService implements IAhaService {
   ): Promise<IdeasListResponse> {
     const count = Math.min(perPage || 20, 3);
     return {
-      ideas: Array.from({ length: count }, (_, i) => generateMockIdea(i + 1)),
+      // Unwrapped for the same reason as the other list methods above: `IdeasListResponse.ideas`
+      // is flat `Idea[]`, the `idea` wrapper is only correct for the single-record `getIdea`.
+      ideas: Array.from({ length: count }, (_, i) => generateMockIdea(i + 1).idea),
       pagination: {
         total_records: count,
         total_pages: 1,
@@ -562,14 +573,17 @@ export class MockAhaService implements IAhaService {
 
   async listIdeasByProduct(_productId: string): Promise<IdeasListResponse> {
     return {
-      ideas: Array.from({ length: 3 }, (_, i) => generateMockIdea(i + 1)),
+      // Unwrapped for the same reason as listIdeas above.
+      ideas: Array.from({ length: 3 }, (_, i) => generateMockIdea(i + 1).idea),
       pagination: { total_records: 3, total_pages: 1, current_page: 1 }
     } as IdeasListResponse;
   }
 
   async listReleasesByProduct(_productId: string): Promise<ReleasesListResponse> {
     return {
-      releases: Array.from({ length: 3 }, (_, i) => generateMockRelease(i + 1)),
+      // `ReleasesListResponse.releases` is flat `Release[]`; the `release` wrapper is only
+      // correct for the single-record `getRelease` response above.
+      releases: Array.from({ length: 3 }, (_, i) => generateMockRelease(i + 1).release),
       pagination: { total_records: 3, total_pages: 1, current_page: 1 }
     } as ReleasesListResponse;
   }

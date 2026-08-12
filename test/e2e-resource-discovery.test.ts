@@ -105,12 +105,16 @@ describe('E2E: Resource Discovery Workflows', () => {
       expect(productsHandler).toBeDefined();
 
       const productsResult = await productsHandler!(new URL('aha://products'));
-      const productsData = JSON.parse(productsResult.contents[0].text);
 
-      // Verify products are returned
-      expect(productsData.products).toBeDefined();
-      expect(productsData.products.length).toBe(2);
-      expect(productsData.products[0].id).toBe('PROD-1');
+      // Products are tier 2 (renderTable): verified against a live /api/v1/products response
+      // with no description/custom_fields, first column linked on reference_prefix rather than
+      // reference_num - see resources.ts's tiering policy notes.
+      expect(productsResult.contents[0].mimeType).toBe('text/markdown');
+      const productsText = productsResult.contents[0].text;
+      expect(productsText).toContain('| Prefix | Name | Type |');
+      expect(productsText).toContain('Product 1');
+      expect(productsText).toContain('Product 2');
+      expect(productsText).toContain('2 records listed.');
     });
 
     it('should work with direct resource access after learning terminology', async () => {
@@ -209,25 +213,30 @@ describe('E2E: Resource Discovery Workflows', () => {
       expect(featuresHandler).toBeDefined();
 
       const result = await featuresHandler!(new URL('aha://features'));
-      const featuresData = JSON.parse(result.contents[0].text);
 
-      // Verify direct access works
-      expect(featuresData.features).toBeDefined();
-      expect(featuresData.features.length).toBe(2);
+      // Collections render as markdown (renderCollection in resource-output.ts), not JSON.
+      expect(result.contents[0].mimeType).toBe('text/markdown');
+      const featuresText = result.contents[0].text;
+      expect(featuresText).toContain('Feature 1');
+      expect(featuresText).toContain('Feature 2');
+      expect(featuresText).toContain('2 records listed.');
     });
   });
 
   describe('Workflow: Multi-Step Navigation', () => {
     it('should support drilling down from products to features', async () => {
-      // Step 1: List products
+      // Step 1: List products. Products are tier 2 (renderTable): a markdown table, not JSON,
+      // and the mock product has no `url` to recover an id from - same limitation the tier 1
+      // features case below has.
       const productsHandler = resourceHandlers.get('aha_products');
       const productsResult = await productsHandler!(new URL('aha://products'));
-      const productsData = JSON.parse(productsResult.contents[0].text);
 
-      const firstProductId = productsData.products[0].id;
-      expect(firstProductId).toBeDefined();
+      expect(productsResult.contents[0].mimeType).toBe('text/markdown');
+      expect(productsResult.contents[0].text).toContain('Product 1');
 
-      // Step 2: Get specific product
+      // Step 2: Get a specific product by the id a client would already know (e.g. from a
+      // prior `aha://product/{id}` fetch or a search result)
+      const firstProductId = 'PROD-1';
       const productHandler = resourceHandlers.get('aha_product');
       const productResult = await productHandler!(
         new URL(`aha://product/${firstProductId}`),
@@ -239,10 +248,9 @@ describe('E2E: Resource Discovery Workflows', () => {
       // Step 3: Access features (global resource)
       const featuresHandler = resourceHandlers.get('aha_features');
       const featuresResult = await featuresHandler!(new URL('aha://features'));
-      const featuresData = JSON.parse(featuresResult.contents[0].text);
 
-      expect(featuresData.features).toBeDefined();
-      expect(featuresData.features.length).toBeGreaterThan(0);
+      expect(featuresResult.contents[0].mimeType).toBe('text/markdown');
+      expect(featuresResult.contents[0].text).toContain('Feature 1');
     });
   });
 

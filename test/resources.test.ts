@@ -11,12 +11,16 @@ const mockAhaService = {
   getEpic: mock(() => Promise.resolve({ id: 'EPIC-123', name: 'Test Epic' })),
   getProduct: mock(() => Promise.resolve({ id: 'PROD-123', name: 'Test Product' })),
   getInitiative: mock(() => Promise.resolve({ id: 'INIT-123', name: 'Test Initiative' })),
-  listFeatures: mock(() => Promise.resolve({ features: [{ id: 'FEAT-1' }, { id: 'FEAT-2' }] })),
-  listUsers: mock(() => Promise.resolve({ users: [{ id: 'USER-1' }, { id: 'USER-2' }] })),
-  listEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1' }, { id: 'EPIC-2' }] })),
-  listProducts: mock(() => Promise.resolve({ products: [{ id: 'PROD-1' }, { id: 'PROD-2' }] })),
-  listInitiatives: mock(() => Promise.resolve({ initiatives: [{ id: 'INIT-1' }, { id: 'INIT-2' }] })),
-  listIdeasByProduct: mock(() => Promise.resolve({ ideas: [{ id: 'IDEA-1' }, { id: 'IDEA-2' }] })),
+  // Collection items carry `reference_num` (and sometimes `name`) because `renderCollection`
+  // (src/core/resource-output.ts) only labels a record by one of those two fields - a record
+  // with neither is dropped from the rendered markdown entirely, same as Aha itself never
+  // returning a bare `id` without one of the human-facing fields.
+  listFeatures: mock(() => Promise.resolve({ features: [{ id: 'FEAT-1', reference_num: 'FEAT-1' }, { id: 'FEAT-2', reference_num: 'FEAT-2' }] })),
+  listUsers: mock(() => Promise.resolve({ users: [{ id: 'USER-1', name: 'USER-1' }, { id: 'USER-2', name: 'USER-2' }] })),
+  listEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1', reference_num: 'EPIC-1' }, { id: 'EPIC-2', reference_num: 'EPIC-2' }] })),
+  listProducts: mock(() => Promise.resolve({ products: [{ id: 'PROD-1', name: 'PROD-1' }, { id: 'PROD-2', name: 'PROD-2' }] })),
+  listInitiatives: mock(() => Promise.resolve({ initiatives: [{ id: 'INIT-1', reference_num: 'INIT-1' }, { id: 'INIT-2', reference_num: 'INIT-2' }] })),
+  listIdeasByProduct: mock(() => Promise.resolve({ ideas: [{ id: 'IDEA-1', reference_num: 'IDEA-1' }, { id: 'IDEA-2', reference_num: 'IDEA-2' }] })),
   getEpicComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-1', body: 'Test epic comment' }] })),
   getIdeaComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-2', body: 'Test idea comment' }] })),
   getInitiativeComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-3', body: 'Test initiative comment' }] })),
@@ -29,15 +33,15 @@ const mockAhaService = {
   getFeatureComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-10', body: 'Test feature comment' }] })),
   getIdeaPortalComments: mock(() => Promise.resolve({ idea_comments: [{ id: 'IC-1', body: 'Test portal comment', visibility: 'Visible to all ideas portal users' }] })),
   getGoal: mock(() => Promise.resolve({ id: 'GOAL-123', name: 'Test Goal' })),
-  listGoals: mock(() => Promise.resolve({ goals: [{ id: 'GOAL-1' }, { id: 'GOAL-2' }] })),
-  getGoalEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1' }, { id: 'EPIC-2' }] })),
+  listGoals: mock(() => Promise.resolve({ goals: [{ id: 'GOAL-1', reference_num: 'GOAL-1' }, { id: 'GOAL-2', reference_num: 'GOAL-2' }] })),
+  getGoalEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1', reference_num: 'EPIC-1' }, { id: 'EPIC-2', reference_num: 'EPIC-2' }] })),
   getRelease: mock(() => Promise.resolve({ id: 'REL-123', name: 'Test Release' })),
-  getReleaseFeatures: mock(() => Promise.resolve({ features: [{ id: 'FEAT-1' }, { id: 'FEAT-2' }] })),
-  getReleaseEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1' }, { id: 'EPIC-2' }] })),
+  getReleaseFeatures: mock(() => Promise.resolve({ features: [{ id: 'FEAT-1', reference_num: 'FEAT-1' }, { id: 'FEAT-2', reference_num: 'FEAT-2' }] })),
+  getReleaseEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1', reference_num: 'EPIC-1' }, { id: 'EPIC-2', reference_num: 'EPIC-2' }] })),
   getReleasePhase: mock(() => Promise.resolve({ id: 'RP-123', name: 'Test Release Phase' })),
-  listReleasePhases: mock(() => Promise.resolve({ releasePhases: [{ id: 'RP-1' }, { id: 'RP-2' }] })),
-  listCustomFields: mock(() => Promise.resolve({ custom_field_definitions: [{ id: 'CF-1', name: 'Custom Field 1' }, { id: 'CF-2', name: 'Custom Field 2' }] })),
-  listCustomFieldOptions: mock(() => Promise.resolve({ options: [{ id: 'OPT-1', name: 'Option 1' }, { id: 'OPT-2', name: 'Option 2' }] }))
+  listReleasePhases: mock(() => Promise.resolve({ release_phases: [{ id: 'RP-1', reference_num: 'RP-1' }, { id: 'RP-2', reference_num: 'RP-2' }] })),
+  listCustomFields: mock(() => Promise.resolve({ custom_field_definitions: [{ id: 'CF-1', reference_num: 'CF-1', name: 'Custom Field 1' }, { id: 'CF-2', reference_num: 'CF-2', name: 'Custom Field 2' }] })),
+  listCustomFieldOptions: mock(() => Promise.resolve({ options: [{ id: 'OPT-1', reference_num: 'OPT-1', name: 'Option 1' }, { id: 'OPT-2', reference_num: 'OPT-2', name: 'Option 2' }] }))
 };
 
 describe('Resources', () => {
@@ -539,6 +543,8 @@ describe('Resources', () => {
         expect(mockAhaService.getEpicComments).toHaveBeenCalledWith('EPIC-123');
         expect(result.contents).toHaveLength(1);
         expect(result.contents[0].uri).toBe('aha://comments/epic/EPIC-123');
+        // Comments stay tier 3 (raw JSON): a Comment carries `body` but never `reference_num`
+        // or `name`, so renderCollection would drop every one of them for lack of a label.
         expect(result.contents[0].text).toContain('Test epic comment');
       });
 
