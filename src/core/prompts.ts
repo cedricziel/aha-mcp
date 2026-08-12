@@ -80,6 +80,7 @@ export function registerPrompts(server: McpServer) {
   server.registerPrompt(
     "feature_analysis",
     {
+      title: "Analyze a feature",
       description: "Analyze feature requirements, dependencies, and implementation strategies",
       argsSchema: {
         feature_name: z.string().describe("Name of the feature to analyze"),
@@ -131,6 +132,7 @@ Format your response with clear sections and actionable recommendations.`
   server.registerPrompt(
     "product_roadmap",
     {
+      title: "Plan a product roadmap",
       description: "Generate product roadmap recommendations and strategic planning",
       argsSchema: {
         product_name: z.string().describe("Name of the product"),
@@ -184,6 +186,7 @@ Structure as a actionable roadmap with clear timelines and dependencies.`
   server.registerPrompt(
     "release_planning",
     {
+      title: "Plan a release",
       description: "Create comprehensive release planning strategies and execution plans",
       argsSchema: {
         release_name: z.string().describe("Name of the release"),
@@ -227,6 +230,7 @@ Format as a comprehensive release plan with clear action items.`
   server.registerPrompt(
     "competitor_analysis",
     {
+      title: "Analyze a competitor",
       description: "Analyze competitor features, positioning, and strategic implications",
       argsSchema: {
         competitor_name: z.string().describe("Name of the competitor"),
@@ -268,6 +272,7 @@ Focus on actionable insights that can inform our product decisions.`
   server.registerPrompt(
     "user_story_generation",
     {
+      title: "Write user stories",
       description: "Generate comprehensive user stories from requirements and acceptance criteria",
       argsSchema: {
         feature_name: z.string().describe("Name of the feature"),
@@ -309,6 +314,7 @@ Format each story following best practices with clear, actionable descriptions.`
   server.registerPrompt(
     "sprint_planning",
     {
+      title: "Plan a sprint",
       description: "Create sprint planning recommendations and capacity allocation",
       argsSchema: {
         sprint_duration: z.string().describe("Sprint duration (e.g., 2 weeks)"),
@@ -352,6 +358,7 @@ Format as a actionable sprint plan with clear assignments and timelines.`
   server.registerPrompt(
     "epic_breakdown",
     {
+      title: "Break down an epic",
       description: "Break down epics into manageable features and user stories",
       argsSchema: {
         epic_name: z.string().describe("Name of the epic"),
@@ -406,6 +413,7 @@ Structure as a hierarchical breakdown with clear relationships and dependencies.
   server.registerPrompt(
     "idea_prioritization",
     {
+      title: "Prioritize ideas",
       description: "Prioritize ideas based on strategic criteria and business value",
       argsSchema: {
         ideas_list: z.string().describe("Comma-separated list of ideas to prioritize"),
@@ -462,6 +470,7 @@ Use a structured scoring approach with clear rationale for each decision.`
   server.registerPrompt(
     "stakeholder_communication",
     {
+      title: "Draft a stakeholder update",
       description: "Generate stakeholder updates and communication materials",
       argsSchema: {
         communication_type: z.string().describe("Type of communication (status_update, milestone_report, roadmap_presentation, issue_escalation)"),
@@ -505,6 +514,7 @@ Format appropriately for the audience level and communication type.`
   server.registerPrompt(
     "feature_specification",
     {
+      title: "Write a feature spec",
       description: "Create detailed feature specifications and technical requirements",
       argsSchema: {
         feature_name: z.string().describe("Name of the feature"),
@@ -549,6 +559,7 @@ Format as a comprehensive specification document with clear sections.`
   server.registerPrompt(
     "risk_assessment",
     {
+      title: "Assess risks",
       description: "Assess project and feature risks with mitigation strategies",
       argsSchema: {
         project_name: z.string().describe("Name of the project or feature"),
@@ -593,6 +604,7 @@ Use a structured risk assessment framework with clear action items.`
   server.registerPrompt(
     "success_metrics",
     {
+      title: "Define success metrics",
       description: "Define success metrics and KPIs for features and initiatives",
       argsSchema: {
         initiative_name: z.string().describe("Name of the initiative or feature"),
@@ -637,6 +649,7 @@ Focus on actionable, measurable metrics that align with business objectives.`
   server.registerPrompt(
     "product_idea_discovery",
     {
+      title: "Discover ideas in a product",
       description: "Discover and analyze ideas within products/workspaces based on topics, themes, or keywords",
       argsSchema: {
         search_topic: z.string().describe("The topic, theme, or keyword to search for (e.g., 'Node.js', 'mobile', 'API')"),
@@ -711,6 +724,7 @@ Focus on providing specific, actionable search queries and analysis approaches.`
   server.registerPrompt(
     "aha_resource_discovery",
     {
+      title: "Find the right Aha resource",
       description: "Get guidance on discovering and using Aha.io resources with terminology mapping and synonym support. Provides primers for common questions about workspaces, Product Areas, and workstreams.",
       argsSchema: {
         search_query: z.string().describe("What you're looking for (e.g., 'workspaces', 'Product Areas', 'how do I find features')")

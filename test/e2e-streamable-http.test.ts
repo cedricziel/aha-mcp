@@ -86,6 +86,25 @@ describe('E2E Streamable HTTP Transport', () => {
       }, { mode: 'streamable-http', timeout: 15000 });
     }, 20000);
 
+    it('should give every prompt a display title', async () => {
+      await withTestClient(async (client) => {
+        const prompts = await client.listPrompts();
+
+        // Prompts are user-controlled, surfaced as slash commands, so the label a person
+        // picks from should not be the underscore name.
+        const untitled = prompts.filter(p => !p.title).map(p => p.name);
+        expect(untitled).toEqual([]);
+
+        for (const prompt of prompts) {
+          expect(typeof prompt.title).toBe('string');
+          expect(prompt.title).not.toBe(prompt.name);
+        }
+
+        const discovery = prompts.find(p => p.name === 'aha_resource_discovery');
+        expect(discovery.title).toBe('Find the right Aha resource');
+      }, { mode: 'streamable-http', timeout: 15000 });
+    }, 20000);
+
     it('should get a prompt via HTTP', async () => {
       await withTestClient(async (client) => {
         const messages = await client.getPrompt('aha_resource_discovery', {
