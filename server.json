@@ -1,0 +1,67 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.cedricziel/aha-mcp",
+  "title": "Aha.io",
+  "description": "Search, read and update Aha.io ideas, features, epics, releases, goals and comments",
+  "version": "5.0.1",
+  "repository": {
+    "url": "https://github.com/cedricziel/aha-mcp",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/cedricziel/aha-mcp#readme",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/cedricziel/aha-mcp/main/icon.png",
+      "mimeType": "image/png"
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@cedricziel/aha-mcp",
+      "version": "5.0.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "AHA_COMPANY",
+          "description": "Aha.io company subdomain, e.g. 'mycompany' for mycompany.aha.io",
+          "isRequired": true,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "AHA_TOKEN",
+          "description": "Aha.io API token",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
+    },
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/cedricziel/aha-mcp:5.0.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "AHA_COMPANY",
+          "description": "Aha.io company subdomain, e.g. 'mycompany' for mycompany.aha.io",
+          "isRequired": true,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "AHA_TOKEN",
+          "description": "Aha.io API token",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}

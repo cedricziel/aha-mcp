@@ -1,5 +1,6 @@
 {
   "name": "@cedricziel/aha-mcp",
+  "mcpName": "io.github.cedricziel/aha-mcp",
   "module": "src/index.ts",
   "type": "module",
   "version": "5.0.1",

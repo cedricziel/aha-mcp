@@ -26,6 +26,11 @@ RUN bun run build
 # Stage 2: Production stage
 FROM oven/bun:1.2-alpine AS production
 
+# Ownership marker for the MCP Registry: it only accepts the `oci` package entry in
+# server.json if the image carries this label with the same name. Must stay identical to
+# `name` in server.json and `mcpName` in package.json.
+LABEL io.modelcontextprotocol.server.name="io.github.cedricziel/aha-mcp"
+
 # Install runtime dependencies
 RUN apk add --no-cache \
     tini \

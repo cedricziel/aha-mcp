@@ -164,3 +164,62 @@ jobs:
           curl -f http://localhost:3001/ || exit 1
           # Cleanup
           docker stop aha-mcp-test
+
+  # Publishes metadata only - the registry hosts nothing, it points at the npm package, the
+  # ghcr image and the .mcpb asset. All three must already exist and carry their ownership
+  # marker before the registry will accept the entry, hence `needs` on both publish jobs:
+  # npm is checked for `mcpName` in package.json, ghcr for the image's
+  # io.modelcontextprotocol.server.name label, and the release asset for its SHA-256.
+  mcp-registry:
+    needs: [release-please, publish, docker]
+    runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.release_created }}
+    permissions:
+      contents: read
+      id-token: write # github-oidc login; no stored registry credential
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # server.json is committed with the version release-please bumps, but two fields it
+      # cannot reach are filled in here: the ghcr tag is embedded in a string rather than
+      # being a value of its own, and the .mcpb entry needs a hash of an artifact that does
+      # not exist until the release is built.
+      - name: Pin server.json to the released artifacts
+        env:
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#aha-mcp-v}"
+          MCPB_URL="https://github.com/cedricziel/aha-mcp/releases/download/${TAG}/aha-mcp-v${VERSION}.mcpb"
+          curl -fsSL -o release.mcpb "$MCPB_URL"
+          MCPB_SHA="$(sha256sum release.mcpb | cut -d' ' -f1)"
+          jq --arg v "$VERSION" --arg url "$MCPB_URL" --arg sha "$MCPB_SHA" '
+            .version = $v
+            | .packages = [
+                .packages[]
+                | if .registryType == "npm" then .version = $v
+                  elif .registryType == "oci" then .identifier = "ghcr.io/cedricziel/aha-mcp:" + $v
+                  else . end
+              ] + [
+                {
+                  registryType: "mcpb",
+                  identifier: $url,
+                  version: $v,
+                  fileSha256: $sha,
+                  transport: { type: "stdio" }
+                }
+              ]
+          ' server.json > server.json.tmp
+          mv server.json.tmp server.json
+          cat server.json
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+
+      - name: Authenticate to the MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish to the MCP Registry
+        run: ./mcp-publisher publish

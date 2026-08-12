@@ -8,6 +8,20 @@ A Model Context Protocol (MCP) server that provides seamless integration with Ah
 
 ## 🔧 Client Configuration
 
+### MCP Registry
+
+This server is published to the [official MCP Registry](https://registry.modelcontextprotocol.io)
+as `io.github.cedricziel/aha-mcp`, so a client that browses the registry can install it
+without any of the configuration below:
+
+```bash
+curl "https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.cedricziel/aha-mcp"
+```
+
+The registry holds metadata only. Its entry points at the three artifacts described below —
+the npm package, the `ghcr.io` image and the `.mcpb` desktop extension — and a client picks
+whichever it can run. Either way the server needs `AHA_COMPANY` and `AHA_TOKEN`.
+
 ### Claude Desktop Extension (easiest)
 
 Download `aha-mcp-v<version>.mcpb` from the [latest release](https://github.com/cedricziel/aha-mcp/releases/latest)
@@ -999,7 +1013,14 @@ This project uses [release-please](https://github.com/googleapis/release-please-
 2. **Push to main** - release-please will automatically:
    - Create a release PR with updated version and changelog
    - Once the release PR is merged, it will create a GitHub release
-   - The release will trigger automatic publication to npm
+   - The release will trigger automatic publication to npm, `ghcr.io` and the
+     [MCP Registry](https://registry.modelcontextprotocol.io)
+
+   The registry job runs last, because the registry verifies ownership by reading the
+   already-published artifacts: `mcpName` in the npm package, the
+   `io.modelcontextprotocol.server.name` label on the image, and the SHA-256 of the `.mcpb`
+   asset attached to the release. It authenticates with GitHub OIDC, so no registry
+   credential is stored anywhere.
 
 #### Manual Publishing
 

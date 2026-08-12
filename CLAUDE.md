@@ -38,6 +38,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   `prompts_generated: true` - the schema requires a `text` field on any statically declared
   prompt, which the server generates at runtime instead.
 
+### MCP Registry
+
+`server.json` is the entry in the [official MCP Registry](https://registry.modelcontextprotocol.io),
+published as `io.github.cedricziel/aha-mcp` by the `mcp-registry` job in
+`release-please.yml`. The registry stores metadata only - it points at the npm package, the
+`ghcr.io` image and the `.mcpb` release asset. Validate a change locally with
+`mcp-publisher validate`, which needs no credentials.
+
+- **The name is fixed by the authentication method.** `mcp-publisher login github-oidc`
+  only grants `io.github.<owner>/`, so the name cannot become `com.cedricziel/...` or
+  anything else without moving to DNS auth and an Ed25519 key.
+- **Each package type is verified against the published artifact, by a different marker.**
+  npm: `mcpName` in `package.json`. OCI: the
+  `io.modelcontextprotocol.server.name` label in the `Dockerfile`. MCPB: a `fileSha256` of
+  the asset. All of them must equal `name` in `server.json`, so renaming the server means
+  changing three files at once - `test/server-json.test.ts` pins them together rather than
+  letting a release discover it.
+- **The registry job therefore runs after `publish` and `docker`.** It reads what those two
+  jobs uploaded; running it first fails validation on artifacts that do not exist yet. For
+  the same reason the first registry entry can only be the **next** release: npm 5.0.1 was
+  published before `mcpName` existed, and the marker is read from the package, not the repo.
+- **Two fields in `server.json` cannot be bumped by release-please and are rewritten in
+  CI.** Its `extra-files` updater sets a whole JSON value, so it handles `$.version` and
+  `$.packages[0].version` but not the version *inside* the `ghcr.io/...:5.0.1` identifier
+  string; and the `.mcpb` entry needs a hash of an artifact that does not exist until the
+  release is built, which is why that entry is absent from the committed file and appended
+  by `jq`. Do not add a placeholder hash to make the file look complete.
+- `description` is capped at **100 characters** by the schema. `title` is the display name;
+  `name` is the identifier and is not shown.
+
 ### Search
 
 Search goes through Aha's GraphQL API (`POST /api/v2/graphql`, `searchDocuments`), wrapped by
