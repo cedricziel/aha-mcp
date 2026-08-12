@@ -48,6 +48,10 @@ Behaviours measured against a live account, not documented upstream - keep the c
 - `per` defaults to 20 and is clamped server-side to 10..200. Requests below 10 come back
   with 10, so the client raises them rather than promising something it will not deliver.
 - `totalCount` saturates at 10000; surfaced as `total_count_is_capped`.
+- `url` on a search hit is an app path (`/features/PRJ1-1`), not a URL. The client resolves
+  it against the account host so `SearchHit.url` is always absolute and a client can open
+  it. REST responses differ here - they already carry an absolute `url` (the web page) plus
+  `resource` (the API endpoint), so nothing rewrites those.
 - Argument and scoping errors arrive as GraphQL errors with an HTTP **200**. A genuine
   permission or licensing problem is an HTTP **403** - do not conflate them.
 - Most other list queries (`goals`, `initiatives`, `keyResults`, ...) require a `filters`

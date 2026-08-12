@@ -56,7 +56,8 @@ const page = (over: Record<string, unknown> = {}) => ({
           searchableId: '123',
           searchableType: 'Idea',
           projectId: 'p1',
-          url: 'https://acme.aha.io/ideas/IDEA-1',
+          // Aha returns an app path here, not a URL.
+          url: '/ideas/ideas/IDEA-1',
           updatedAt: '2026-08-01T00:00:00Z'
         }
       ],
@@ -207,6 +208,50 @@ describe('AhaGraphQLClient', () => {
     it('tolerates a null node list', async () => {
       const { client } = stub(page({ nodes: null }));
       expect((await client.searchDocuments({ query: 'a' })).results).toEqual([]);
+    });
+  });
+
+  describe('record links', () => {
+    const withUrl = (url: unknown) =>
+      page({
+        nodes: [
+          {
+            name: 'Alerting: silence by label',
+            searchableId: '123',
+            searchableType: 'Idea',
+            projectId: 'p1',
+            url,
+            updatedAt: '2026-08-01T00:00:00Z'
+          }
+        ]
+      });
+
+    const firstUrl = async (url: unknown) => {
+      const { client } = stub(withUrl(url));
+      return (await client.searchDocuments({ query: 'alert' })).results[0].url;
+    };
+
+    it('resolves the app path against the account host', async () => {
+      expect(await firstUrl('/ideas/ideas/IDEA-1')).toBe('https://acme.aha.io/ideas/ideas/IDEA-1');
+    });
+
+    it('leaves an absolute url alone, should Aha start returning one', async () => {
+      expect(await firstUrl('https://acme.aha.io/features/PRJ1-1')).toBe(
+        'https://acme.aha.io/features/PRJ1-1'
+      );
+    });
+
+    it('does not lose the separator on a path with no leading slash', async () => {
+      expect(await firstUrl('features/PRJ1-1')).toBe('https://acme.aha.io/features/PRJ1-1');
+    });
+
+    it('passes an empty url through rather than emitting a bare host', async () => {
+      expect(await firstUrl('')).toBe('');
+    });
+
+    it('exposes the account host', () => {
+      const { client } = stub(page());
+      expect(client.host()).toBe('https://acme.aha.io');
     });
   });
 
