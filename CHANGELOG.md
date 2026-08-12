@@ -1,5 +1,14 @@
 # Changelog
 
+## [5.1.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v5.0.1...aha-mcp-v5.1.0) (2026-08-12)
+
+
+### Features
+
+* enumerate a release's epics as a tool ([#331](https://github.com/cedricziel/aha-mcp/issues/331)) ([13e23b3](https://github.com/cedricziel/aha-mcp/commit/13e23b30e57db6cec0c6a41f9f81b444ae4dfb51))
+* enumerate a release's features as a tool ([#329](https://github.com/cedricziel/aha-mcp/issues/329)) ([e778592](https://github.com/cedricziel/aha-mcp/commit/e778592bd9774fc2c70cf0230642ac8f30544d68))
+* publish to the official MCP Registry ([#332](https://github.com/cedricziel/aha-mcp/issues/332)) ([12751e8](https://github.com/cedricziel/aha-mcp/commit/12751e835e1e9722dc09e71433fdaf98bbe7e9e3))
+
 ## [5.0.1](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v5.0.0...aha-mcp-v5.0.1) (2026-08-12)
 
 
