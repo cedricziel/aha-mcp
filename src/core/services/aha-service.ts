@@ -1427,10 +1427,16 @@ export class AhaService {
   public static async createFeature(releaseId: string, featureData: any): Promise<unknown> {
     const featuresApi = this.getFeaturesApi();
 
+    // Aha documents the body as `{"feature": {...}}`, so tolerate either shape from callers:
+    // the tool's schema sends it already wrapped, but a bare record from a direct caller
+    // should not post an unwrapped body Aha will quietly do nothing with.
+    // https://www.aha.io/api/resources/features/create_a_feature
+    const payload = featureData?.feature ? featureData : { feature: featureData ?? {} };
+
     try {
       const response = await featuresApi.releasesByReleaseFeaturesPost({
         releaseId: releaseId,
-        featuresPostRequest: featureData ?? {}
+        featuresPostRequest: payload
       });
       return response.data;
     } catch (error) {
