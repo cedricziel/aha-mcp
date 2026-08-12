@@ -10,11 +10,53 @@ import type { Subprocess } from 'bun';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+/** Thrown when the server subprocess died before serving, so callers can retry a new port. */
+class ServerStartupError extends Error {}
+
+/**
+ * Every server subprocess this helper spawns, so none can outlive the test run.
+ *
+ * Without this, an interrupted or crashing run left servers running indefinitely: a machine
+ * accumulated 22 of them, which slowed things down enough to cause the very readiness
+ * timeouts that leaked the next one.
+ */
+const liveServers = new Set<Subprocess>();
+let exitHookInstalled = false;
+
+function trackServer(proc: Subprocess): void {
+  liveServers.add(proc);
+  if (exitHookInstalled) return;
+  exitHookInstalled = true;
+
+  // Synchronous, because exit handlers cannot await.
+  const killAll = () => {
+    for (const p of liveServers) {
+      try {
+        p.kill();
+      } catch {
+        // Already gone.
+      }
+    }
+    liveServers.clear();
+  };
+  process.on('exit', killAll);
+  for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+    process.on(signal, () => {
+      killAll();
+      process.exit(130);
+    });
+  }
+}
+
+function untrackServer(proc: Subprocess): void {
+  liveServers.delete(proc);
+}
+
 export interface TestClientOptions {
   company?: string;
   token?: string;
   timeout?: number;
-  mode?: 'stdio' | 'sse' | 'streamable-http';
+  mode?: 'stdio' | 'streamable-http';
   port?: number;
   host?: string;
 }
@@ -62,13 +104,8 @@ export class TestMCPClient {
   private serverProcess?: Subprocess;
 
   constructor() {
-    // Find the built server or use the source directly with bun
-    const projectRoot = join(__dirname, '../..');
-    const builtServer = join(projectRoot, 'build/index.js');
-    const sourceServer = join(projectRoot, 'src/index.ts');
-
-    // For tests, we'll use bun to run the source directly
-    this.serverCommand = sourceServer;
+    // Run the source directly with bun, so tests do not depend on a prior build.
+    this.serverCommand = join(__dirname, '../..', 'src/index.ts');
   }
 
   /**
@@ -86,19 +123,64 @@ export class TestMCPClient {
   }
 
   /**
-   * Wait for HTTP server to be ready
+   * Wait for HTTP server to be ready.
+   *
+   * Polls /health, but gives up immediately if the subprocess has already exited - most
+   * often because the port was taken between findAvailablePort() closing its probe socket
+   * and the child binding it. Waiting out the full timeout in that case turned a startup
+   * failure into an opaque "did not become ready" after 15-30 seconds.
    */
   private async waitForHttpServer(port: number, timeout: number): Promise<void> {
     const startTime = Date.now();
     while (Date.now() - startTime < timeout) {
+      if (this.serverProcess?.exitCode !== null && this.serverProcess?.exitCode !== undefined) {
+        throw new ServerStartupError(
+          `Server exited with code ${this.serverProcess.exitCode} before becoming ready on ` +
+            `port ${port}.${await this.readServerStderr()}`
+        );
+      }
+
       try {
         const response = await fetch(`http://localhost:${port}/health`);
         if (response.ok) return;
       } catch {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Not listening yet.
       }
+
+      // Sleep on every iteration. Previously only the catch branch slept, so a server
+      // answering /health with a non-2xx status produced a tight request loop.
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
-    throw new Error(`Server did not become ready on port ${port} within ${timeout}ms`);
+
+    // Kill before reading stderr; see readServerStderr().
+    this.serverProcess?.kill();
+    throw new Error(
+      `Server did not become ready on port ${port} within ${timeout}ms.${await this.readServerStderr()}`
+    );
+  }
+
+  /**
+   * Best-effort stderr capture, to make startup failures diagnosable.
+   *
+   * Only safe once the child has exited: reading the stream to EOF while it is still running
+   * never returns, because stderr stays open. Callers must kill the process first.
+   */
+  private async readServerStderr(): Promise<string> {
+    const proc = this.serverProcess;
+    const stderr = proc?.stderr;
+    if (!proc || !stderr || typeof stderr === 'number') return '';
+    if (proc.exitCode === null && proc.signalCode === null) return '';
+
+    try {
+      // Still bounded, in case the stream stays open for another reason.
+      const text = await Promise.race([
+        new Response(stderr as ReadableStream).text(),
+        new Promise<string>(resolve => setTimeout(() => resolve(''), 1000))
+      ]);
+      return text.trim() ? `\nServer stderr:\n${text.trim().slice(0, 2000)}` : '';
+    } catch {
+      return '';
+    }
   }
 
   /**
@@ -129,28 +211,41 @@ export class TestMCPClient {
     );
 
     if (mode === 'streamable-http') {
-      // Find available port
-      this.httpPort = options.port || await this.findAvailablePort();
-      this.httpBaseUrl = `http://${host}:${this.httpPort}`;
+      // findAvailablePort() closes its probe socket before the child binds, so the port can
+      // be taken in between - especially with several test files running at once. Retry on a
+      // fresh port rather than reporting a timeout for what is a lost race.
+      const attempts = options.port ? 1 : 3;
+      for (let attempt = 1; ; attempt++) {
+        this.httpPort = options.port || (await this.findAvailablePort());
+        this.httpBaseUrl = `http://${host}:${this.httpPort}`;
 
-      // Spawn server with HTTP mode
-      this.serverProcess = Bun.spawn([
-        'bun', 'run', this.serverCommand,
-        '--mode', 'streamable-http',
-        '--port', this.httpPort.toString(),
-        '--host', host
-      ], {
-        env: {
-          ...process.env,
-          AHA_COMPANY: company,
-          AHA_TOKEN: token,
-          NODE_ENV: 'test'
-        },
-        stderr: 'pipe'
-      });
+        // Spawn server with HTTP mode
+        this.serverProcess = Bun.spawn([
+          'bun', 'run', this.serverCommand,
+          '--mode', 'streamable-http',
+          '--port', this.httpPort.toString(),
+          '--host', host
+        ], {
+          env: {
+            ...process.env,
+            AHA_COMPANY: company,
+            AHA_TOKEN: token,
+            NODE_ENV: 'test'
+          },
+          stderr: 'pipe'
+        });
+        trackServer(this.serverProcess);
 
-      // Wait for server to be ready
-      await this.waitForHttpServer(this.httpPort, timeout);
+        try {
+          await this.waitForHttpServer(this.httpPort, timeout);
+          break;
+        } catch (error) {
+          untrackServer(this.serverProcess);
+          this.serverProcess?.kill();
+          this.serverProcess = undefined;
+          if (attempt >= attempts || !(error instanceof ServerStartupError)) throw error;
+        }
+      }
 
       // Create HTTP transport
       this.transport = new StreamableHTTPClientTransport(
@@ -205,7 +300,11 @@ export class TestMCPClient {
    * Disconnect from the server
    */
   async disconnect(): Promise<void> {
-    if (!this.connected) {
+    // Clean up even when the client never finished connecting. A failed connect() still
+    // leaves a spawned subprocess behind, and withTestClient's finally block relies on this
+    // call to reap it - returning early here leaked a server on every readiness timeout,
+    // and each orphan then slowed the machine down enough to cause the next one.
+    if (!this.connected && !this.serverProcess && !this.transport && !this.client) {
       return;
     }
 
@@ -348,6 +447,7 @@ export class TestMCPClient {
 
     // Kill HTTP server process if it exists
     if (this.serverProcess) {
+      untrackServer(this.serverProcess);
       try {
         this.serverProcess.kill();
       } catch (error) {
