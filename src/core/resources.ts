@@ -812,11 +812,13 @@ export function registerResources(server: McpServer) {
       try {
         const comments = await getAhaService().getFeatureComments(featureId);
 
+        // Tier 3: see the epic comments resource above for why comments can never be tier 1.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(comments, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -862,11 +864,14 @@ export function registerResources(server: McpServer) {
       try {
         const comments = await getAhaService().getIdeaPortalComments(ideaId);
 
+        // Tier 3: same shape and reasoning as every other comment resource - see the epic
+        // comments resource above.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(comments, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -1410,7 +1415,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(keyResult, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(keyResult as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -1448,11 +1454,17 @@ export function registerResources(server: McpServer) {
       try {
         const keyResults = await getAhaService().listKeyResults(goalId);
 
+        // Tier 3, and unverified rather than measured: the live account has no goal with any
+        // key results, and /goals/{id}/key_results returns an empty array, so the shape of a
+        // key result from the list endpoint could not be checked against a real payload. The
+        // policy's documented default for an unverified collection is tier 3, not tier 1 or 2 -
+        // worth revisiting here if a real payload becomes available.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(keyResults, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {

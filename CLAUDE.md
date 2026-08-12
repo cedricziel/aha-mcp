@@ -446,7 +446,7 @@ here rather than in a client.
 
 #### Resource output: rendering tiers and `resourceAnnotations`
 
-Every one of the 56 `registerResource` calls now attaches `annotations` from
+Every one of the 60 `registerResource` calls now attaches `annotations` from
 `resourceAnnotations()` (`src/core/resource-output.ts`), and collection reads no longer come
 back as one uniform `JSON.stringify(x, null, 2)` with `mimeType: "application/json"`. This is
 the resource-side counterpart to "Tool output" above - same motivation, opposite constraint,
@@ -469,15 +469,22 @@ endpoint populates):
   identity - ideas add `description` and `workflow_status`, releases add `start_date`,
   `release_date`, `owner` - enough to be worth a column, not enough to need the nested
   structure JSON alone can carry.
-- **Tier 3** (23 registrations - all 9 comment resources, `goals`, `initiatives`,
+- **Tier 3** (26 registrations - all 11 comment resources, `goals`, `initiatives`,
   `competitors`, `todos`, `endorsements`, `votes`, `custom_fields`, `custom_field_options`,
-  `release_phases`, `strategic_models`, `me_pending_tasks`): JSON kept unchanged, annotations
-  added. Goals nest `features`/`initiatives`/`key_results`/`releases` arrays that a flat
-  table or a link list would either flatten away or drop outright.
-- **Single-record** (16 registrations, `aha://feature/{id}` and siblings): JSON kept
+  `release_phases`, `strategic_models`, `me_pending_tasks`, `goal_key_results`): JSON kept
+  unchanged, annotations added. Goals nest `features`/`initiatives`/`key_results`/`releases`
+  arrays that a flat table or a link list would either flatten away or drop outright.
+  `goal_key_results` lands here by the same conservative default, not by measurement: the
+  live account has no goal with any key results and `/goals/{id}/key_results` returns an
+  empty array, so the list endpoint's shape has never been checked against a real payload -
+  see the code comment at that registration if a real payload becomes available to verify
+  against.
+- **Single-record** (17 registrations, `aha://feature/{id}` and siblings): JSON kept
   unconditionally, `resourceAnnotations(record)` passed so a fetched record's `updated_at`
   becomes `lastModified` the same way `recordLinks()` does for tools. Someone reading one
-  specific record wants the data, not a summary of it, so tiering never applies here.
+  specific record wants the data, not a summary of it, so tiering never applies here. This
+  set includes `key_result`, which carries no `url` of its own - the `aha://key_result/{id}`
+  URI is the only stable pointer to one.
 
 **Two rules in this scheme must not be undone:**
 
@@ -488,8 +495,10 @@ endpoint populates):
   has one just because most Aha records do.
 - **Comments are tier 3, permanently.** Aha's `Comment` carries only `id`, `body`, `url` -
   never `reference_num` or `name`. Routing comments through `renderCollection` would silently
-  delete every comment body: the nine `*_comments` resources would render as a heading and a
-  count, with the one thing anyone reading a comment wants gone. The body *is* the payload;
+  delete every comment body: the eleven comment resources (the nine `*_comments` resources
+  plus `aha_idea_portal_comments`, whose `aha://idea-comments/{id}` URI does not follow that
+  naming pattern but shares the same `Comment` shape) would render as a heading and a count,
+  with the one thing anyone reading a comment wants gone. The body *is* the payload;
   there is nothing to index by. If a future type has this shape, the fix is routing it to
   tier 3, never loosening `renderCollection` to emit unlabelled bullets - a bullet with no
   label is worse than no bullet, and a bullet with a truncated body is worse than JSON.
