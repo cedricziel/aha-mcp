@@ -1480,16 +1480,24 @@ export class AhaService {
   /**
    * Update a feature's custom fields
    * @param featureId The ID of the feature
-   * @param customFields The custom fields data
-   * @returns Success response
+   * @param customFields Object of custom field key/value pairs
+   * @returns The updated feature response
    */
-  public static async updateFeatureCustomFields(featureId: string, _customFields: any): Promise<void> {
-    const defaultApi = this.getDefaultApi();
+  public static async updateFeatureCustomFields(featureId: string, customFields: Record<string, any>): Promise<Feature> {
+    const featuresApi = this.getFeaturesApi();
 
     try {
-      await defaultApi.featuresIdCustomFieldsPut({
-        id: featureId
+      // This used to call `DefaultApi.featuresIdCustomFieldsPut`, whose generated signature
+      // takes an id and nothing else - the operation is declared without a request body, so
+      // the values could not be sent at all and every call was a no-op reported as success.
+      // `PUT /features/:id` carries `feature.custom_fields`, so route through that instead.
+      const response = await featuresApi.featuresUpdate({
+        id: featureId,
+        featureUpdateRequest: {
+          feature: { custom_fields: customFields } as any
+        }
       });
+      return response.data.feature;
     } catch (error) {
       log.error('Error updating custom fields for feature', error as Error, { operation: 'updateFeatureCustomFields', feature_id: featureId });
       throw error;
