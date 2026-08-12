@@ -1,7 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { completable } from "@modelcontextprotocol/sdk/server/completable.js";
 import * as z from "zod/v4";
 import * as services from "./services/index.js";
 import { getSamplingPrimer } from "./sampling.js";
+import {
+  completeProduct,
+  completeRecordReference,
+  completeRecordReferenceList
+} from "./completions.js";
 
 /**
  * Helper function to fetch context from Aha.io resources
@@ -88,7 +94,10 @@ export function registerPrompts(server: McpServer) {
         product_context: z.string().optional().describe("Product context and goals"),
         existing_features: z.string().optional().describe("Comma-separated list of related existing features"),
         target_users: z.string().optional().describe("Target user segments"),
-        feature_id: z.string().optional().describe("Existing feature ID from Aha.io for context (e.g., PROJ-123)")
+        feature_id: completable(
+          z.string().optional().describe("Existing feature ID from Aha.io for context (e.g., PROJ-123)"),
+          completeRecordReference("Feature")
+        )
       }
     },
     async (params: { feature_name: string; feature_description?: string; product_context?: string; existing_features?: string; target_users?: string; feature_id?: string }) => {
@@ -135,13 +144,19 @@ Format your response with clear sections and actionable recommendations.`
       title: "Plan a product roadmap",
       description: "Generate product roadmap recommendations and strategic planning",
       argsSchema: {
-        product_name: z.string().describe("Name of the product"),
+        product_name: completable(
+          z.string().describe("Name of the product"),
+          completeProduct("name")
+        ),
         current_version: z.string().optional().describe("Current product version"),
         business_goals: z.string().describe("Business goals and objectives"),
         time_horizon: z.string().describe("Roadmap time horizon (quarter, half-year, year)"),
         key_features: z.string().optional().describe("Comma-separated list of key features to consider"),
         market_constraints: z.string().optional().describe("Market constraints and competitive landscape"),
-        product_id: z.string().optional().describe("Existing product ID from Aha.io for context (e.g., PROJ)")
+        product_id: completable(
+          z.string().optional().describe("Existing product ID from Aha.io for context (e.g., PROJ)"),
+          completeProduct("reference_prefix")
+        )
       }
     },
     async (params: { product_name: string; current_version?: string; business_goals: string; time_horizon: string; key_features?: string; market_constraints?: string; product_id?: string }) => {
@@ -367,7 +382,10 @@ Format as a actionable sprint plan with clear assignments and timelines.`
         user_types: z.string().describe("Comma-separated list of user types affected"),
         constraints: z.string().optional().describe("Technical or business constraints"),
         timeline: z.string().optional().describe("Target timeline or deadline"),
-        epic_id: z.string().optional().describe("Existing epic ID from Aha.io for context (e.g., PROJ-E-123)")
+        epic_id: completable(
+          z.string().optional().describe("Existing epic ID from Aha.io for context (e.g., PROJ-E-123)"),
+          completeRecordReference("Epic")
+        )
       }
     },
     async (params: { epic_name: string; epic_description: string; business_value: string; user_types: string; constraints?: string; timeline?: string; epic_id?: string }) => {
@@ -421,7 +439,10 @@ Structure as a hierarchical breakdown with clear relationships and dependencies.
         evaluation_criteria: z.string().optional().describe("Comma-separated list of evaluation criteria"),
         constraints: z.string().optional().describe("Resource or timeline constraints"),
         market_context: z.string().optional().describe("Market context and competitive landscape"),
-        idea_ids: z.string().optional().describe("Comma-separated list of Aha.io idea IDs for context (e.g., PROJ-I-123,PROJ-I-456)")
+        idea_ids: completable(
+          z.string().optional().describe("Comma-separated list of Aha.io idea IDs for context (e.g., PROJ-I-123,PROJ-I-456)"),
+          completeRecordReferenceList("Idea")
+        )
       }
     },
     async (params: { ideas_list: string; business_goals: string; evaluation_criteria?: string; constraints?: string; market_context?: string; idea_ids?: string }) => {
@@ -653,8 +674,14 @@ Focus on actionable, measurable metrics that align with business objectives.`
       description: "Discover and analyze ideas within products/workspaces based on topics, themes, or keywords",
       argsSchema: {
         search_topic: z.string().describe("The topic, theme, or keyword to search for (e.g., 'Node.js', 'mobile', 'API')"),
-        product_name: z.string().optional().describe("Name of the product/workspace to search in (e.g., 'VoC', 'Platform')"),
-        product_id: z.string().optional().describe("Specific product ID to search in (e.g., 'VOC-1')"),
+        product_name: completable(
+          z.string().optional().describe("Name of the product/workspace to search in (e.g., 'VoC', 'Platform')"),
+          completeProduct("name")
+        ),
+        product_id: completable(
+          z.string().optional().describe("Specific product ID to search in (e.g., 'VOC-1')"),
+          completeProduct("reference_prefix")
+        ),
         analysis_focus: z.string().optional().describe("What aspect to focus on (e.g., 'customer pain points', 'feature gaps', 'enhancement opportunities')"),
         time_filter: z.string().optional().describe("Time filter for ideas (e.g., 'last 6 months', 'recent', 'all time')"),
         include_status: z.string().optional().describe("Comma-separated list of idea statuses to include (e.g., 'new,under review,planned')")

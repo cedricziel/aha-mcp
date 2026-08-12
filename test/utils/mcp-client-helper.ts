@@ -380,6 +380,24 @@ export class TestMCPClient {
   }
 
   /**
+   * Complete a prompt argument, returning the offered values.
+   */
+  async complete(promptName: string, argumentName: string, value: string): Promise<string[]> {
+    this.ensureConnected();
+
+    try {
+      const response = await this.client!.complete({
+        ref: { type: 'ref/prompt', name: promptName },
+        argument: { name: argumentName, value }
+      });
+      return response.completion.values;
+    } catch (error) {
+      console.error(`Error completing ${promptName}.${argumentName}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * List all available tools
    */
   async listTools(): Promise<Tool[]> {
