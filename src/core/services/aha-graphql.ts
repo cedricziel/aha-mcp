@@ -1,4 +1,5 @@
 import { AhaService } from './aha-service.js';
+import { log } from '../logger.js';
 
 /**
  * Minimal client for Aha.io's GraphQL API.
@@ -68,6 +69,39 @@ export interface SearchHit {
    */
   url: string;
   updatedAt: string;
+  /**
+   * The identifier people recognise - `IDEASVOC-I-9930`, `APPO11Y-43`. Null for the few
+   * searchable types that have no reference number at all (ReleasePhase, IdeaUser, Project).
+   *
+   * This is not a field of `SearchDocument`; it comes from the record behind the hit, via
+   * `searchable` - see `SEARCHABLE_ENRICHMENT`. Without it a hit's only human-readable
+   * identifier is the tail of its `url` path, and an agent transcribing that drops the
+   * workspace prefix: `I-9930` rather than `IDEASVOC-I-9930`, which every read then 404s on.
+   */
+  referenceNum: string | null;
+  /** Aha score, for the types that are scorable. Null for the rest. */
+  score: number | null;
+  /** Ideas-portal vote count. Ideas only - null for every other type. */
+  votes: number | null;
+  /** Ideas-portal endorsement count. Ideas only - null for every other type. */
+  endorsements: number | null;
+}
+
+/** The shape a node arrives in, before `searchable` is flattened into the hit. */
+interface SearchNode {
+  name: string | null;
+  searchableType: string;
+  searchableId: string | null;
+  projectId: string | null;
+  url: string;
+  updatedAt: string;
+  searchable?: {
+    __typename?: string;
+    referenceNum?: string | null;
+    score?: number | null;
+    votes?: number | null;
+    numEndorsements?: number | null;
+  } | null;
 }
 
 export interface SearchDocumentsResult {
@@ -80,7 +114,36 @@ export interface SearchDocumentsResult {
   results: SearchHit[];
 }
 
-const SEARCH_DOCUMENTS_QUERY = `
+/**
+ * Per-record fields, reached through `searchable`.
+ *
+ * A fragment spread directly on `SearchDocument` is rejected outright - *"Fragment on Feature
+ * can't be spread inside SearchDocument"* - which is why this server long reported that a hit
+ * could not carry per-type fields at all. That is true of `SearchDocument`; it is not true of
+ * its `searchable` field, which **is** a union (`SearchableDocument`, the same 20 members as
+ * `SEARCHABLE_TYPES`). Fragments one level down are accepted, measured against a live account.
+ *
+ * Two things here are not guessable:
+ *
+ *  - **`ReferenceInterface` does not cover every type that has a `referenceNum`.** `Goal`,
+ *    `Initiative` and `Task` declare the field without implementing the interface, and the
+ *    miss is silent - the interface fragment simply returns null for them. Hence the three
+ *    explicit fragments; drop them and initiative hits lose their reference number again.
+ *  - **`votes` and `numEndorsements` exist on `Idea` only.** They are the ideas-portal demand
+ *    signal, and the reason a search over ideas could not be ranked by demand before.
+ */
+const SEARCHABLE_ENRICHMENT = `
+        searchable {
+          __typename
+          ... on ReferenceInterface { referenceNum }
+          ... on Goal { referenceNum }
+          ... on Initiative { referenceNum }
+          ... on Task { referenceNum }
+          ... on ScorableInterface { score }
+          ... on Idea { votes numEndorsements }
+        }`;
+
+const searchDocumentsQuery = (enrichment: string) => `
   query SearchDocuments($filters: SearchDocumentFilters!, $page: Int, $per: Int) {
     searchDocuments(filters: $filters, page: $page, per: $per) {
       totalCount
@@ -93,11 +156,25 @@ const SEARCH_DOCUMENTS_QUERY = `
         searchableType
         projectId
         url
-        updatedAt
+        updatedAt${enrichment}
       }
     }
   }
 `;
+
+export const SEARCH_DOCUMENTS_QUERY = searchDocumentsQuery(SEARCHABLE_ENRICHMENT);
+
+/**
+ * The same query without the per-record fields, used only as a fallback.
+ *
+ * Aha validates the enriched query server-side and, rarely, gives up: one attempt in roughly
+ * twenty came back HTTP 200 with `Timeout on validation of query` and no data, on a query
+ * that succeeded 20 times either side of it - including at `per: 200`. Enrichment is worth
+ * having but not worth failing a search over, so a GraphQL error retries once unenriched.
+ * Argument errors (a bad `projectId`, an unknown filter) cost a second round trip and then
+ * surface from the fallback, which is the right end of that trade.
+ */
+export const SEARCH_DOCUMENTS_QUERY_UNENRICHED = searchDocumentsQuery('');
 
 type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
 
@@ -186,15 +263,28 @@ export class AhaGraphQLClient {
     const per = Math.min(Math.max(params.per ?? 20, MIN_PER_PAGE), MAX_PER_PAGE);
     const page = Math.max(params.page ?? 1, 1);
 
-    const data = await this.request<{
+    type SearchResponse = {
       searchDocuments: {
         totalCount: number;
         currentPage: number;
         totalPages: number;
         isLastPage: boolean;
-        nodes: SearchHit[];
+        nodes: SearchNode[];
       };
-    }>(SEARCH_DOCUMENTS_QUERY, { filters, page, per });
+    };
+
+    const variables = { filters, page, per };
+    let data: SearchResponse;
+    try {
+      data = await this.request<SearchResponse>(SEARCH_DOCUMENTS_QUERY, variables);
+    } catch (error) {
+      // Only a GraphQL-level failure is worth a second attempt: a 401, a 403 or a transport
+      // failure will not be fixed by asking for fewer fields. See
+      // SEARCH_DOCUMENTS_QUERY_UNENRICHED for the failure this exists for.
+      if (!(error instanceof Error) || !error.message.startsWith('Aha.io GraphQL error')) throw error;
+      log.warn('Retrying search without per-record fields', { reason: error.message });
+      data = await this.request<SearchResponse>(SEARCH_DOCUMENTS_QUERY_UNENRICHED, variables);
+    }
 
     const page_ = data.searchDocuments;
     const host = this.host();
@@ -204,10 +294,24 @@ export class AhaGraphQLClient {
       currentPage: page_.currentPage,
       totalPages: page_.totalPages,
       isLastPage: page_.isLastPage,
-      results: (page_.nodes ?? []).map(node => ({
-        ...node,
-        url: this.toAbsoluteUrl(node.url, host)
-      }))
+      results: (page_.nodes ?? []).map(node => this.toHit(node, host))
+    };
+  }
+
+  /**
+   * Flatten `searchable` into the hit. The nesting is an artefact of how the field has to be
+   * asked for, not something a caller should have to know about, and every enrichment field
+   * becomes null rather than absent so one shape covers enriched and fallback responses alike.
+   */
+  private toHit(node: SearchNode, host: string): SearchHit {
+    const { searchable, ...rest } = node;
+    return {
+      ...rest,
+      url: this.toAbsoluteUrl(node.url, host),
+      referenceNum: searchable?.referenceNum ?? null,
+      score: searchable?.score ?? null,
+      votes: searchable?.votes ?? null,
+      endorsements: searchable?.numEndorsements ?? null
     };
   }
 

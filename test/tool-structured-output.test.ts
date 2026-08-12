@@ -236,19 +236,27 @@ describe('Tool structured output', () => {
           {
             name: 'Login flow',
             searchableType: 'Feature',
-            searchableId: 'PRJ1-1',
+            searchableId: '7446889503515556446',
+            referenceNum: 'PRJ1-1',
             projectId: '123',
             url: 'https://test.aha.io/features/PRJ1-1',
-            updatedAt: '2026-08-01T10:00:00.000Z'
+            updatedAt: '2026-08-01T10:00:00.000Z',
+            score: null,
+            votes: null,
+            endorsements: null
           },
           {
             // A hit with the nullable fields actually null, which the schema allows.
             name: null,
             searchableType: 'Idea',
             searchableId: null,
+            referenceNum: null,
             projectId: null,
             url: 'https://test.aha.io/ideas/PRJ1-I-1',
-            updatedAt: '2026-08-02T10:00:00.000Z'
+            updatedAt: '2026-08-02T10:00:00.000Z',
+            score: null,
+            votes: null,
+            endorsements: null
           }
         ]
       })
@@ -281,18 +289,26 @@ describe('Tool structured output', () => {
           {
             name: 'Login flow',
             searchableType: 'Feature',
-            searchableId: 'PRJ1-1',
+            searchableId: '7446889503515556446',
+            referenceNum: 'PRJ1-1',
             projectId: '123',
             url: 'https://test.aha.io/features/PRJ1-1',
-            updatedAt: '2026-08-01T10:00:00.000Z'
+            updatedAt: '2026-08-01T10:00:00.000Z',
+            score: null,
+            votes: null,
+            endorsements: null
           },
           {
             name: null,
             searchableType: 'Idea',
             searchableId: null,
+            referenceNum: null,
             projectId: null,
             url: 'https://test.aha.io/ideas/PRJ1-I-1',
-            updatedAt: '2026-08-02T10:00:00.000Z'
+            updatedAt: '2026-08-02T10:00:00.000Z',
+            score: null,
+            votes: null,
+            endorsements: null
           }
         ]
       })
@@ -303,9 +319,11 @@ describe('Tool structured output', () => {
 
     // Building the links here is what keeps the model from re-emitting - and mangling - a
     // URL it only ever needed to pass through.
+    // The label leads with the reference number, because that is what a follow-up read needs
+    // and the part that goes missing when it is reconstructed from a url path.
     expect(result.content[0].text).toBe(
       '2 matches for "login":\n' +
-        '- [Login flow](https://test.aha.io/features/PRJ1-1) - Feature\n' +
+        '- [PRJ1-1 Login flow](https://test.aha.io/features/PRJ1-1) - Feature\n' +
         '- [Untitled](https://test.aha.io/ideas/PRJ1-I-1) - Idea'
     );
   });

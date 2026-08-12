@@ -70,11 +70,37 @@ Behaviours measured against a live account, not documented upstream - keep the c
 - `projectId` must be a **string**. A numeric id is not an error, it silently matches
   nothing - and real workspace ids exceed 2^53, so a JS number cannot hold one exactly
   anyway. `searchDocuments` coerces with `String()`.
-- A search hit cannot carry per-type fields. `searchDocuments` returns a concrete
-  `SearchDocument`, not a union, so `... on Feature { workflowStatus }` is rejected outright
-  with *"Fragment on Feature can't be spread inside SearchDocument"*. Status, release
-  membership and custom field values are only reachable per record - hence the `aha_get_*`
-  tools. Do not try to enrich search hits through this query.
+- **A fragment on `SearchDocument` is rejected; one on its `searchable` field is not.**
+  `... on Feature { workflowStatus }` spread directly on the hit still fails with *"Fragment on
+  Feature can't be spread inside SearchDocument"* - which is why this file used to say per-type
+  fields were unreachable full stop. They are not: `SearchDocument.searchable` **is** a union
+  (`SearchableDocument`, the same 20 members as `SEARCHABLE_TYPES`), and fragments one level
+  down are accepted. `SEARCHABLE_ENRICHMENT` in `aha-graphql.ts` uses this for `referenceNum`,
+  `score`, `votes` and `numEndorsements`. Workflow status is reachable the same way but is not
+  asked for: a hit is a pointer, and `aha_get_*` is what "read before you write" means.
+- **`referenceNum` is the reason that enrichment exists.** A hit's own fields are `name`,
+  `searchableId`, `searchableType`, `projectId`, `url`, `updatedAt` - no reference number
+  anywhere. So the only human-readable identifier used to be the tail of the `url` path, and an
+  agent transcribing it drops the workspace prefix: `I-9930` for `IDEASVOC-I-9930`. Measured:
+  `GET /ideas/I-9930` and `/ideas/9930` both answer 404 `Record not found`, `IDEASVOC-I-9930`
+  answers 200 - so a truncated reference could be found by search and then never read, written
+  or linked, and the 404 reads as a permissions problem. Do not remove `referenceNum` from that
+  query to save a field.
+- **`ReferenceInterface` does not cover every type that declares `referenceNum`.** `Goal`,
+  `Initiative` and `Task` have the field without implementing the interface, and the interface
+  fragment returns **null** for them rather than failing - a silent miss. Hence the three
+  explicit fragments alongside it.
+- **`votes` and `numEndorsements` exist on `Idea` only**, and on the account measured they were
+  equal for all 200 ideas sampled, so the text rendering collapses them to one number and keeps
+  both in `structuredContent`. `score` came back as exactly 20 for every one of those ideas -
+  one distinct value, ranking nothing - while a feature in the same result set scored 0, so it
+  is carried in the payload but left out of the line a person reads.
+- **The enriched query is occasionally rejected server-side, with an HTTP 200.** One attempt in
+  roughly twenty answered `Timeout on validation of query` and no data, on a query that
+  succeeded either side of it, including at `per: 200`. `searchDocuments()` therefore retries
+  once with `SEARCH_DOCUMENTS_QUERY_UNENRICHED` on any GraphQL error, so a search degrades to
+  bare hits instead of failing. This is not a general retry policy - a 401, a 403 or a
+  transport failure is not retried, because fewer fields cannot fix any of them.
 
 A previous local-cache implementation (SQLite plus a placeholder embedding that hashed
 character codes through `Math.sin()`) was removed in favour of this. Do not reintroduce
@@ -447,12 +473,23 @@ copy. No identifier, no link: a link to an unreadable URI is worse than none. Ea
 `z.iso.datetime()`, which rejects a numeric offset, and a rejected annotation fails the whole
 call where an omitted one costs only a hint.
 
-`aha_search` deliberately emits **no** `resource_link`s. `recordLinks()` can only build URIs
-for the five types with a single-record template in `resources.ts`, while search returns a
-dozen or more - so linking would cover some hits and silently skip others in the same result
-set, for no reason a client could see. Its hits already carry an absolute `url`, and `perPage`
-goes to 200, so the alternative was up to 200 content blocks of partial coverage. Reconsider
-only if the missing record types gain resource templates.
+`aha_search` links the hits it can, via the `LINKABLE_TYPES` table in `search-tools.ts`:
+feature, epic, idea, initiative, goal, key result, release, requirement and competitor - the
+GraphQL types that have a single-record template in `resources.ts`. It used to emit **no**
+links at all, on the grounds that coverage would be partial and silently so. Coverage is still
+partial, because it is bounded by which types are readable as resources, but it is no longer
+silent: the tool description names the linked types, and every hit carries its absolute `url`
+either way. A hit nothing can re-read is the worse outcome, and that is what the old rule
+optimised for. Block count is bounded by `perPage`, which the caller sets - the same rule the
+release and key-result list tools follow.
+
+`Project` and `Task` stay out of that table deliberately, even though `aha://product/{id}` and
+`aha://todo/{id}` exist: a Project hit's `searchableId` has never been checked against the
+product resource, and a GraphQL `Task` is not confirmed to be a REST todo. An unverified link
+is what the table is there to prevent. The three types with no `reference_num` at all
+(ReleasePhase, IdeaUser, Project) are outside the table too, so nothing links them - but
+`recordLinks()` would fall back to `searchableId` if one ever joined it, and that id is
+measured to be readable: `GET /ideas/7615609440903611104` answers 200.
 
 **The text block is a one-line summary, not a copy of the record.** `recordSummary()` builds
 `Updated feature PRJ1-123 "Name" - https://...`; `aha_search` renders its hits as a markdown

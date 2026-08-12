@@ -602,7 +602,7 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 - **Comment reads and writes** on every record type Aha supports, with an idea's ideas-portal conversation handled as its own stream
 - **Goal and key result CRUD**, so a quarterly OKR loop can run through the server rather than the Aha UI
 - **5 server configuration tools** for runtime configuration
-- **468 tests passing** with comprehensive service coverage
+- **534 tests passing** with comprehensive service coverage
 - **No native dependencies**, so the server runs anywhere Node does
 - **Comprehensive error handling** with proper Zod schema validation
 
@@ -633,9 +633,18 @@ subset for it, and combined with `workspaceId` it returns nothing at all — an 
 that reads like an empty workspace. Search for a term, or enumerate a workspace through the
 list resources (`aha://features`, `aha://ideas/{product_id}`) instead of searching it.
 
+**What a hit carries:** name, type, `reference_num`, internal id, workspace, absolute URL and
+`updated_at`. Idea hits also carry portal `votes` and `endorsements`, and scorable types their
+Aha.io `score`, so ideas can be ranked by demand without a second call. Hits whose type is
+readable as a resource — feature, epic, idea, initiative, goal, key result, release,
+requirement, competitor — come with a `resource_link`; the rest are reachable by URL.
+
+**Quote a reference number in full.** The workspace prefix is part of it: `IDEASVOC-I-9930`
+identifies an idea, `I-9930` identifies nothing, and Aha answers the truncated form with a 404
+that reads like a missing record rather than a mistyped one.
+
 **What it does not return:** workflow status, release membership, assignee or custom field
-values. Aha's `searchDocuments` cannot select per-type fields, so a hit carries only its
-name, type, id, workspace, URL and `updated_at`. Read the record itself for anything else:
+values. Read the record itself for those:
 
 ```jsonc
 { "featureId": "PRJ1-123" }   // aha_get_feature — full record, including custom fields

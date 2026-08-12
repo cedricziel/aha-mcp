@@ -106,7 +106,8 @@ function isoTimestamp(value: unknown): string | undefined {
 export function recordLinks(
   recordType: LinkableRecordType,
   record: Record<string, unknown>,
-  fallbackId?: string
+  fallbackId?: string,
+  options: { description?: string } = {}
 ) {
   const id = identifier(record.reference_num) ?? identifier(record.id) ?? fallbackId;
   if (!id) return [];
@@ -120,7 +121,9 @@ export function recordLinks(
       uri: `aha://${recordType}/${id}`,
       name: name ?? `${recordType} ${id}`,
       title: name ? `${id} - ${name}` : `${recordType} ${id}`,
-      description: `The ${recordType} this call touched. Read it for the record's current full state.`,
+      description:
+        options.description ??
+        `The ${recordType} this call touched. Read it for the record's current full state.`,
       mimeType: "application/json",
       annotations: {
         audience: ["user" as const, "assistant" as const],
@@ -462,10 +465,28 @@ export const searchOutputSchema = z.object({
       z.object({
         name: z.string().nullable().describe("Record name"),
         type: z.string().describe("Aha.io record type, e.g. Feature or Idea"),
-        id: z.string().nullable().describe("Record id or reference number"),
+        id: z.string().nullable().describe("Internal Aha.io id. Readable, but not an identifier anyone recognises."),
+        /**
+         * Nullable rather than optional, unlike the per-type fields below: whether a hit has
+         * a reference number decides whether it can be read or linked at all, so its absence
+         * is worth stating rather than leaving to be inferred from a missing key.
+         */
+        reference_num: z
+          .string()
+          .nullable()
+          .describe(
+            "Human-facing identifier, e.g. IDEASVOC-I-9930. Null for the few types that have " +
+              "none (ReleasePhase, IdeaUser, Project). Use this in full - the workspace prefix " +
+              "is part of it, and reads fail without it."
+          ),
         workspace_id: z.string().nullable().describe("Workspace (Aha project) the record lives in"),
         url: z.string().describe("Absolute URL of the record's web page in Aha.io"),
-        updated_at: z.string().describe("ISO 8601 last-modified timestamp")
+        updated_at: z.string().describe("ISO 8601 last-modified timestamp"),
+        // Present only on the types that carry them, so a caller can tell "no votes" from
+        // "not a kind of record that has votes".
+        score: z.number().nullish().describe("Aha.io score. Scorable types only."),
+        votes: z.number().nullish().describe("Ideas-portal vote count. Ideas only."),
+        endorsements: z.number().nullish().describe("Ideas-portal endorsement count. Ideas only.")
       })
     )
     .describe("Matching records, most relevant first")
