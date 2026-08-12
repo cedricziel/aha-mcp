@@ -1,5 +1,20 @@
 # Changelog
 
+## [5.0.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v4.0.0...aha-mcp-v5.0.0) (2026-08-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* 17 collection resources now return text/markdown instead of application/json. Anything parsing their contents as JSON must change. Tier 3 collections and all single-record resources are unaffected.
+* aha_search rejects a wildcard-only query. A call passing query "*" previously returned an arbitrary subset of records, or nothing at all when workspaceId was set; it now comes back as an isError result naming the query forms that work. Callers relying on "*" must pass a real term, or enumerate a workspace through the list resources instead.
+
+### Features
+
+* add goal and key result tools for Aha OKRs ([#325](https://github.com/cedricziel/aha-mcp/issues/325)) ([284e48d](https://github.com/cedricziel/aha-mcp/commit/284e48df5ed66f581a01392593e7f81c8d13ceb0))
+* add single-record read tools and stop advertising "*" as a match-all ([#321](https://github.com/cedricziel/aha-mcp/issues/321)) ([e6f6208](https://github.com/cedricziel/aha-mcp/commit/e6f62086b0fe23bc59fdb392389e925e450c2dc0))
+* read and write comments on every record type, including the ideas portal ([#323](https://github.com/cedricziel/aha-mcp/issues/323)) ([de70727](https://github.com/cedricziel/aha-mcp/commit/de70727b880311731562a1729c6945b2966e5698))
+* render collection resource reads by measured payload tier ([#326](https://github.com/cedricziel/aha-mcp/issues/326)) ([ad47583](https://github.com/cedricziel/aha-mcp/commit/ad475839e64b5634b035b0baeddef75d9f66acdc))
+
 ## [4.0.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v3.0.0...aha-mcp-v4.0.0) (2026-08-12)
 
 
