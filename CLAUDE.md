@@ -303,8 +303,8 @@ Every tool is registered with an annotations argument, and the e2e suite fails i
 missing. Conventions used here:
 
 - `title` is a short human-readable label for client UIs.
-- `readOnlyHint` is true only for tools that never write: `aha_search`, the five `aha_get_*`
-  readers, `server_status`, `get_server_config`, `server_health_check`,
+- `readOnlyHint` is true only for tools that never write: `aha_search`, `aha_list_comments`,
+  the five `aha_get_*` readers, `server_status`, `get_server_config`, `server_health_check`,
   `test_configuration`.
 - `destructiveHint` and `idempotentHint` are **omitted** when `readOnlyHint` is true - the
   spec only gives them meaning for writers.
