@@ -34,6 +34,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # Set up Node before the build so the smoke tests below run against the same
+      # version the artifacts are published for, rather than the runner default.
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -73,12 +81,6 @@ jobs:
             --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '18'
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Publish to npm
         run: npm publish --provenance --access public

@@ -12,6 +12,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # commitlint needs a merge-base with main to pick the commit range, which a
+          # shallow clone cannot provide.
+          fetch-depth: 0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -55,6 +59,4 @@ jobs:
 
       - name: Validate commit messages
         if: github.event_name == 'pull_request'
-        run: |
-          git fetch origin main
-          npx commitlint --from origin/main --to HEAD --verbose
+        run: bunx commitlint --from origin/main --to HEAD --verbose
