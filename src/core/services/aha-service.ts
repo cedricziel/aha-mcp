@@ -9,6 +9,7 @@ import {
   CommentsApi,
   IdeaCommentsApi,
   GoalsApi,
+  KeyResultsApi,
   ToDosApi,
   CompetitorsApi,
   RequirementsApi,
@@ -42,6 +43,8 @@ import {
   GoalGetResponse,
   GoalsListResponse,
   GoalEpicsResponse,
+  KeyResultsListResponse,
+  KeyResultResponse,
   ReleaseGetResponse,
   ReleasesListResponse,
   ReleaseFeaturesResponse,
@@ -88,6 +91,7 @@ export class AhaService {
   private static commentsApi: CommentsApi | null = null;
   private static ideaCommentsApi: IdeaCommentsApi | null = null;
   private static goalsApi: GoalsApi | null = null;
+  private static keyResultsApi: KeyResultsApi | null = null;
   private static todosApi: ToDosApi | null = null;
   private static competitorsApi: CompetitorsApi | null = null;
   private static requirementsApi: RequirementsApi | null = null;
@@ -242,6 +246,7 @@ export class AhaService {
       this.commentsApi = new CommentsApi(this.configuration);
       this.ideaCommentsApi = new IdeaCommentsApi(this.configuration);
       this.goalsApi = new GoalsApi(this.configuration);
+      this.keyResultsApi = new KeyResultsApi(this.configuration);
       this.todosApi = new ToDosApi(this.configuration);
       this.competitorsApi = new CompetitorsApi(this.configuration);
       this.requirementsApi = new RequirementsApi(this.configuration);
@@ -356,6 +361,17 @@ export class AhaService {
       this.initializeClient();
     }
     return this.goalsApi!;
+  }
+
+  /**
+   * Get the key results API instance
+   * @returns KeyResultsApi instance
+   */
+  private static getKeyResultsApi(): KeyResultsApi {
+    if (!this.keyResultsApi) {
+      this.initializeClient();
+    }
+    return this.keyResultsApi!;
   }
 
   /**
@@ -1229,6 +1245,221 @@ export class AhaService {
       log.error('Error getting epics for goal', error as Error, { operation: 'getGoalEpics', goal_id: goalId });
       throw error;
     }
+  }
+
+  /**
+   * Create a goal in a workspace
+   *
+   * Goal creation is workspace-scoped - `POST /products/{product_id}/goals` - so there is no
+   * account-level create; a goal always belongs to one workspace.
+   *
+   * The generated `GoalsPostRequest` body type only knows `description` and
+   * `workflow_status`, because aha-js' spec is derived from recorded fixtures. Aha's own
+   * documentation for this endpoint also accepts `name` (required in practice),
+   * `success_metric_name`, `success_metric_description`, `time_frame`, `effort`, `value`,
+   * `parent_id`, `progress_source` and `progress`, so the payload is passed through as-is and
+   * cast at the boundary rather than narrowed to the generated shape.
+   *
+   * @param productId The ID or key of the workspace (Aha product) to create the goal in
+   * @param goalData The goal payload, wrapped as `{ goal: { ... } }`
+   * @returns The created goal
+   */
+  public static async createGoal(productId: string, goalData: any): Promise<GoalGetResponse> {
+    const goalsApi = this.getGoalsApi();
+
+    try {
+      const response = await goalsApi.productsByProductGoalsPost({
+        productId,
+        goalsPostRequest: goalData
+      });
+      return response.data as unknown as GoalGetResponse;
+    } catch (error) {
+      log.error('Error creating goal', error as Error, { operation: 'createGoal', product_id: productId });
+      throw error;
+    }
+  }
+
+  /**
+   * Update a goal
+   *
+   * Two routes reach the same record. Aha documents the workspace-scoped
+   * `PUT /products/{product_id}/goals/{id}`; `PUT /goals/{id}` is what aha-js was generated
+   * against and needs no workspace id, which matches how every other updater here is called.
+   * So the account-level route is the default and `productId` selects the documented one -
+   * useful if an account rejects the shorter form.
+   *
+   * That the account-level route exists was measured, not assumed: `PUT /goals/0` answers
+   * `{"error":"Record not found."}` as JSON, whereas a route Aha does not serve at all answers
+   * with its HTML 404 page. Same for `PUT /key_results/{id}`.
+   *
+   * @param goalId The ID or reference number of the goal
+   * @param goalData The goal payload, wrapped as `{ goal: { ... } }`
+   * @param productId Optional workspace id, to use Aha's documented workspace-scoped route
+   * @returns The updated goal
+   */
+  public static async updateGoal(
+    goalId: string,
+    goalData: any,
+    productId?: string
+  ): Promise<GoalGetResponse> {
+    const goalsApi = this.getGoalsApi();
+
+    try {
+      const response = productId
+        ? await goalsApi.productsByProductGoalsByIdPut({
+            productId,
+            id: goalId,
+            goalsPostRequest: goalData
+          })
+        : await goalsApi.goalsByIdPut({ id: goalId, goalsPutRequest: goalData });
+      return response.data as unknown as GoalGetResponse;
+    } catch (error) {
+      log.error('Error updating goal', error as Error, { operation: 'updateGoal', goal_id: goalId });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a goal
+   *
+   * Only the workspace-scoped route exists - `DELETE /products/{product_id}/goals/{id}` - so
+   * unlike the other deletes here this one needs the goal's workspace. A goal read through
+   * `getGoal` carries it as `product_id`.
+   *
+   * @param productId The ID or key of the workspace the goal belongs to
+   * @param goalId The ID or reference number of the goal
+   */
+  public static async deleteGoal(productId: string, goalId: string): Promise<void> {
+    const goalsApi = this.getGoalsApi();
+
+    try {
+      await goalsApi.productsByProductGoalsByIdDelete({ productId, id: goalId });
+    } catch (error) {
+      log.error('Error deleting goal', error as Error, { operation: 'deleteGoal', goal_id: goalId, product_id: productId });
+      throw error;
+    }
+  }
+
+  /**
+   * List the key results belonging to a goal
+   *
+   * @param goalId The ID or reference number of the goal
+   * @param page Page number for pagination (optional)
+   * @param perPage Number of items per page (optional)
+   * @returns The goal's key results
+   */
+  public static async listKeyResults(
+    goalId: string,
+    page?: number,
+    perPage?: number
+  ): Promise<KeyResultsListResponse> {
+    const keyResultsApi = this.getKeyResultsApi();
+
+    try {
+      const response = await keyResultsApi.goalsByGoalKeyResultsGet({
+        goalId,
+        page: this.numParam(page),
+        perPage: this.numParam(perPage)
+      });
+      // Generator defect: `goalsByGoalKeyResultsGet` is typed as returning the single-record
+      // wrapper (`{ key_result }`); the endpoint returns `{ key_results, pagination }`.
+      return response.data as unknown as KeyResultsListResponse;
+    } catch (error) {
+      log.error('Error listing key results', error as Error, { operation: 'listKeyResults', goal_id: goalId });
+      throw error;
+    }
+  }
+
+  /**
+   * Get a specific key result by ID
+   * @param keyResultId The ID or reference number of the key result
+   * @returns The key result, wrapped as `{ key_result }`
+   */
+  public static async getKeyResult(keyResultId: string): Promise<KeyResultResponse> {
+    const keyResultsApi = this.getKeyResultsApi();
+
+    try {
+      const response = await keyResultsApi.keyResultsByIdGet({ id: keyResultId });
+      return response.data as unknown as KeyResultResponse;
+    } catch (error) {
+      log.error('Error getting key result', error as Error, { operation: 'getKeyResult', key_result_id: keyResultId });
+      throw error;
+    }
+  }
+
+  /**
+   * Create a key result under a goal
+   *
+   * @param goalId The ID or reference number of the goal that will own the key result
+   * @param keyResultData The key result payload, wrapped as `{ key_result: { ... } }`
+   * @returns The created key result
+   */
+  public static async createKeyResult(goalId: string, keyResultData: any): Promise<KeyResultResponse> {
+    const keyResultsApi = this.getKeyResultsApi();
+
+    try {
+      const response = await keyResultsApi.goalsByGoalKeyResultsPost({
+        goalId,
+        keyresultsPostRequest: this.normalizeKeyResultPayload(keyResultData)
+      });
+      return response.data as unknown as KeyResultResponse;
+    } catch (error) {
+      log.error('Error creating key result', error as Error, { operation: 'createKeyResult', goal_id: goalId });
+      throw error;
+    }
+  }
+
+  /**
+   * Update a key result
+   *
+   * @param keyResultId The ID or reference number of the key result
+   * @param keyResultData The key result payload, wrapped as `{ key_result: { ... } }`
+   * @returns The updated key result
+   */
+  public static async updateKeyResult(keyResultId: string, keyResultData: any): Promise<KeyResultResponse> {
+    const keyResultsApi = this.getKeyResultsApi();
+
+    try {
+      const response = await keyResultsApi.keyResultsByIdPut({
+        id: keyResultId,
+        keyresultsPostRequest: this.normalizeKeyResultPayload(keyResultData)
+      });
+      return response.data as unknown as KeyResultResponse;
+    } catch (error) {
+      log.error('Error updating key result', error as Error, { operation: 'updateKeyResult', key_result_id: keyResultId });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a key result
+   * @param keyResultId The ID or reference number of the key result
+   */
+  public static async deleteKeyResult(keyResultId: string): Promise<void> {
+    const keyResultsApi = this.getKeyResultsApi();
+
+    try {
+      await keyResultsApi.keyResultsByIdDelete({ id: keyResultId });
+    } catch (error) {
+      log.error('Error deleting key result', error as Error, { operation: 'deleteKeyResult', key_result_id: keyResultId });
+      throw error;
+    }
+  }
+
+  /**
+   * Key results take `workflow_status` as an object (`{ name: "On track" }`), unlike goals,
+   * which take a bare string. The tools accept either, because a caller that has just read a
+   * key result has an object in hand and a caller naming a status has a string - so the
+   * difference is resolved here instead of failing at Aha with a 422.
+   */
+  private static normalizeKeyResultPayload(keyResultData: any): any {
+    const status = keyResultData?.key_result?.workflow_status;
+    if (typeof status !== 'string') return keyResultData;
+
+    return {
+      ...keyResultData,
+      key_result: { ...keyResultData.key_result, workflow_status: { name: status } }
+    };
   }
 
   /**

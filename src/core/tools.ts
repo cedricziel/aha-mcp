@@ -4,6 +4,7 @@ import * as services from "./services/index.js";
 import { registerSearchTools } from "./tools/search-tools.js";
 import { registerRecordTools } from "./tools/record-tools.js";
 import { registerCommentTools } from "./tools/comment-tools.js";
+import { registerGoalTools } from "./tools/goal-tools.js";
 import {
   commentOutputSchema,
   competitorOutputSchema,
@@ -1349,4 +1350,9 @@ export function registerTools(server: McpServer) {
 
   // Comments, including the ideas-portal stream that aha://comments/idea/{id} does not carry.
   registerCommentTools(server);
+
+  // Goals and key results - Aha's model of an OKR. Kept in their own file because the routes
+  // are shaped differently from the rest: goal creation and deletion are workspace-scoped,
+  // and key results only exist under a goal.
+  registerGoalTools(server);
 }

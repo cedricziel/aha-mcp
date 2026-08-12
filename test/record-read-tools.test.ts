@@ -75,8 +75,10 @@ describe('Single-record read tools', () => {
     expect(names).toEqual([
       'aha_get_epic',
       'aha_get_feature',
+      'aha_get_goal',
       'aha_get_idea',
       'aha_get_initiative',
+      'aha_get_key_result',
       'aha_get_release'
     ]);
   });

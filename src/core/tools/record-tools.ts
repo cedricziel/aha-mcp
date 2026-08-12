@@ -4,8 +4,10 @@ import * as services from "../services/index.js";
 import {
   epicOutputSchema,
   featureOutputSchema,
+  goalOutputSchema,
   ideaOutputSchema,
   initiativeOutputSchema,
+  keyResultOutputSchema,
   recordLinks,
   recordSummary,
   releaseOutputSchema,
@@ -46,6 +48,27 @@ function stateDetail(record: Record<string, unknown>): string | undefined {
   } else if (status && typeof status === "object") {
     const name = (status as Record<string, unknown>).name;
     if (typeof name === "string" && name) parts.push(name);
+  }
+
+  // A goal has no top-level workflow_status; the status Aha shows for it lives under its
+  // success metric. Only goals carry `success_metric`, so this cannot alter any other
+  // record's summary.
+  if (parts.length === 0 && record.success_metric && typeof record.success_metric === "object") {
+    const metricStatus = (record.success_metric as Record<string, unknown>).workflow_status;
+    if (metricStatus && typeof metricStatus === "object") {
+      const name = (metricStatus as Record<string, unknown>).name;
+      if (typeof name === "string" && name) parts.push(name);
+    }
+  }
+
+  // Key result metrics, the numbers the whole record exists to track. Again type-specific by
+  // construction: no other record type returns these fields.
+  const current = record.current_metric;
+  const target = record.target_metric;
+  if (typeof current === "string" && current) {
+    parts.push(typeof target === "string" && target ? `${current} of ${target}` : `at ${current}`);
+  } else if (typeof target === "string" && target) {
+    parts.push(`target ${target}`);
   }
 
   const releaseRef =
@@ -146,6 +169,31 @@ const READERS: ReaderConfig[] = [
     unwrapKey: "release",
     outputSchema: releaseOutputSchema,
     fetch: id => services.AhaService.getRelease(id)
+  },
+  {
+    tool: "aha_get_goal",
+    title: "Get goal",
+    noun: "goal",
+    recordType: "goal",
+    idParam: "goalId",
+    example: "PRJ1-G-3",
+    fields:
+      "progress and what drives it, time frame, success metric and its status, product_id, the initiatives and work rolling up to it, and a summary of its key results",
+    unwrapKey: "goal",
+    outputSchema: goalOutputSchema,
+    fetch: id => services.AhaService.getGoal(id)
+  },
+  {
+    tool: "aha_get_key_result",
+    title: "Get key result",
+    noun: "key result",
+    recordType: "key_result",
+    idParam: "keyResultId",
+    example: "PRJ1-G-3-KR-1",
+    fields: "workflow status, progress, and the starting, current and target metrics",
+    unwrapKey: "key_result",
+    outputSchema: keyResultOutputSchema,
+    fetch: id => services.AhaService.getKeyResult(id)
   }
 ];
 

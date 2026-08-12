@@ -29,6 +29,8 @@ import type {
   GoalGetResponse,
   GoalsListResponse,
   GoalEpicsResponse,
+  KeyResultsListResponse,
+  KeyResultResponse,
   ReleaseGetResponse,
   ReleasesListResponse,
   ReleaseFeaturesResponse,
@@ -106,6 +108,16 @@ export interface IAhaService {
     perPage?: number
   ): Promise<GoalsListResponse>;
   getGoal(goalId: string): Promise<GoalGetResponse>;
+  createGoal(productId: string, goalData: any): Promise<GoalGetResponse>;
+  updateGoal(goalId: string, goalData: any, productId?: string): Promise<GoalGetResponse>;
+  deleteGoal(productId: string, goalId: string): Promise<void>;
+
+  // Key results - the measurable half of an OKR, always owned by a goal
+  listKeyResults(goalId: string, page?: number, perPage?: number): Promise<KeyResultsListResponse>;
+  getKeyResult(keyResultId: string): Promise<KeyResultResponse>;
+  createKeyResult(goalId: string, keyResultData: any): Promise<KeyResultResponse>;
+  updateKeyResult(keyResultId: string, keyResultData: any): Promise<KeyResultResponse>;
+  deleteKeyResult(keyResultId: string): Promise<void>;
 
   // Releases
   getRelease(releaseId: string): Promise<ReleaseGetResponse>;

@@ -113,6 +113,44 @@ The SDK's `IdeacommentsPostRequest` model captured only `spam`, because aha-js 2
 generated from recorded test responses. `createIdeaPortalComment` casts the documented
 `{ idea_comment: { body, visibility } }` body onto it; if a regenerated SDK types that
 properly, drop the cast.
+### Goals and key results (OKRs)
+
+`src/core/tools/goal-tools.ts` holds the writers; the two readers live with the others in
+`record-tools.ts`. Goals are Aha's objectives and key results the measurable half, so both
+have to be writable for a quarterly OKR loop to happen through this server at all - before
+these, a goal was readable only as a resource and a key result was not reachable in any form.
+
+Measured against a live account, not taken from `@cedricziel/aha-js`' fixture-derived spec:
+
+- **A goal has no top-level `workflow_status`.** Its status lives at
+  `success_metric.workflow_status.name`, which is what the Aha UI shows. `goalOutputSchema`
+  therefore does not describe one, and `stateDetail()` falls back to the success metric.
+  Do not "fix" this by describing `workflow_status` on a goal.
+- **A key result carries no `url` and no `resource`** - unlike every other record type here,
+  and unlike the abbreviated copies embedded in `goal.key_results`, which do have a `url`.
+  So a key result's summary line cannot end in a link, and `aha://key_result/{id}` is the
+  only pointer a client can follow. That resource template is what makes `recordLinks()`
+  legal for the type; it is not optional.
+- **Goal creation and deletion are workspace-scoped**, `POST /products/{id}/goals` and
+  `DELETE /products/{id}/goals/{id}`. There is no account-level route for either, which is
+  why `aha_create_goal` and `aha_delete_goal` require a workspace id where the other creates
+  and deletes here do not. Updates reach the record either way: `PUT /goals/{id}` is what
+  aha-js was generated against and is the default, while `productId` selects Aha's
+  documented `PUT /products/{id}/goals/{id}`. To check a route exists without writing
+  anything, request it with id `0`: an API route Aha serves answers
+  `{"error":"Record not found."}` as JSON, while one it does not serve answers with Aha's
+  HTML 404 page. That is how `PUT /goals/{id}` and `PUT /key_results/{id}` were confirmed.
+- **`workflow_status` is an object for a key result and a bare string for a goal.** The key
+  result tools accept either and `AhaService.normalizeKeyResultPayload()` wraps a string,
+  because a caller re-grading an OKR has a name in hand and one echoing a record it just read
+  has the object.
+- `GET /goals/{goal_id}/key_results` returns `{ key_results, pagination }`; the generated
+  operation is typed as returning the single-record `{ key_result }` wrapper. `GoalsPostRequest`
+  likewise omits `name`, which Aha's own documentation lists (and requires) - hence the
+  pass-through payloads and casts at that boundary.
+- `aha_list_key_results` emits one `resource_link` per key result, unlike `aha_search`, which
+  emits none. The difference is coverage: every record in this result is the same type and has
+  a resource template, so linking is complete rather than partial.
 
 ### Error handling
 
@@ -220,12 +258,12 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
   does not cover. Reads credentials via `AhaService.getCredentials()` so `configure_server`
   applies at runtime
 - **ConfigService**: Manages runtime configuration with file persistence and validation
-- **Tools**: 39 MCP tools (CRUD, single-record reads, comments, search, health checks,
+- **Tools**: 48 MCP tools (CRUD, single-record reads, comments, OKRs, search, health checks,
   configuration), none of which keep local state
 - **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes
 - **Read tools vs read resources**: `src/core/tools/record-tools.ts` registers `aha_get_*`
-  for feature, epic, idea, initiative and release, wrapping the same service getters the
-  `aha://{type}/{id}` resources call. The duplication is deliberate and should stay.
+  for feature, epic, idea, initiative, release, goal and key result, wrapping the same
+  service getters the `aha://{type}/{id}` resources call. The duplication is deliberate and should stay.
   Surfacing resources to a model is optional for a client, and tool-only clients are common;
   on one of those this server was ~25 writers plus a search returning six fields, so an
   agent could set a feature's status but never read the status it was replacing. Reads must
