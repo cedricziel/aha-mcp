@@ -3,6 +3,7 @@ import * as z from "zod/v4";
 import * as services from "./services/index.js";
 import { registerSearchTools } from "./tools/search-tools.js";
 import { registerRecordTools } from "./tools/record-tools.js";
+import { registerCommentTools } from "./tools/comment-tools.js";
 import {
   commentOutputSchema,
   competitorOutputSchema,
@@ -30,7 +31,13 @@ export function registerTools(server: McpServer) {
     "aha_create_feature_comment",
     {
       title: "Create feature comment",
-      description: "Create a comment on a feature in Aha.io. Returns the created comment.",
+      // Kept as-is now that aha_create_comment covers every commentable type: removing it
+      // would break callers for no gain. The description says which to prefer so a model is
+      // not left choosing between two tools that look identical for features.
+      description:
+        "Create a comment on a feature in Aha.io. Returns the created comment. " +
+        "aha_create_comment does the same for features and every other record type, and " +
+        "aha_list_comments reads them back - prefer those unless you specifically want this one.",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         body: z.string().describe("Comment body")
@@ -1339,4 +1346,7 @@ export function registerTools(server: McpServer) {
   // that does not surface resources to its model would otherwise see writers with no way to
   // read what they are about to overwrite.
   registerRecordTools(server);
+
+  // Comments, including the ideas-portal stream that aha://comments/idea/{id} does not carry.
+  registerCommentTools(server);
 }

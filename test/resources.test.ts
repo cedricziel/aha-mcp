@@ -26,6 +26,8 @@ const mockAhaService = {
   getReleasePhaseComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-7', body: 'Test release phase comment' }] })),
   getRequirementComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-8', body: 'Test requirement comment' }] })),
   getTodoComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-9', body: 'Test todo comment' }] })),
+  getFeatureComments: mock(() => Promise.resolve({ comments: [{ id: 'COMMENT-10', body: 'Test feature comment' }] })),
+  getIdeaPortalComments: mock(() => Promise.resolve({ idea_comments: [{ id: 'IC-1', body: 'Test portal comment', visibility: 'Visible to all ideas portal users' }] })),
   getGoal: mock(() => Promise.resolve({ id: 'GOAL-123', name: 'Test Goal' })),
   listGoals: mock(() => Promise.resolve({ goals: [{ id: 'GOAL-1' }, { id: 'GOAL-2' }] })),
   getGoalEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1' }, { id: 'EPIC-2' }] })),
@@ -67,6 +69,8 @@ describe('Resources', () => {
       getReleasePhaseComments: AhaService.getReleasePhaseComments,
       getRequirementComments: AhaService.getRequirementComments,
       getTodoComments: AhaService.getTodoComments,
+      getFeatureComments: AhaService.getFeatureComments,
+      getIdeaPortalComments: AhaService.getIdeaPortalComments,
       getGoal: AhaService.getGoal,
       listGoals: AhaService.listGoals,
       getGoalEpics: AhaService.getGoalEpics,
@@ -104,6 +108,8 @@ describe('Resources', () => {
     (AhaService as any).getReleasePhaseComments = mockAhaService.getReleasePhaseComments;
     (AhaService as any).getRequirementComments = mockAhaService.getRequirementComments;
     (AhaService as any).getTodoComments = mockAhaService.getTodoComments;
+    (AhaService as any).getFeatureComments = mockAhaService.getFeatureComments;
+    (AhaService as any).getIdeaPortalComments = mockAhaService.getIdeaPortalComments;
     (AhaService as any).getGoal = mockAhaService.getGoal;
     (AhaService as any).listGoals = mockAhaService.listGoals;
     (AhaService as any).getGoalEpics = mockAhaService.getGoalEpics;
@@ -169,6 +175,8 @@ describe('Resources', () => {
     (AhaService as any).getReleasePhaseComments = originalMethods.getReleasePhaseComments;
     (AhaService as any).getRequirementComments = originalMethods.getRequirementComments;
     (AhaService as any).getTodoComments = originalMethods.getTodoComments;
+    (AhaService as any).getFeatureComments = originalMethods.getFeatureComments;
+    (AhaService as any).getIdeaPortalComments = originalMethods.getIdeaPortalComments;
     (AhaService as any).getGoal = originalMethods.getGoal;
     (AhaService as any).listGoals = originalMethods.listGoals;
     (AhaService as any).getGoalEpics = originalMethods.getGoalEpics;
@@ -476,6 +484,50 @@ describe('Resources', () => {
   });
 
   describe('Comment Resources', () => {
+    describe('aha_feature_comments resource', () => {
+      it('should retrieve comments for feature', async () => {
+        // A feature could be commented on but not read back: aha_create_feature_comment
+        // existed with no matching read resource.
+        const handler = resourceHandlers.get('aha_feature_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://comments/feature/FEAT-123');
+        const result = await handler!(uri, {}, {} as any);
+
+        expect(mockAhaService.getFeatureComments).toHaveBeenCalledWith('FEAT-123');
+        expect(result.contents[0].text).toContain('Test feature comment');
+      });
+
+      it('should throw error for missing feature ID', async () => {
+        const handler = resourceHandlers.get('aha_feature_comments');
+        const uri = new URL('aha://comments/feature/');
+
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid feature ID: Feature ID is missing from URI');
+      });
+    });
+
+    describe('aha_idea_portal_comments resource', () => {
+      it('should retrieve the portal stream, which aha_idea_comments does not return', async () => {
+        const handler = resourceHandlers.get('aha_idea_portal_comments');
+        expect(handler).toBeDefined();
+
+        const uri = new URL('aha://idea-comments/IDEA-123');
+        const result = await handler!(uri, {}, {} as any);
+
+        expect(mockAhaService.getIdeaPortalComments).toHaveBeenCalledWith('IDEA-123');
+        // Kept a separate URI so neither resource silently changes meaning; the visibility
+        // is the field that distinguishes a portal comment from an internal one.
+        expect(result.contents[0].text).toContain('Visible to all ideas portal users');
+      });
+
+      it('should throw error for missing idea ID', async () => {
+        const handler = resourceHandlers.get('aha_idea_portal_comments');
+        const uri = new URL('aha://idea-comments/');
+
+        await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid idea ID: Idea ID is missing from URI');
+      });
+    });
+
     describe('aha_epic_comments resource', () => {
       it('should retrieve comments for epic', async () => {
         const handler = resourceHandlers.get('aha_epic_comments');

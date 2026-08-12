@@ -149,6 +149,11 @@ const READERS: ReaderConfig[] = [
   }
 ];
 
+/** "an epic", not "a epic" - these strings are read by people as well as models. */
+function article(noun: string): string {
+  return /^[aeiou]/i.test(noun) ? "an" : "a";
+}
+
 function register(server: McpServer, config: ReaderConfig) {
   server.registerTool(
     config.tool,
@@ -158,8 +163,9 @@ function register(server: McpServer, config: ReaderConfig) {
         `Read one ${config.noun} from Aha.io by reference number (e.g. ${config.example}) or ` +
         `internal id. Returns the full current record - including ${config.fields} - as ` +
         `structuredContent, a one-line summary naming its status, and a link to the ` +
-        `${config.noun}. aha_search returns none of these fields, so use this to see a ` +
-        `${config.noun}'s current values, and always read before you write to one.`,
+        `${config.noun}. aha_search returns none of these fields, so use this to see ` +
+        `${article(config.noun)} ${config.noun}'s current values, and always read before you ` +
+        `write to one. aha_list_comments reads its comment thread.`,
       inputSchema: {
         [config.idParam]: z
           .string()

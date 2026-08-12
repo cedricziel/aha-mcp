@@ -4,7 +4,7 @@
   "display_name": "Aha.io MCP Server",
   "version": "4.0.0",
   "description": "Model Context Protocol server for Aha.io product management platform",
-  "long_description": "A comprehensive MCP server that provides seamless integration with Aha.io's API. This extension enables AI assistants to search and manage Aha.io records - ideas, features, epics, initiatives, goals, requirements, releases and competitors - with 36 tools, 15 resources and 17 guided prompts.\n\nSearch is served by Aha.io's own index via aha_search, so results are always current and nothing is cached locally. Search returns names, types and links; aha_get_feature and its siblings return a full record - workflow status, release, assignee and custom field values - so a change can be checked against what the record says now. Every tool queries Aha.io directly; the extension stores no data and needs no native dependencies.",
+  "long_description": "A comprehensive MCP server that provides seamless integration with Aha.io's API. This extension enables AI assistants to search and manage Aha.io records - ideas, features, epics, initiatives, goals, requirements, releases and competitors - with 39 tools, 17 resources and 17 guided prompts.\n\nSearch is served by Aha.io's own index via aha_search, so results are always current and nothing is cached locally. Search returns names, types and links; aha_get_feature and its siblings return a full record - workflow status, release, assignee and custom field values - so a change can be checked against what the record says now. Comments are readable and writable on every record type that supports them, and an idea's ideas-portal conversation is handled as its own stream - so a customer's own words are visible, and a reply can be aimed at portal users or kept to employees. Every tool queries Aha.io directly; the extension stores no data and needs no native dependencies.",
   "author": {
     "name": "Cedric Ziel",
     "email": "mail@cedric-ziel.com",
@@ -59,6 +59,10 @@
       "description": "Associate a feature with multiple goals in Aha.io. Replaces the feature's whole goal set, so goals left out are unlinked. Returns the updated feature and a link to it."
     },
     {
+      "name": "aha_create_comment",
+      "description": "Add a comment to an Aha.io record - feature, idea, epic, initiative, goal, release, release phase, requirement or todo. The comment is internal: visible to Aha.io users and never shown in an ideas portal, including on an idea. To reply to a customer in the ideas portal, use aha_create_idea_portal_comment instead. Returns the created comment and a link to the record it was added to."
+    },
+    {
       "name": "aha_create_competitor",
       "description": "Create a competitor in a product in Aha.io. Returns the created competitor and a link to it."
     },
@@ -76,7 +80,7 @@
     },
     {
       "name": "aha_create_feature_comment",
-      "description": "Create a comment on a feature in Aha.io. Returns the created comment."
+      "description": "Create a comment on a feature in Aha.io. Returns the created comment. aha_create_comment does the same for features and every other record type, and aha_list_comments reads them back - prefer those unless you specifically want this one."
     },
     {
       "name": "aha_create_idea",
@@ -85,6 +89,10 @@
     {
       "name": "aha_create_idea_by_portal_user",
       "description": "Create an idea in a product in Aha.io, attributed to an ideas-portal user rather than to the API token's owner. Returns the created idea and a link to it."
+    },
+    {
+      "name": "aha_create_idea_portal_comment",
+      "description": "Comment on an idea in a way that can be seen outside Aha.io, in the ideas portal - this is how you reply to a customer who submitted or commented on an idea. visibility is required and decides the audience: 'public' shows the comment to every portal user, 'employee_or_creator' restricts it to employees and the idea's creator. Aha.io itself defaults to 'public', so nothing here is optional by design. For a note that must stay inside Aha.io, use aha_create_comment. Returns the created comment and a link to the idea."
     },
     {
       "name": "aha_create_idea_with_category",
@@ -120,23 +128,27 @@
     },
     {
       "name": "aha_get_epic",
-      "description": "Read one epic from Aha.io by reference number (e.g. PRJ1-E-4) or internal id. Returns the full current record - including workflow status, release, initiative, assignee, progress and custom field values - as structuredContent, a one-line summary naming its status, and a link to the epic. aha_search returns none of these fields, so use this to see a epic's current values, and always read before you write to one."
+      "description": "Read one epic from Aha.io by reference number (e.g. PRJ1-E-4) or internal id. Returns the full current record - including workflow status, release, initiative, assignee, progress and custom field values - as structuredContent, a one-line summary naming its status, and a link to the epic. aha_search returns none of these fields, so use this to see an epic's current values, and always read before you write to one. aha_list_comments reads its comment thread."
     },
     {
       "name": "aha_get_feature",
-      "description": "Read one feature from Aha.io by reference number (e.g. PRJ1-123) or internal id. Returns the full current record - including workflow status, release, epic, initiative, assignee, tags, score, progress and custom field values - as structuredContent, a one-line summary naming its status, and a link to the feature. aha_search returns none of these fields, so use this to see a feature's current values, and always read before you write to one."
+      "description": "Read one feature from Aha.io by reference number (e.g. PRJ1-123) or internal id. Returns the full current record - including workflow status, release, epic, initiative, assignee, tags, score, progress and custom field values - as structuredContent, a one-line summary naming its status, and a link to the feature. aha_search returns none of these fields, so use this to see a feature's current values, and always read before you write to one. aha_list_comments reads its comment thread."
     },
     {
       "name": "aha_get_idea",
-      "description": "Read one idea from Aha.io by reference number (e.g. PRJ1-I-7) or internal id. Returns the full current record - including workflow status, score, endorsement and vote counts, categories and custom field values - as structuredContent, a one-line summary naming its status, and a link to the idea. aha_search returns none of these fields, so use this to see a idea's current values, and always read before you write to one."
+      "description": "Read one idea from Aha.io by reference number (e.g. PRJ1-I-7) or internal id. Returns the full current record - including workflow status, score, endorsement and vote counts, categories and custom field values - as structuredContent, a one-line summary naming its status, and a link to the idea. aha_search returns none of these fields, so use this to see an idea's current values, and always read before you write to one. aha_list_comments reads its comment thread."
     },
     {
       "name": "aha_get_initiative",
-      "description": "Read one initiative from Aha.io by reference number (e.g. PRJ1-S-2) or internal id. Returns the full current record - including workflow status, progress, timeframe, goals and custom field values - as structuredContent, a one-line summary naming its status, and a link to the initiative. aha_search returns none of these fields, so use this to see a initiative's current values, and always read before you write to one."
+      "description": "Read one initiative from Aha.io by reference number (e.g. PRJ1-S-2) or internal id. Returns the full current record - including workflow status, progress, timeframe, goals and custom field values - as structuredContent, a one-line summary naming its status, and a link to the initiative. aha_search returns none of these fields, so use this to see an initiative's current values, and always read before you write to one. aha_list_comments reads its comment thread."
     },
     {
       "name": "aha_get_release",
-      "description": "Read one release from Aha.io by reference number (e.g. PRJ1-R-3) or internal id. Returns the full current record - including workflow status, progress, whether it has been released, its release date, parking-lot flag, goals and custom field values - as structuredContent, a one-line summary naming its status, and a link to the release. aha_search returns none of these fields, so use this to see a release's current values, and always read before you write to one."
+      "description": "Read one release from Aha.io by reference number (e.g. PRJ1-R-3) or internal id. Returns the full current record - including workflow status, progress, whether it has been released, its release date, parking-lot flag, goals and custom field values - as structuredContent, a one-line summary naming its status, and a link to the release. aha_search returns none of these fields, so use this to see a release's current values, and always read before you write to one. aha_list_comments reads its comment thread."
+    },
+    {
+      "name": "aha_list_comments",
+      "description": "Read the comments on an Aha.io record - feature, idea, epic, initiative, goal, release, release phase, requirement, todo or product. For an idea this returns both streams: internal comments and the ideas-portal conversation, which are separate records in Aha, so a customer's own words arrive alongside internal discussion. Every comment is labelled with its source ('internal' or 'portal') and, for portal comments, its visibility. Returns the comments oldest first as structuredContent, a summary listing author and an excerpt of each, and a link to the parent record."
     },
     {
       "name": "aha_move_feature_to_release",

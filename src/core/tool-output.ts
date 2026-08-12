@@ -51,14 +51,25 @@ export function unwrapRecord(payload: unknown, key: string): Record<string, unkn
   return {};
 }
 
-/** Record types with a single-record resource template in resources.ts. */
+/**
+ * Record types with a single-record resource template in resources.ts.
+ *
+ * Spelled as the URI segment, so `release-phase` rather than `release_phase` - a link built
+ * from the wrong spelling points at a template that does not match, which is worse than
+ * omitting the link.
+ */
 export type LinkableRecordType =
   | "feature"
   | "epic"
   | "idea"
   | "initiative"
   | "competitor"
-  | "release";
+  | "release"
+  | "release-phase"
+  | "goal"
+  | "requirement"
+  | "todo"
+  | "product";
 
 function identifier(value: unknown): string | undefined {
   if (typeof value === "string" && value.length > 0) return value;
@@ -242,6 +253,25 @@ export const commentOutputSchema = z.looseObject({
 });
 
 /**
+ * An idea portal comment, which carries a `visibility` the generic comment does not.
+ *
+ * The value here is Aha's read vocabulary - a human-readable phrase such as "Visible to all
+ * ideas portal users" - not the `public` / `employee_or_creator` a create request takes. A
+ * caller cannot round-trip one into the other.
+ */
+export const ideaCommentOutputSchema = z.looseObject({
+  id: z.union([z.string(), z.number()]).optional().describe("Idea comment id"),
+  idea_id: z.union([z.string(), z.number()]).optional().describe("Idea the comment belongs to"),
+  body: z.string().nullish().describe("Comment body, as HTML"),
+  visibility: z
+    .string()
+    .nullish()
+    .describe('How visible the comment is, as a phrase, e.g. "Visible to all ideas portal users"'),
+  created_at: z.string().optional().describe("ISO 8601 creation timestamp"),
+  updated_at: z.string().optional().describe("ISO 8601 last-modified timestamp")
+});
+
+/**
  * Aha's DELETE endpoints answer with an empty body, so there is no record to hand back -
  * only a restatement of what went away, which the caller can use to confirm the right
  * record was targeted.
@@ -252,6 +282,56 @@ export const deletionOutputSchema = z.object({
     .enum(["feature", "epic", "idea", "competitor"])
     .describe("Type of record that was deleted"),
   id: z.string().describe("Id or reference number the deletion was requested for")
+});
+
+/**
+ * Comment types a record can carry. `internal` is Aha's own comment stream, reachable on
+ * every record type; `portal` exists only on ideas and is the conversation that can appear in
+ * an ideas portal. They come from different endpoints over disjoint records, so a caller has
+ * to be able to tell which one it is holding - hence the field rather than one flat list.
+ */
+export const COMMENT_SOURCES = ["internal", "portal"] as const;
+
+/**
+ * One comment as `aha_list_comments` reports it. Loose, because the body is Aha's record
+ * with `source` added, and Aha returns far more fields than are worth describing.
+ */
+const listedCommentSchema = z.looseObject({
+  id: z.union([z.string(), z.number()]).optional().describe("Comment id"),
+  source: z
+    .enum(COMMENT_SOURCES)
+    .describe(
+      'Which stream this came from. "internal" is visible to Aha users only; "portal" can ' +
+        "be visible in the ideas portal - check `visibility`."
+    ),
+  body: z.string().nullish().describe("Comment body, as HTML"),
+  visibility: z
+    .string()
+    .nullish()
+    .describe(
+      'Portal comments only, as a human-readable phrase, e.g. "Visible to all ideas portal ' +
+        'users". Absent on internal comments, which are never portal-visible.'
+    ),
+  created_at: z.string().nullish().describe("ISO 8601 creation timestamp"),
+  updated_at: z.string().nullish().describe("ISO 8601 last-modified timestamp")
+});
+
+/** Built by `aha_list_comments`: the wrapper is this server's, the comments are Aha's. */
+export const commentListOutputSchema = z.object({
+  record_type: z.string().describe("Record type the comments belong to, e.g. feature"),
+  record_id: z.string().describe("Id or reference number the comments were read for"),
+  comment_count: z.number().describe("Number of comments returned"),
+  /**
+   * Named explicitly so a zero here cannot be mistaken for "no portal conversation exists".
+   * Only ideas have a portal stream, and only ideas are asked for one.
+   */
+  includes_portal_comments: z
+    .boolean()
+    .describe(
+      "True when the ideas-portal stream was read as well as the internal one. Only ideas " +
+        "have a portal stream, so this is false for every other record type."
+    ),
+  comments: z.array(listedCommentSchema).describe("Comments, oldest first")
 });
 
 /** Built by `aha_search` from the GraphQL response, so every field is known. */

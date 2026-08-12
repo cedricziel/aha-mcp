@@ -7,6 +7,7 @@ import {
   ProductsApi,
   InitiativesApi,
   CommentsApi,
+  IdeaCommentsApi,
   GoalsApi,
   ToDosApi,
   CompetitorsApi,
@@ -19,6 +20,7 @@ import {
   IdeaVotesApi,
   CustomFieldsApi
 } from '@cedricziel/aha-js';
+import type { IdeacommentsPostRequest } from '@cedricziel/aha-js';
 
 import {
   Feature,
@@ -34,6 +36,9 @@ import {
   ProductsListResponse,
   Comment,
   CommentsListResponse,
+  IdeaComment,
+  IdeaCommentsListResponse,
+  IdeaCommentVisibility,
   GoalGetResponse,
   GoalsListResponse,
   GoalEpicsResponse,
@@ -81,6 +86,7 @@ export class AhaService {
   private static productsApi: ProductsApi | null = null;
   private static initiativesApi: InitiativesApi | null = null;
   private static commentsApi: CommentsApi | null = null;
+  private static ideaCommentsApi: IdeaCommentsApi | null = null;
   private static goalsApi: GoalsApi | null = null;
   private static todosApi: ToDosApi | null = null;
   private static competitorsApi: CompetitorsApi | null = null;
@@ -234,6 +240,7 @@ export class AhaService {
       this.productsApi = new ProductsApi(this.configuration);
       this.initiativesApi = new InitiativesApi(this.configuration);
       this.commentsApi = new CommentsApi(this.configuration);
+      this.ideaCommentsApi = new IdeaCommentsApi(this.configuration);
       this.goalsApi = new GoalsApi(this.configuration);
       this.todosApi = new ToDosApi(this.configuration);
       this.competitorsApi = new CompetitorsApi(this.configuration);
@@ -327,6 +334,17 @@ export class AhaService {
       this.initializeClient();
     }
     return this.commentsApi!;
+  }
+
+  /**
+   * `IdeaCommentsApi` covers `/ideas/{id}/idea_comments`, which is a different endpoint from
+   * the `/ideas/{id}/comments` that `CommentsApi` serves - see the `IdeaComment` type.
+   */
+  private static getIdeaCommentsApi(): IdeaCommentsApi {
+    if (!this.ideaCommentsApi) {
+      this.initializeClient();
+    }
+    return this.ideaCommentsApi!;
   }
 
   /**
@@ -963,6 +981,170 @@ export class AhaService {
       return response.data as unknown as CommentsListResponse;
     } catch (error) {
       log.error('Error getting comments for todo', error as Error, { operation: 'getTodoComments', todo_id: todoId });
+      throw error;
+    }
+  }
+
+  /**
+   * Get comments for a specific feature
+   * @param featureId The ID of the feature
+   * @returns A list of comments for the feature
+   */
+  public static async getFeatureComments(featureId: string): Promise<CommentsListResponse> {
+    const commentsApi = this.getCommentsApi();
+
+    try {
+      const response = await commentsApi.featuresByFeatureCommentsGet({ featureId });
+      return response.data as unknown as CommentsListResponse;
+    } catch (error) {
+      log.error('Error getting comments for feature', error as Error, { operation: 'getFeatureComments', feature_id: featureId });
+      throw error;
+    }
+  }
+
+  /**
+   * Every `POST .../comments` endpoint takes the same body and answers with `{ comment }`,
+   * so the per-type creators differ only in which SDK method they call. One helper keeps
+   * that from becoming nine copies of the same five lines.
+   */
+  private static async postComment(
+    operation: string,
+    context: Record<string, unknown>,
+    body: string,
+    call: (
+      api: CommentsApi,
+      request: { comment: { body: string } }
+    ) => Promise<{ data: unknown }>
+  ): Promise<Comment> {
+    const commentsApi = this.getCommentsApi();
+
+    try {
+      const response = await call(commentsApi, { comment: { body } });
+      const data = response.data as { comment?: Comment };
+      return data.comment as Comment;
+    } catch (error) {
+      log.error('Error creating comment', error as Error, { operation, ...context });
+      throw error;
+    }
+  }
+
+  public static async createEpicComment(epicId: string, body: string): Promise<Comment> {
+    return this.postComment('createEpicComment', { epic_id: epicId }, body, (api, request) =>
+      api.epicsByEpicCommentsPost({ epicId, commentsPostRequest: request })
+    );
+  }
+
+  /**
+   * Comment on an idea *internally*. Aha documents `POST /ideas/{id}/comments` as creating an
+   * internal comment; it cannot reach the ideas portal, and the record it creates will not
+   * appear in `getIdeaPortalComments`. Use `createIdeaPortalComment` to reply to a customer.
+   */
+  public static async createIdeaComment(ideaId: string, body: string): Promise<Comment> {
+    return this.postComment('createIdeaComment', { idea_id: ideaId }, body, (api, request) =>
+      api.ideasByIdeaCommentsPost({ ideaId, commentsPostRequest: request })
+    );
+  }
+
+  public static async createInitiativeComment(initiativeId: string, body: string): Promise<Comment> {
+    return this.postComment(
+      'createInitiativeComment',
+      { initiative_id: initiativeId },
+      body,
+      (api, request) => api.initiativesByInitiativeCommentsPost({ initiativeId, commentsPostRequest: request })
+    );
+  }
+
+  public static async createGoalComment(goalId: string, body: string): Promise<Comment> {
+    return this.postComment('createGoalComment', { goal_id: goalId }, body, (api, request) =>
+      api.goalsByGoalCommentsPost({ goalId, commentsPostRequest: request })
+    );
+  }
+
+  public static async createReleaseComment(releaseId: string, body: string): Promise<Comment> {
+    return this.postComment('createReleaseComment', { release_id: releaseId }, body, (api, request) =>
+      api.releasesByReleaseCommentsPost({ releaseId, commentsPostRequest: request })
+    );
+  }
+
+  public static async createReleasePhaseComment(releasePhaseId: string, body: string): Promise<Comment> {
+    return this.postComment(
+      'createReleasePhaseComment',
+      { release_phase_id: releasePhaseId },
+      body,
+      (api, request) => api.releasePhasesByReleasePhaseCommentsPost({ releasePhaseId, commentsPostRequest: request })
+    );
+  }
+
+  public static async createRequirementComment(requirementId: string, body: string): Promise<Comment> {
+    return this.postComment(
+      'createRequirementComment',
+      { requirement_id: requirementId },
+      body,
+      (api, request) => api.requirementsByRequirementCommentsPost({ requirementId, commentsPostRequest: request })
+    );
+  }
+
+  /** Todos are `/tasks` in Aha's API; see the aha-js 2.0.0 migration notes. */
+  public static async createTodoComment(todoId: string, body: string): Promise<Comment> {
+    return this.postComment('createTodoComment', { todo_id: todoId }, body, (api, request) =>
+      api.tasksByTaskCommentsPost({ taskId: todoId, commentsPostRequest: request })
+    );
+  }
+
+  /**
+   * An idea's portal comments - a different endpoint from `getIdeaComments`, over records
+   * that endpoint never returns. See the `IdeaComment` type for what the split is and why
+   * reading only one side is misleading.
+   */
+  public static async getIdeaPortalComments(ideaId: string): Promise<IdeaCommentsListResponse> {
+    const ideaCommentsApi = this.getIdeaCommentsApi();
+
+    try {
+      const response = await ideaCommentsApi.ideasByIdeaIdeaCommentsGet({ ideaId });
+      return response.data as unknown as IdeaCommentsListResponse;
+    } catch (error) {
+      log.error('Error getting portal comments for idea', error as Error, {
+        operation: 'getIdeaPortalComments',
+        idea_id: ideaId
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Create a comment on an idea that can reach the ideas portal.
+   *
+   * `visibility` is a required argument on purpose. Aha defaults it to `public`, so an
+   * omitted value publishes to customers - not a thing that should happen because a caller
+   * left a field out.
+   *
+   * The cast is needed because this SDK is generated from recorded test responses, and the
+   * only field its `IdeacommentsPostRequest` model captured is `spam`. Aha documents the
+   * body as `{ idea_comment: { body, visibility } }`, which is what goes on the wire; the
+   * cast admits it without hand-rolling the request the way `competitorRequest` has to.
+   */
+  public static async createIdeaPortalComment(
+    ideaId: string,
+    body: string,
+    visibility: IdeaCommentVisibility
+  ): Promise<IdeaComment> {
+    const ideaCommentsApi = this.getIdeaCommentsApi();
+
+    try {
+      const response = await ideaCommentsApi.ideasByIdeaIdeaCommentsPost({
+        ideaId,
+        ideacommentsPostRequest: {
+          idea_comment: { body, visibility }
+        } as unknown as IdeacommentsPostRequest
+      });
+      const data = response.data as unknown as { idea_comment?: IdeaComment };
+      return (data.idea_comment ?? (data as IdeaComment)) as IdeaComment;
+    } catch (error) {
+      log.error('Error creating portal comment on idea', error as Error, {
+        operation: 'createIdeaPortalComment',
+        idea_id: ideaId,
+        visibility
+      });
       throw error;
     }
   }

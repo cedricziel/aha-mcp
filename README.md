@@ -14,7 +14,7 @@ Download `aha-mcp-v<version>.mcpb` from the [latest release](https://github.com/
 and open it with Claude Desktop, which will prompt you for your Aha.io subdomain and API
 token. No Node.js or Docker setup and no manual JSON editing required.
 
-The extension exposes 31 tools that query Aha.io directly, so results are always current and
+The extension exposes 39 tools that query Aha.io directly, so results are always current and
 nothing is stored locally. Cross-record search is served by Aha.io's own index — see
 [Search](#-search).
 
@@ -349,8 +349,10 @@ aha_embedding_status --jobId embed-xyz789
 - `aha_initiative_epics`: List epics for an initiative using `aha://initiative/{initiative_id}/epics`
 
 #### Comment Resources
+- `aha_feature_comments`: Access comments for a feature using `aha://comments/feature/{feature_id}`
 - `aha_epic_comments`: Access comments for an epic using `aha://comments/epic/{epic_id}`
-- `aha_idea_comments`: Access comments for an idea using `aha://comments/idea/{idea_id}`
+- `aha_idea_comments`: Access an idea's **internal** comments using `aha://comments/idea/{idea_id}`
+- `aha_idea_portal_comments`: Access an idea's **ideas-portal** comments using `aha://idea-comments/{idea_id}` — different records from the above, including anything a customer wrote
 - `aha_initiative_comments`: Access comments for an initiative using `aha://comments/initiative/{initiative_id}`
 - `aha_product_comments`: Access comments for a product using `aha://comments/product/{product_id}`
 - `aha_goal_comments`: Access comments for a goal using `aha://comments/goal/{goal_id}`
@@ -402,8 +404,10 @@ aha://releases/PROJ-001?query=mobile&status=shipped # List releases for product
 aha://initiative/INIT-123/epics   # List epics for initiative
 
 # Comment Resources
+aha://comments/feature/PRJ1-123   # Get comments for feature
 aha://comments/epic/EPIC-123      # Get comments for epic
-aha://comments/idea/IDEA-456      # Get comments for idea
+aha://comments/idea/IDEA-456      # Get an idea's internal comments
+aha://idea-comments/IDEA-456      # Get an idea's ideas-portal comments
 aha://comments/initiative/INIT-789 # Get comments for initiative
 aha://comments/product/PROD-001   # Get comments for product
 aha://comments/goal/GOAL-555      # Get comments for goal
@@ -538,14 +542,15 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 - **Comprehensive Entity Coverage**: Full CRUD operations for features, epics, ideas, and competitors
 
 #### Technical Achievements
-- **36 MCP tools**, all querying Aha.io directly — no local state
-- **15 listed MCP resources** covering the entity set, plus templated resource URIs
+- **39 MCP tools**, all querying Aha.io directly — no local state
+- **17 listed MCP resources** covering the entity set, plus templated resource URIs
 - **17 domain-specific prompts** (workflow automation)
 - **25 core CRUD and write operation tools** for complete lifecycle management
 - **Cross-record search** over Aha's own index, covering 20 record types
 - **5 single-record read tools**, so a write can be checked against the record's current state on clients that do not surface resources
+- **Comment reads and writes** on every record type Aha supports, with an idea's ideas-portal conversation handled as its own stream
 - **5 server configuration tools** for runtime configuration
-- **437 tests passing** with comprehensive service coverage
+- **457 tests passing** with comprehensive service coverage
 - **No native dependencies**, so the server runs anywhere Node does
 - **Comprehensive error handling** with proper Zod schema validation
 

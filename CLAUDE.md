@@ -80,6 +80,40 @@ A previous local-cache implementation (SQLite plus a placeholder embedding that 
 character codes through `Math.sin()`) was removed in favour of this. Do not reintroduce
 client-side "semantic" ranking without a real embedding model.
 
+### Comments
+
+Comments live in `src/core/tools/comment-tools.ts` (`aha_list_comments`, `aha_create_comment`,
+`aha_create_idea_portal_comment`) plus the `aha://comments/{type}/{id}` resources. Three
+things here are not guessable from Aha's docs:
+
+- **An idea has two comment streams, and they are disjoint.** `/ideas/{id}/comments` holds
+  internal comments; `/ideas/{id}/idea_comments` holds the ideas-portal conversation, served
+  by a different SDK class (`IdeaCommentsApi`). Measured on a live idea: one internal comment,
+  two portal comments, **no overlapping ids**. The portal side is where a customer's own words
+  are - on the idea probed, a portal user asking why their idea was rejected, and the reply.
+  Reading only `/comments` therefore looks complete while dropping the half that matters for
+  triage. `aha_list_comments` reads both for ideas and stamps each comment with `source`;
+  `aha://comments/idea/{id}` and `aha://idea-comments/{id}` stay separate URIs so neither
+  changes meaning. Do not merge them into one resource.
+- **`visibility` reads and writes in different vocabularies.** A response carries a phrase
+  ("Visible to all ideas portal users"); a create request takes `public` or
+  `employee_or_creator`. One cannot be fed back as the other, so nothing maps between them.
+- **`visibility` is a required argument on `aha_create_idea_portal_comment`.** Aha defaults it
+  to `public`, which means a caller that omits the field publishes to customers by accident.
+  Keep it required, and keep the portal write a separate tool from `aha_create_comment` so a
+  host can gate the customer-facing one on its own.
+
+Two smaller notes. `POST /ideas/{id}/comments` is documented as creating an *internal*
+comment, so `aha_create_comment` on an idea cannot reach the portal - that is why the tool
+says "internal" in its own output. And Aha's spec has GET but no POST for a workspace's
+comments, so `product` is readable but not writable; the `TARGETS` table in `comment-tools.ts`
+encodes that by having no `write` for it, rather than failing at call time.
+
+The SDK's `IdeacommentsPostRequest` model captured only `spam`, because aha-js 2.0.0 is
+generated from recorded test responses. `createIdeaPortalComment` casts the documented
+`{ idea_comment: { body, visibility } }` body onto it; if a regenerated SDK types that
+properly, drop the cast.
+
 ### Error handling
 
 Aha's REST failures are mapped by `src/core/services/aha-errors.ts` rather than surfaced
@@ -186,8 +220,8 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
   does not cover. Reads credentials via `AhaService.getCredentials()` so `configure_server`
   applies at runtime
 - **ConfigService**: Manages runtime configuration with file persistence and validation
-- **Tools**: 36 MCP tools (CRUD, single-record reads, search, health checks, configuration),
-  none of which keep local state
+- **Tools**: 39 MCP tools (CRUD, single-record reads, comments, search, health checks,
+  configuration), none of which keep local state
 - **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes
 - **Read tools vs read resources**: `src/core/tools/record-tools.ts` registers `aha_get_*`
   for feature, epic, idea, initiative and release, wrapping the same service getters the
