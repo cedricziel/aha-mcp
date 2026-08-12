@@ -67,6 +67,7 @@ export type LinkableRecordType =
   | "release"
   | "release-phase"
   | "goal"
+  | "key_result"
   | "requirement"
   | "todo"
   | "product";
@@ -246,6 +247,76 @@ export const competitorOutputSchema = z.looseObject({
   ...recordIdentity
 });
 
+/**
+ * Goals are Aha's objectives: the O of an OKR, with key results hanging off them.
+ *
+ * No `workflow_status` here, deliberately. Measured against a live account, a goal carries
+ * none at the top level - its status lives under `success_metric.workflow_status`, which is
+ * what the Aha UI shows as the goal's status. Describing a `workflow_status` a goal never
+ * returns would advertise a field no caller could use.
+ */
+export const goalOutputSchema = z.looseObject({
+  ...recordIdentity,
+  progress: progressField,
+  progress_source: z
+    .string()
+    .nullish()
+    .describe(
+      "What drives `progress`, e.g. progress_manual or progress_from_key_results. `progress` is only writable when this is progress_manual."
+    ),
+  product_id: z
+    .union([z.string(), z.number()])
+    .nullish()
+    .describe("Workspace (Aha product) the goal belongs to. Needed to delete the goal."),
+  time_frame: z
+    .looseObject({})
+    .nullish()
+    .describe('Time frame the goal is set in, e.g. { name: "FY27" }'),
+  success_metric: z
+    .looseObject({})
+    .nullish()
+    .describe(
+      "How success is measured, and where a goal's status actually lives - `success_metric.workflow_status.name` is what Aha shows as the goal's status."
+    ),
+  key_results: z
+    .array(z.looseObject({}))
+    .nullish()
+    .describe("Abbreviated key results owned by this goal. Read one in full with aha_get_key_result.")
+});
+
+/**
+ * A key result is the measurable half of an OKR. Unlike every other record type here it
+ * carries **no `url`** - measured live, the standalone record has neither `url` nor
+ * `resource`, even though the copies embedded in `goal.key_results` do have a `url`. So a
+ * summary of one cannot end in a link, and the `aha://key_result/{id}` resource is the only
+ * pointer that always exists.
+ *
+ * The metric fields are strings, not numbers: Aha stores them as typed by the user ("30%",
+ * "$1.2M", "8"), and they are null until set.
+ */
+export const keyResultOutputSchema = z.looseObject({
+  ...recordIdentity,
+  progress: progressField,
+  position: z.number().nullish().describe("Order of the key result within its goal"),
+  workflow_status: workflowStatusField,
+  starting_metric: z.string().nullish().describe('Metric value at the start, as text, e.g. "0%"'),
+  current_metric: z.string().nullish().describe('Where the metric stands now, as text, e.g. "30%"'),
+  target_metric: z.string().nullish().describe('Metric value that counts as done, as text, e.g. "90%"')
+});
+
+/**
+ * `aha_list_key_results` builds this itself from the list response, so it is closed. The
+ * key results inside are not: they are Aha records.
+ */
+export const keyResultsListOutputSchema = z.object({
+  goal_id: z.string().describe("Goal whose key results these are, as it was requested"),
+  key_results: z.array(keyResultOutputSchema).describe("Key results owned by the goal, in position order"),
+  pagination: z
+    .looseObject({})
+    .optional()
+    .describe("Aha's pagination block, when the response carried one")
+});
+
 export const commentOutputSchema = z.looseObject({
   id: z.union([z.string(), z.number()]).optional().describe("Comment id"),
   created_at: z.string().optional().describe("ISO 8601 creation timestamp"),
@@ -279,7 +350,7 @@ export const ideaCommentOutputSchema = z.looseObject({
 export const deletionOutputSchema = z.object({
   deleted: z.literal(true).describe("Always true; failures come back with isError instead"),
   record_type: z
-    .enum(["feature", "epic", "idea", "competitor"])
+    .enum(["feature", "epic", "idea", "competitor", "goal", "key_result"])
     .describe("Type of record that was deleted"),
   id: z.string().describe("Id or reference number the deletion was requested for")
 });

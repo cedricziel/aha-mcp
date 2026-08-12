@@ -1255,6 +1255,89 @@ export function registerResources(server: McpServer) {
     }
   );
 
+  // Aha key result resource
+  //
+  // A key result carries no `url` of its own, so this URI is the only stable pointer to one -
+  // which is also why the tools link to it rather than to an Aha web page.
+  server.registerResource(
+    "aha_key_result",
+    new ResourceTemplate(
+      "aha://key_result/{id}",
+      {
+        list: undefined,
+        complete: {
+          id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Key Result",
+      description: "Get a specific key result by ID",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const id = normalizeVar(variables.id) || uri.pathname.split('/').pop();
+      if (!id) {
+        throw new Error('Invalid key result ID: ID is missing from URI');
+      }
+      try {
+        const keyResult = await getAhaService().getKeyResult(id);
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(keyResult, null, 2),
+            mimeType: "application/json"
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving key result ${id}:`, error);
+        throw toMcpError(error, uri.toString());
+      }
+    }
+  );
+
+  // Aha goal key results resource
+  server.registerResource(
+    "aha_goal_key_results",
+    new ResourceTemplate(
+      "aha://goal/{goal_id}/key_results",
+      {
+        list: undefined,
+        complete: {
+          goal_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Goal Key Results",
+      description: "Get key results for a specific goal",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const pathParts = uri.pathname.split('/');
+      const goalId = normalizeVar(variables?.goal_id) || pathParts[pathParts.length - 2]; // goal_id is before /key_results
+
+      if (!goalId) {
+        throw new Error('Invalid goal ID: Goal ID is missing from URI');
+      }
+
+      try {
+        const keyResults = await getAhaService().listKeyResults(goalId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(keyResults, null, 2),
+            mimeType: "application/json"
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving key results for goal ${goalId}:`, error);
+        throw toMcpError(error, uri.toString());
+      }
+    }
+  );
+
   // Aha release resource
   server.registerResource(
     "aha_release",

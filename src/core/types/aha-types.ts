@@ -359,6 +359,53 @@ export interface GoalEpicsResponse {
 }
 
 /**
+ * Key result entity - the measurable half of an OKR, always owned by a goal.
+ *
+ * Measured against a live account rather than taken from the generated model: a key result
+ * carries **no `url` and no `resource`**, unlike every other record type here, even though
+ * the abbreviated copies embedded in `goal.key_results` do carry a `url`. Nothing may assume
+ * a standalone key result can be linked to by `url`; the `aha://key_result/{id}` resource is
+ * the pointer that always exists.
+ *
+ * `reference_num` extends the owning goal's: `COMPANY1-G-8-KR-1`.
+ */
+export interface KeyResult {
+  id?: string;
+  name?: string;
+  reference_num?: string;
+  position?: number;
+  created_at?: string;
+  updated_at?: string;
+  progress?: number | null;
+  target_metric?: string | null;
+  starting_metric?: string | null;
+  current_metric?: string | null;
+  description?: RichText | null;
+  assigned_to_user?: User | null;
+  workflow_status?: WorkflowStatus;
+  custom_fields?: CustomField[];
+  [key: string]: unknown;
+}
+
+/**
+ * `GET /goals/{goal_id}/key_results` returns `{ key_results, pagination }`, measured live.
+ * The generated SDK operation is typed as returning the single-record `{ key_result }`
+ * wrapper instead - see the generator-quirk note at the top of this file.
+ */
+export interface KeyResultsListResponse {
+  key_results?: KeyResult[];
+  pagination?: Pagination;
+}
+
+/**
+ * `GET /key_results/{id}` wraps the key result under a `key_result` key.
+ */
+export interface KeyResultResponse {
+  key_result?: KeyResult;
+  [key: string]: unknown;
+}
+
+/**
  * Release entity.
  */
 export interface Release {

@@ -23,6 +23,8 @@ import type {
   GoalGetResponse,
   GoalsListResponse,
   GoalEpicsResponse,
+  KeyResultsListResponse,
+  KeyResultResponse,
   ReleaseGetResponse,
   ReleasesListResponse,
   ReleaseFeaturesResponse,
@@ -92,6 +94,27 @@ const generateMockGoal = (index: number) => ({
     },
     created_at: '2024-01-01T00:00:00Z'
   }
+});
+
+/**
+ * A key result carries no `url` of its own - measured against a live account - so the mock
+ * does not invent one.
+ */
+const generateMockKeyResult = (index: number, goalRef = 'GOAL-1') => ({
+  id: `KR-${index}`,
+  reference_num: `${goalRef}-KR-${index}`,
+  name: `Test Key Result ${index}`,
+  position: index,
+  progress: 0,
+  target_metric: '100',
+  starting_metric: '0',
+  current_metric: '10',
+  workflow_status: {
+    id: '1',
+    name: 'Not started'
+  },
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-15T00:00:00Z'
 });
 
 const generateMockRelease = (index: number) => ({
@@ -254,6 +277,50 @@ export class MockAhaService implements IAhaService {
 
   async getGoal(_goalId: string): Promise<GoalGetResponse> {
     return generateMockGoal(1) as GoalGetResponse;
+  }
+
+  async createGoal(_productId: string, _goalData: any): Promise<GoalGetResponse> {
+    return generateMockGoal(1) as GoalGetResponse;
+  }
+
+  async updateGoal(_goalId: string, _goalData: any, _productId?: string): Promise<GoalGetResponse> {
+    return generateMockGoal(1) as GoalGetResponse;
+  }
+
+  async deleteGoal(_productId: string, _goalId: string): Promise<void> {
+    return;
+  }
+
+  async listKeyResults(
+    _goalId: string,
+    page?: number,
+    perPage?: number
+  ): Promise<KeyResultsListResponse> {
+    const count = Math.min(perPage || 20, 3);
+    return {
+      key_results: Array.from({ length: count }, (_, i) => generateMockKeyResult(i + 1)),
+      pagination: {
+        total_records: count,
+        total_pages: 1,
+        current_page: page || 1
+      }
+    } as KeyResultsListResponse;
+  }
+
+  async getKeyResult(_keyResultId: string): Promise<KeyResultResponse> {
+    return { key_result: generateMockKeyResult(1) } as KeyResultResponse;
+  }
+
+  async createKeyResult(_goalId: string, _keyResultData: any): Promise<KeyResultResponse> {
+    return { key_result: generateMockKeyResult(1) } as KeyResultResponse;
+  }
+
+  async updateKeyResult(_keyResultId: string, _keyResultData: any): Promise<KeyResultResponse> {
+    return { key_result: generateMockKeyResult(1) } as KeyResultResponse;
+  }
+
+  async deleteKeyResult(_keyResultId: string): Promise<void> {
+    return;
   }
 
   async getRelease(_releaseId: string): Promise<ReleaseGetResponse> {

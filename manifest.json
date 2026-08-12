@@ -83,6 +83,10 @@
       "description": "Create a comment on a feature in Aha.io. Returns the created comment. aha_create_comment does the same for features and every other record type, and aha_list_comments reads them back - prefer those unless you specifically want this one."
     },
     {
+      "name": "aha_create_goal",
+      "description": "Create a goal (an objective) in a workspace in Aha.io. Goals are workspace-scoped, so the goal lands in the workspace named by productId. Add its key results afterwards with aha_create_key_result. Returns the created goal and a link to it."
+    },
+    {
       "name": "aha_create_idea",
       "description": "Create an idea in a product in Aha.io. Returns the created idea and a link to it."
     },
@@ -111,6 +115,10 @@
       "description": "Create an initiative within a specific product in Aha.io. Returns the created initiative and a link to it."
     },
     {
+      "name": "aha_create_key_result",
+      "description": "Create a key result under a goal in Aha.io - the measurable half of an OKR. Aha documents name, description, workflow_status, current_metric, assigned_to_user and watchers for creation; if a starting or target metric does not come back set, follow with aha_update_key_result, which documents those. Returns the created key result and a link to it."
+    },
+    {
       "name": "aha_delete_competitor",
       "description": "Delete a competitor in Aha.io. Returns a confirmation naming the deleted competitor; there is no record to return."
     },
@@ -123,8 +131,16 @@
       "description": "Delete a feature in Aha.io. Returns a confirmation naming the deleted feature; there is no record to return."
     },
     {
+      "name": "aha_delete_goal",
+      "description": "Delete a goal in Aha.io, along with the key results it owns. Aha only offers this workspace-scoped, so productId is required; aha_get_goal returns it as product_id. Returns a confirmation naming the deleted goal; there is no record to return."
+    },
+    {
       "name": "aha_delete_idea",
       "description": "Delete an idea in Aha.io. Returns a confirmation naming the deleted idea; there is no record to return."
+    },
+    {
+      "name": "aha_delete_key_result",
+      "description": "Delete a key result in Aha.io. Returns a confirmation naming the deleted key result; there is no record to return."
     },
     {
       "name": "aha_get_epic",
@@ -135,6 +151,10 @@
       "description": "Read one feature from Aha.io by reference number (e.g. PRJ1-123) or internal id. Returns the full current record - including workflow status, release, epic, initiative, assignee, tags, score, progress and custom field values - as structuredContent, a one-line summary naming its status, and a link to the feature. aha_search returns none of these fields, so use this to see a feature's current values, and always read before you write to one. aha_list_comments reads its comment thread."
     },
     {
+      "name": "aha_get_goal",
+      "description": "Read one goal from Aha.io by reference number (e.g. PRJ1-G-3) or internal id. Returns the full current record - including progress and what drives it, time frame, success metric and its status, product_id, the initiatives and work rolling up to it, and a summary of its key results - as structuredContent, a one-line summary naming its status, and a link to the goal. aha_search returns none of these fields, so use this to see a goal's current values, and always read before you write to one. aha_list_comments reads its comment thread."
+    },
+    {
       "name": "aha_get_idea",
       "description": "Read one idea from Aha.io by reference number (e.g. PRJ1-I-7) or internal id. Returns the full current record - including workflow status, score, endorsement and vote counts, categories and custom field values - as structuredContent, a one-line summary naming its status, and a link to the idea. aha_search returns none of these fields, so use this to see an idea's current values, and always read before you write to one. aha_list_comments reads its comment thread."
     },
@@ -143,12 +163,20 @@
       "description": "Read one initiative from Aha.io by reference number (e.g. PRJ1-S-2) or internal id. Returns the full current record - including workflow status, progress, timeframe, goals and custom field values - as structuredContent, a one-line summary naming its status, and a link to the initiative. aha_search returns none of these fields, so use this to see an initiative's current values, and always read before you write to one. aha_list_comments reads its comment thread."
     },
     {
+      "name": "aha_get_key_result",
+      "description": "Read one key result from Aha.io by reference number (e.g. PRJ1-G-3-KR-1) or internal id. Returns the full current record - including workflow status, progress, and the starting, current and target metrics - as structuredContent, a one-line summary naming its status, and a link to the key result. aha_search returns none of these fields, so use this to see a key result's current values, and always read before you write to one. aha_list_comments reads its comment thread."
+    },
+    {
       "name": "aha_get_release",
       "description": "Read one release from Aha.io by reference number (e.g. PRJ1-R-3) or internal id. Returns the full current record - including workflow status, progress, whether it has been released, its release date, parking-lot flag, goals and custom field values - as structuredContent, a one-line summary naming its status, and a link to the release. aha_search returns none of these fields, so use this to see a release's current values, and always read before you write to one. aha_list_comments reads its comment thread."
     },
     {
       "name": "aha_list_comments",
       "description": "Read the comments on an Aha.io record - feature, idea, epic, initiative, goal, release, release phase, requirement, todo or product. For an idea this returns both streams: internal comments and the ideas-portal conversation, which are separate records in Aha, so a customer's own words arrive alongside internal discussion. Every comment is labelled with its source ('internal' or 'portal') and, for portal comments, its visibility. Returns the comments oldest first as structuredContent, a summary listing author and an excerpt of each, and a link to the parent record."
+    },
+    {
+      "name": "aha_list_key_results",
+      "description": "List the key results belonging to a goal in Aha.io. This is how you get the id of a key result before updating it: aha_search cannot return a key result's metrics or status, and the abbreviated copies inside a goal are not the full records. Returns each key result with its status, progress and metrics, plus a link per key result."
     },
     {
       "name": "aha_move_feature_to_release",
@@ -185,6 +213,14 @@
     {
       "name": "aha_update_feature_tags",
       "description": "Update tags for a feature in Aha.io. Replaces the feature's whole tag set, so tags left out are removed. Returns the updated feature and a link to it."
+    },
+    {
+      "name": "aha_update_goal",
+      "description": "Update a goal in Aha.io - its name, description, success metric, status, time frame or progress. Only the fields you send change. Read the goal first with aha_get_goal: a goal's status lives under success_metric.workflow_status, and progress is only writable when progress_source is progress_manual. Returns the updated goal and a link to it."
+    },
+    {
+      "name": "aha_update_key_result",
+      "description": "Update a key result in Aha.io - its status, its starting, current or target metric, its name or description. This is how an OKR gets re-graded: move current_metric and set workflow_status. Only the fields you send change; read the key result first with aha_get_key_result. Returns the updated key result and a link to it."
     },
     {
       "name": "configure_server",

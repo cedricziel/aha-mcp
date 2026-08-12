@@ -14,7 +14,7 @@ Download `aha-mcp-v<version>.mcpb` from the [latest release](https://github.com/
 and open it with Claude Desktop, which will prompt you for your Aha.io subdomain and API
 token. No Node.js or Docker setup and no manual JSON editing required.
 
-The extension exposes 39 tools that query Aha.io directly, so results are always current and
+The extension exposes 48 tools that query Aha.io directly, so results are always current and
 nothing is stored locally. Cross-record search is served by Aha.io's own index — see
 [Search](#-search).
 
@@ -365,6 +365,8 @@ aha_embedding_status --jobId embed-xyz789
 - `aha_goal`: Access individual goals using `aha://goal/{goal_id}`
 - `aha_goals`: List all goals using `aha://goals`
 - `aha_goal_epics`: Access epics associated with a goal using `aha://goal/{goal_id}/epics`
+- `aha_goal_key_results`: Access key results for a goal using `aha://goal/{goal_id}/key_results`
+- `aha_key_result`: Access individual key results using `aha://key_result/{id}`
 
 #### Release Resources
 - `aha_release`: Access individual releases using `aha://release/{release_id}`
@@ -420,6 +422,8 @@ aha://comments/todo/TODO-777      # Get comments for todo
 aha://goal/GOAL-123               # Get specific goal
 aha://goals                       # List all goals
 aha://goal/GOAL-456/epics         # Get epics for goal
+aha://goal/GOAL-456/key_results   # Get key results for goal
+aha://key_result/PRJ1-G-3-KR-1    # Get specific key result
 
 # Release Resources
 aha://release/REL-123             # Get specific release
@@ -445,6 +449,8 @@ reads, write operations and relationship management.
 - `aha_get_idea`: Read one idea
 - `aha_get_initiative`: Read one initiative
 - `aha_get_release`: Read one release
+- `aha_get_goal`: Read one goal, including its time frame, progress source, success metric and key result summary
+- `aha_get_key_result`: Read one key result, including its status and starting, current and target metrics
 
 These return the full record as `structuredContent`. They duplicate what
 `aha://feature/{id}` and friends already serve, deliberately: a client is free to surface
@@ -475,6 +481,26 @@ unreachable, leaving write tools with no way to see what they were about to repl
 - `aha_create_idea_with_category`: Create an idea with a category
 - `aha_create_idea_with_score`: Create an idea with a score
 - `aha_delete_idea`: Delete an idea
+
+#### Goal and Key Result Tools (OKRs)
+- `aha_create_goal`: Create a goal (objective) in a workspace
+- `aha_update_goal`: Update a goal's name, description, success metric, status, time frame or progress
+- `aha_delete_goal`: Delete a goal, and with it the key results it owns
+- `aha_list_key_results`: List a goal's key results, with status, progress and metrics
+- `aha_create_key_result`: Create a key result under a goal
+- `aha_update_key_result`: Update a key result — its status and starting, current or target metric
+- `aha_delete_key_result`: Delete a key result
+
+Three things about these differ from the rest of the API, all measured against a live account:
+
+- **Goal creation and deletion are workspace-scoped.** `POST /products/{id}/goals` and
+  `DELETE /products/{id}/goals/{id}` are the only routes Aha offers, so both tools require a
+  workspace id — `aha_get_goal` returns it as `product_id`. Updates do not need one.
+- **A key result has no `url`.** Unlike every other record type, the standalone record carries
+  neither `url` nor `resource`, so the `aha://key_result/{id}` resource link each tool returns
+  is the only pointer a client can follow.
+- **A goal has no top-level workflow status.** It lives under `success_metric.workflow_status`,
+  which is what the Aha UI shows as the goal's status.
 
 #### Competitor Management Tools
 - `aha_create_competitor`: Create a competitor in a product
@@ -542,15 +568,16 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 - **Comprehensive Entity Coverage**: Full CRUD operations for features, epics, ideas, and competitors
 
 #### Technical Achievements
-- **39 MCP tools**, all querying Aha.io directly — no local state
+- **48 MCP tools**, all querying Aha.io directly — no local state
 - **17 listed MCP resources** covering the entity set, plus templated resource URIs
 - **17 domain-specific prompts** (workflow automation)
-- **25 core CRUD and write operation tools** for complete lifecycle management
+- **32 core CRUD and write operation tools** for complete lifecycle management, including OKRs (goals and key results)
 - **Cross-record search** over Aha's own index, covering 20 record types
-- **5 single-record read tools**, so a write can be checked against the record's current state on clients that do not surface resources
+- **7 single-record read tools**, so a write can be checked against the record's current state on clients that do not surface resources
 - **Comment reads and writes** on every record type Aha supports, with an idea's ideas-portal conversation handled as its own stream
+- **Goal and key result CRUD**, so a quarterly OKR loop can run through the server rather than the Aha UI
 - **5 server configuration tools** for runtime configuration
-- **457 tests passing** with comprehensive service coverage
+- **468 tests passing** with comprehensive service coverage
 - **No native dependencies**, so the server runs anywhere Node does
 - **Comprehensive error handling** with proper Zod schema validation
 
