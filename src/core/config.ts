@@ -2,7 +2,23 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-export type TransportMode = 'stdio' | 'sse' | 'streamable-http';
+export type TransportMode = 'stdio' | 'streamable-http';
+
+/**
+ * The SSE transport was removed after being deprecated in MCP spec 2025-03-26 (and marked
+ * `@deprecated` in the SDK). Existing configurations and command lines that still ask for it
+ * are mapped to streamable-http with a warning rather than failing to start.
+ */
+export const REMOVED_SSE_MODE = 'sse';
+
+export function normalizeTransportMode(mode: string): { mode: TransportMode; migrated: boolean } | null {
+  const value = mode.toLowerCase().trim();
+  if (value === REMOVED_SSE_MODE) return { mode: 'streamable-http', migrated: true };
+  if (value === 'stdio' || value === 'streamable-http') {
+    return { mode: value as TransportMode, migrated: false };
+  }
+  return null;
+}
 
 export interface ServerConfig {
   company: string | null;
@@ -65,9 +81,15 @@ export class ConfigService {
       config.token = process.env.AHA_TOKEN;
     }
     if (process.env.MCP_TRANSPORT_MODE) {
-      const mode = process.env.MCP_TRANSPORT_MODE.toLowerCase();
-      if (mode === 'stdio' || mode === 'sse' || mode === 'streamable-http') {
-        config.mode = mode as TransportMode;
+      const normalized = normalizeTransportMode(process.env.MCP_TRANSPORT_MODE);
+      if (normalized) {
+        if (normalized.migrated) {
+          console.error(
+            `⚠️  MCP_TRANSPORT_MODE=sse is no longer supported and has been removed; ` +
+              `using streamable-http instead.`
+          );
+        }
+        config.mode = normalized.mode;
       }
     }
     if (process.env.MCP_PORT) {
@@ -168,19 +190,19 @@ export class ConfigService {
     }
 
     // Validate transport mode
-    if (!['stdio', 'sse', 'streamable-http'].includes(config.mode)) {
-      errors.push('Mode must be either "stdio", "sse", or "streamable-http"');
+    if (!['stdio', 'streamable-http'].includes(config.mode)) {
+      errors.push(
+        config.mode === REMOVED_SSE_MODE
+          ? 'Mode "sse" was removed; use "streamable-http"'
+          : 'Mode must be either "stdio" or "streamable-http"'
+      );
     }
 
-    // Validate port for HTTP-based modes (SSE and Streamable HTTP)
-    if (config.mode === 'sse' || config.mode === 'streamable-http') {
+    // Validate port and host for the HTTP-based transport
+    if (config.mode === 'streamable-http') {
       if (!config.port || config.port < 1 || config.port > 65535) {
         errors.push('Port must be between 1 and 65535 for HTTP-based transports');
       }
-    }
-
-    // Validate host for HTTP-based modes (SSE and Streamable HTTP)
-    if (config.mode === 'sse' || config.mode === 'streamable-http') {
       if (!config.host || config.host.trim() === '') {
         errors.push('Host must be specified for HTTP-based transports');
       }

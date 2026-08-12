@@ -87,8 +87,6 @@ docker run --rm -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TOKEN" ghcr.io/
 # Run in Streamable HTTP mode (recommended for remote access)
 docker run --rm -p 3001:3001 -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TOKEN" ghcr.io/cedricziel/aha-mcp --mode streamable-http
 
-# Run in SSE mode (deprecated)
-docker run --rm -p 3001:3001 -e AHA_COMPANY="$AHA_COMPANY" -e AHA_TOKEN="$AHA_TOKEN" ghcr.io/cedricziel/aha-mcp --mode sse
 ```
 
 ### Development Setup
@@ -158,130 +156,34 @@ The Aha.io integration can be configured using multiple methods, with the follow
 - `AHA_COMPANY`: Your Aha.io subdomain (e.g., `mycompany` for `mycompany.aha.io`)
 - `AHA_TOKEN`: Your Aha.io API token (for API token authentication)
 - `AHA_ACCESS_TOKEN`: Your OAuth 2.0 access token (for OAuth authentication)
-- `MCP_TRANSPORT_MODE`: Transport mode (`stdio`, `streamable-http`, or `sse`)
+- `MCP_TRANSPORT_MODE`: Transport mode (`stdio` or `streamable-http`)
 - `MCP_PORT`: Port number for HTTP-based modes (default: 3001)
 - `MCP_HOST`: Host address for HTTP-based modes (default: 0.0.0.0)
 - `MCP_AUTH_TOKEN`: Authentication token for HTTP-based modes (optional)
 
 #### Transport Modes
 
-The server supports three transport modes:
-
-1. **stdio** (default) - Standard input/output for local MCP clients
-   ```bash
-   aha-mcp --mode stdio
-   ```
-
-2. **streamable-http** (recommended for remote access) - Modern HTTP transport
-   ```bash
-   aha-mcp --mode streamable-http --port 3001 --host localhost
-   ```
-   - Protocol version: 2025-06-18
-   - Single `/mcp` endpoint for all communication
-   - Better scalability and performance
-   - Origin validation for security
-
-3. **sse** (deprecated) - Legacy SSE transport
-   - Deprecated as of MCP spec 2025-03-26
-   - Will be removed in a future version
-   - Use `streamable-http` instead
-
-#### Authentication Methods
-
-The Aha MCP Server supports two authentication methods:
-
-1. **API Token Authentication** (Recommended for server-to-server integrations)
-   - Set `AHA_TOKEN` environment variable
-   - Most secure for automated applications
-   - Generate tokens at: Settings → Personal → API Access
-
-2. **OAuth 2.0 Authentication** (For web applications)
-   - Set `AHA_ACCESS_TOKEN` environment variable
-   - Best for user-authorized applications
-   - Requires OAuth flow implementation
-
-**Configuration Examples:**
-
-```bash
-# API Token Authentication (Recommended)
-export AHA_COMPANY="mycompany"
-export AHA_TOKEN="your-api-token"
-
-# OAuth 2.0 Authentication
-export AHA_COMPANY="mycompany"
-export AHA_ACCESS_TOKEN="your-oauth-access-token"
-```
-
-#### Runtime Configuration
-
-The server supports runtime configuration through MCP tools, allowing you to set up credentials without restarting:
-
-```bash
-# Configure server settings
-aha_mcp --mode stdio
-> Use the `configure_server` tool to set:
-> - company: "your-company-subdomain"
-> - token: "your-api-token"
-> - mode: "stdio" or "sse"
-> - port: 3001 (for SSE mode)
-> - host: "0.0.0.0" (for SSE mode)
-
-# Check current configuration
-> Use the `get_server_config` tool to view current settings
-
-# Test your configuration
-> Use the `test_configuration` tool to verify API connectivity
-```
-
-#### Command Line Arguments
-
-You can override configuration settings using command line arguments:
-
-```bash
-# Force stdio mode
-aha-mcp --mode stdio
-
-# Force SSE mode with custom port
-aha-mcp --mode sse --port 3000 --host localhost
-
-# Get help
-aha-mcp --help
-```
-
-#### Configuration File
-
-The server automatically creates and manages a configuration file at `~/.aha-mcp-config.json`. This file stores your settings with basic token obfuscation for security.
-
-Example configuration file:
-```json
-{
-  "company": "your-company",
-  "token": "base64-encoded-token",
-  "mode": "stdio",
-  "port": 3001,
-  "host": "0.0.0.0"
-}
-```
-
-#### Transport Modes
-
 The server supports two transport modes:
 
 1. **stdio**: Standard input/output mode for MCP client integration (default)
-2. **sse**: Server-Sent Events mode for HTTP-based integration
+2. **streamable-http**: HTTP transport (MCP protocol 2025-06-18), for remote and web clients
 
 Example usage:
 ```bash
 # Stdio mode (default)
 aha-mcp
 
-# SSE mode
-aha-mcp --mode sse --port 3001
+# Streamable HTTP mode
+aha-mcp --mode streamable-http --port 3001
 ```
 
-#### Authentication (SSE Mode)
+> **Removed:** the `sse` transport was deprecated in MCP spec 2025-03-26 and has been
+> removed. `MCP_TRANSPORT_MODE=sse` and `--mode sse` now fall back to `streamable-http`
+> with a warning, so existing configurations keep starting.
 
-The SSE mode supports optional Bearer token authentication for enhanced security:
+#### Authentication (HTTP transport)
+
+The `streamable-http` transport supports optional Bearer token authentication:
 
 ##### Environment Variable Configuration
 
@@ -290,60 +192,34 @@ The SSE mode supports optional Bearer token authentication for enhanced security
 export MCP_AUTH_TOKEN="your-secure-token-here"
 
 # Start server with authentication
-aha-mcp --mode sse --port 3001
+aha-mcp --mode streamable-http --port 3001
 ```
 
 ##### Client Authentication
 
-When authentication is enabled, clients must include a Bearer token in the Authorization header:
+When authentication is enabled, clients must include a Bearer token in the Authorization
+header. All MCP traffic goes to the single `/mcp` endpoint:
 
 ```bash
-# SSE connection with authentication
-curl -H "Authorization: Bearer your-secure-token-here" \
-     http://localhost:3001/sse
-
-# Messages endpoint with authentication
 curl -X POST \
      -H "Authorization: Bearer your-secure-token-here" \
      -H "Content-Type: application/json" \
-     -d '{"method": "tools/list", "params": {}}' \
-     http://localhost:3001/messages
+     -H "MCP-Protocol-Version: 2025-06-18" \
+     -d '{"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}' \
+     http://localhost:3001/mcp
 ```
 
-##### JavaScript Client Example
-
-```javascript
-// SSE connection with authentication
-const eventSource = new EventSource('http://localhost:3001/sse', {
-  headers: {
-    'Authorization': 'Bearer your-secure-token-here'
-  }
-});
-
-// Fetch with authentication
-fetch('http://localhost:3001/messages', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer your-secure-token-here'
-  },
-  body: JSON.stringify({
-    method: 'tools/list',
-    params: {}
-  })
-});
-```
+Most callers should use an MCP client library rather than raw HTTP; pass the token as an
+`Authorization` header when constructing the transport.
 
 ##### Security Notes
 
-- **Backward Compatibility**: Authentication is optional. If `MCP_AUTH_TOKEN` is not set, all requests are allowed.
+- **Opt-in**: Authentication is optional. If `MCP_AUTH_TOKEN` is not set, all requests are allowed.
 - **Token Security**: Use strong, randomly generated tokens (minimum 8 characters).
 - **HTTPS**: In production, always use HTTPS to protect tokens in transit.
 - **Token Storage**: Tokens are obfuscated (base64 encoded) in the configuration file but should be treated as sensitive data.
 
 ##### Checking Authentication Status
-
-You can check if authentication is enabled by visiting the server info endpoint:
 
 ```bash
 curl http://localhost:3001/
@@ -352,8 +228,7 @@ curl http://localhost:3001/
 # {
 #   "authentication": {
 #     "enabled": true,
-#     "type": "Bearer token",
-#     "note": "Authentication required for SSE and messages endpoints"
+#     "type": "Bearer token"
 #   }
 # }
 ```
@@ -758,20 +633,20 @@ docker run --rm \
   -e AHA_TOKEN="your-api-token" \
   ghcr.io/cedricziel/aha-mcp
 
-# Run in SSE mode
+# Run in Streamable HTTP mode
 docker run --rm \
   -p 3001:3001 \
   -e AHA_COMPANY="your-company" \
   -e AHA_TOKEN="your-api-token" \
-  ghcr.io/cedricziel/aha-mcp --mode sse
+  ghcr.io/cedricziel/aha-mcp --mode streamable-http
 
-# Run in SSE mode with authentication
+# Run in Streamable HTTP mode with authentication
 docker run --rm \
   -p 3001:3001 \
   -e AHA_COMPANY="your-company" \
   -e AHA_TOKEN="your-api-token" \
   -e MCP_AUTH_TOKEN="your-secure-token" \
-  ghcr.io/cedricziel/aha-mcp --mode sse
+  ghcr.io/cedricziel/aha-mcp --mode streamable-http
 ```
 
 #### Persistent Configuration
@@ -805,11 +680,11 @@ AHA_TOKEN=your-api-token
 # Run in stdio mode
 docker-compose --profile stdio up
 
-# Run in SSE mode
-docker-compose --profile sse up
+# Run in Streamable HTTP mode
+docker-compose --profile http up
 
 # Run in detached mode
-docker-compose --profile sse up -d
+docker-compose --profile http up -d
 ```
 
 Example `.env` file:
@@ -827,18 +702,18 @@ The Docker image supports all the same environment variables as the npm package:
 |----------|-------------|---------|
 | `AHA_COMPANY` | Aha.io company subdomain | - |
 | `AHA_TOKEN` | Aha.io API token | - |
-| `MCP_TRANSPORT_MODE` | Transport mode (`stdio` or `sse`) | `stdio` |
-| `MCP_PORT` | Port for SSE mode | `3001` |
-| `MCP_HOST` | Host for SSE mode | `0.0.0.0` |
-| `MCP_AUTH_TOKEN` | Authentication token for SSE mode | - |
+| `MCP_TRANSPORT_MODE` | Transport mode (`stdio` or `streamable-http`) | `stdio` |
+| `MCP_PORT` | Port for streamable-http mode | `3001` |
+| `MCP_HOST` | Host for streamable-http mode | `0.0.0.0` |
+| `MCP_AUTH_TOKEN` | Bearer token for the streamable-http transport | - |
 | `MCP_CONFIG_DIR` | Configuration directory | `/home/mcp/.config` |
 
 ### Health Checks
 
-The Docker image includes health checks for SSE mode:
+The Docker image includes health checks for streamable-http mode:
 
 ```bash
-# Check if the SSE server is healthy
+# Check if the HTTP server is healthy
 curl http://localhost:3001/health
 
 # Get detailed server status
@@ -859,8 +734,8 @@ npm run docker:test
 # Run the image
 npm run docker:run
 
-# Run in SSE mode
-npm run docker:run:sse
+# Run in Streamable HTTP mode
+npm run docker:run:http
 ```
 
 ### Multi-Architecture Support

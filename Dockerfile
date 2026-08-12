@@ -78,7 +78,7 @@ EXPOSE 3001
 
 # Health check for HTTP-based modes
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD if [ "$MCP_TRANSPORT_MODE" = "sse" ] || [ "$MCP_TRANSPORT_MODE" = "streamable-http" ]; then \
+  CMD if [ "$MCP_TRANSPORT_MODE" = "streamable-http" ]; then \
         wget --no-verbose --tries=1 --spider http://localhost:${MCP_PORT:-3001}/health || exit 1; \
       else \
         echo "stdio mode - no health check needed"; \

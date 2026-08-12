@@ -153,10 +153,10 @@ jobs:
           # Test basic functionality without credentials
           timeout 5s docker run --rm ghcr.io/cedricziel/aha-mcp:${{ steps.version.outputs.version }} --mode stdio || true
 
-      - name: Test Docker image in SSE mode
+      - name: Test Docker image in Streamable HTTP mode
         run: |
-          # Test SSE mode startup
-          docker run --rm -d --name aha-mcp-test -p 3001:3001 ghcr.io/cedricziel/aha-mcp:${{ steps.version.outputs.version }} --mode sse
+          # Test Streamable HTTP mode startup
+          docker run --rm -d --name aha-mcp-test -p 3001:3001 ghcr.io/cedricziel/aha-mcp:${{ steps.version.outputs.version }} --mode streamable-http
           sleep 5
           # Check health endpoint
           curl -f http://localhost:3001/health || exit 1

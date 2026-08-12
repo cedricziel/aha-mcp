@@ -2,8 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import { ConfigService } from "../../core/config.js";
 
 /**
- * Bearer token authentication middleware for SSE mode
- * Validates Authorization header with Bearer token format
+ * Bearer token authentication middleware for the HTTP transport.
+ * Validates Authorization header with Bearer token format.
+ *
+ * Opt-in: with no authToken/MCP_AUTH_TOKEN configured, every request is allowed through.
  */
 export function bearerAuth(req: Request, res: Response, next: NextFunction) {
   const config = ConfigService.getConfig();

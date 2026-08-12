@@ -16,13 +16,13 @@ services:
     profiles:
       - stdio
 
-  aha-mcp-sse:
+  aha-mcp-http:
     image: ghcr.io/cedricziel/aha-mcp:latest
-    container_name: aha-mcp-sse
+    container_name: aha-mcp-http
     environment:
       - AHA_COMPANY=${AHA_COMPANY}
       - AHA_TOKEN=${AHA_TOKEN}
-      - MCP_TRANSPORT_MODE=sse
+      - MCP_TRANSPORT_MODE=streamable-http
       - MCP_PORT=3001
       - MCP_HOST=0.0.0.0
     ports:
@@ -37,7 +37,7 @@ services:
       retries: 3
       start_period: 40s
     profiles:
-      - sse
+      - http
 
 volumes:
   mcp-config:

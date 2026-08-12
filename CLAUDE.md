@@ -65,14 +65,14 @@ The server supports runtime configuration through three key parameters:
 
 - **Company**: Aha.io company subdomain (e.g., "mycompany" for mycompany.aha.io)
 - **Token**: Aha.io API token for authentication
-- **Mode**: Transport mode - "stdio", "streamable-http" (recommended), or "sse" (deprecated)
+- **Mode**: Transport mode - "stdio" or "streamable-http"
 
 ### Configuration Sources (Priority Order)
 
 1. **Environment Variables** (highest priority)
    - `AHA_COMPANY` - Company subdomain
    - `AHA_TOKEN` - API token
-   - `MCP_TRANSPORT_MODE` - Transport mode (stdio, streamable-http, sse)
+   - `MCP_TRANSPORT_MODE` - Transport mode (stdio, streamable-http)
    - `MCP_PORT` - Port for HTTP-based transports (default: 3001)
    - `MCP_HOST` - Host for HTTP-based transports (default: 0.0.0.0)
 
@@ -97,9 +97,6 @@ aha-mcp --mode stdio
 
 # Force Streamable HTTP mode (recommended for remote/web clients)
 aha-mcp --mode streamable-http
-
-# Force SSE mode (deprecated, use streamable-http instead)
-aha-mcp --mode sse
 
 # Custom Streamable HTTP configuration
 aha-mcp --mode streamable-http --port 3000 --host localhost
@@ -157,19 +154,21 @@ extension - regenerate that list from a running server rather than editing it by
 
 ### Transport Layer
 
-The server supports three transport modes from a unified entry point:
+The server supports two transport modes from a unified entry point:
 
 - **Stdio**: Primary mode for local MCP client integration (default)
 - **Streamable HTTP**: Modern HTTP-based transport (recommended for remote/web clients)
   - Protocol version: 2025-06-18
   - Single `/mcp` endpoint for all communication
-  - Supports both POST (client → server) and GET (SSE streaming)
+  - Supports both POST (client → server) and GET (server-sent event streaming)
   - Origin validation for security
   - Session management with cryptographic session IDs
-- **SSE**: Legacy HTTP-based Server-Sent Events transport (deprecated)
-  - Deprecated as of MCP spec 2025-03-26
-  - Will be removed in a future version
-  - Users should migrate to Streamable HTTP
+  - Optional Bearer auth via `MCP_AUTH_TOKEN` (see `src/server/middleware/auth.ts`)
+
+The legacy `sse` transport was removed. `--mode sse` and `MCP_TRANSPORT_MODE=sse` are mapped
+to `streamable-http` with a warning by `normalizeTransportMode()` in `src/core/config.ts`, so
+existing setups keep starting rather than failing. Do not reintroduce it: the SDK marks
+`SSEServerTransport` as `@deprecated`, and the MCP spec deprecated it in 2025-03-26.
 
 ### Configuration Management
 
@@ -217,36 +216,19 @@ When working with this MCP server, follow these key principles from the Model Co
 - Use the official MCP TypeScript SDK (`@modelcontextprotocol/sdk`)
 - Follow JSON-RPC 2.0 message format for all communications
 - Support multiple transports (stdio, streamable-http) for flexibility
-- Prefer Streamable HTTP over deprecated SSE for new HTTP-based implementations
 - Log usage appropriately for debugging and monitoring
 - Design for human oversight and control of AI interactions
 
-## Transport Migration Guide
+## Transport Migration
 
-### Migrating from SSE to Streamable HTTP
+`sse` was removed after being deprecated in MCP spec 2025-03-26. If you have an old
+configuration:
 
-The SSE transport is deprecated and will be removed in a future version. If you're currently using SSE mode, follow these steps to migrate:
+```bash
+export MCP_TRANSPORT_MODE=streamable-http   # instead of sse
+```
 
-1. **Update Configuration**
-   ```bash
-   # Change environment variable
-   export MCP_TRANSPORT_MODE=streamable-http  # instead of sse
-
-   # Or update config file ~/.aha-mcp-config.json
-   {
-     "mode": "streamable-http"
-   }
-   ```
-
-2. **Update Client Code** (if using HTTP directly)
-   - Old SSE: Two endpoints (`/sse` for GET, `/messages` for POST)
-   - New Streamable HTTP: Single `/mcp` endpoint for both GET and POST
-   - Add `MCP-Protocol-Version: 2025-06-18` header
-   - Use session IDs from response headers
-
-3. **Benefits of Streamable HTTP**
-   - Single endpoint simplifies architecture
-   - Better scalability and resource efficiency
-   - Enhanced error handling and recovery
-   - Modern protocol support (HTTP/2, HTTP/3)
-   - Active maintenance and future improvements
+The server accepts `sse` and warns, mapping it to `streamable-http`. If you were talking HTTP
+directly, the two SSE endpoints (`/sse` for GET, `/messages` for POST) are replaced by a
+single `/mcp` endpoint handling both, with a `MCP-Protocol-Version: 2025-06-18` header and
+session ids taken from the response headers.
