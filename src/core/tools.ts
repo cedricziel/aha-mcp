@@ -19,6 +19,13 @@ export function registerTools(server: McpServer) {
       featureId: z.string().describe("ID of the feature"),
       body: z.string().describe("Comment body")
     },
+    {
+      title: "Create feature comment",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     async (params: { featureId: string; body: string }) => {
       try {
         const comment = await services.AhaService.createFeatureComment(params.featureId, params.body);
@@ -57,6 +64,13 @@ export function registerTools(server: McpServer) {
       featureId: z.string().describe("ID of the feature"),
       epicId: z.string().describe("ID or name of the epic")
     },
+    {
+      title: "Associate feature with epic",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     async (params: { featureId: string; epicId: string }) => {
       try {
         const feature = await services.AhaService.associateFeatureWithEpic(params.featureId, params.epicId);
@@ -90,6 +104,13 @@ export function registerTools(server: McpServer) {
     {
       featureId: z.string().describe("ID of the feature"),
       releaseId: z.string().describe("ID or key of the target release")
+    },
+    {
+      title: "Move feature to release",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
     },
     async (params: { featureId: string; releaseId: string }) => {
       try {
@@ -125,6 +146,14 @@ export function registerTools(server: McpServer) {
       featureId: z.string().describe("ID of the feature"),
       goalIds: z.array(z.number()).describe("Array of goal IDs to associate with the feature")
     },
+    // destructive: PUT /features/:id/goals replaces the goal set, so goals left out are unlinked.
+    {
+      title: "Set feature goals",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     async (params: { featureId: string; goalIds: number[] }) => {
       try {
         const feature = await services.AhaService.associateFeatureWithGoals(params.featureId, params.goalIds);
@@ -158,6 +187,14 @@ export function registerTools(server: McpServer) {
     {
       featureId: z.string().describe("ID of the feature"),
       tags: z.array(z.string()).describe("Array of tag strings to associate with the feature")
+    },
+    // destructive: PUT /features/:id/tags replaces the tag set, so tags left out are removed.
+    {
+      title: "Set feature tags",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
     },
     async (params: { featureId: string; tags: string[] }) => {
       try {
@@ -198,6 +235,13 @@ export function registerTools(server: McpServer) {
         }).describe("Epic data object")
       }).describe("Epic creation data")
     },
+    {
+      title: "Create epic in product",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     async (params: { productId: string; epicData: any }) => {
       try {
         const epic = await services.AhaService.createEpicInProduct(params.productId, params.epicData);
@@ -237,6 +281,13 @@ export function registerTools(server: McpServer) {
         }).describe("Epic data object")
       }).describe("Epic creation data")
     },
+    {
+      title: "Create epic in release",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     async (params: { releaseId: string; epicData: any }) => {
       try {
         const epic = await services.AhaService.createEpicInRelease(params.releaseId, params.epicData);
@@ -275,6 +326,13 @@ export function registerTools(server: McpServer) {
           description: z.string().optional().describe("Description of the initiative")
         }).describe("Initiative data object")
       }).describe("Initiative creation data")
+    },
+    {
+      title: "Create initiative in product",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
     },
     async (params: { productId: string; initiativeData: any }) => {
       try {
@@ -319,6 +377,13 @@ export function registerTools(server: McpServer) {
         }).describe("Feature data object")
       }).describe("Feature creation data")
     },
+    {
+      title: "Create feature",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     async (params: { releaseId: string; featureData: any }) => {
       try {
         const feature = await services.AhaService.createFeature(params.releaseId, params.featureData);
@@ -358,6 +423,13 @@ export function registerTools(server: McpServer) {
         }).describe("Feature data object")
       }).describe("Feature update data")
     },
+    {
+      title: "Update feature",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     async (params: { featureId: string; featureData: any }) => {
       try {
         const feature = await services.AhaService.updateFeature(params.featureId, params.featureData);
@@ -390,6 +462,13 @@ export function registerTools(server: McpServer) {
     "Delete a feature in Aha.io",
     {
       featureId: z.string().describe("ID of the feature")
+    },
+    {
+      title: "Delete feature",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
     },
     async (params: { featureId: string }) => {
       try {
@@ -425,6 +504,13 @@ export function registerTools(server: McpServer) {
       featureId: z.string().describe("ID of the feature"),
       progress: z.number().min(0).max(100).describe("Progress percentage (0-100)")
     },
+    {
+      title: "Update feature progress",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     async (params: { featureId: string; progress: number }) => {
       try {
         const feature = await services.AhaService.updateFeatureProgress(params.featureId, params.progress);
@@ -459,6 +545,13 @@ export function registerTools(server: McpServer) {
       featureId: z.string().describe("ID of the feature"),
       score: z.number().describe("Score value")
     },
+    {
+      title: "Update feature score",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     async (params: { featureId: string; score: number }) => {
       try {
         const feature = await services.AhaService.updateFeatureScore(params.featureId, params.score);
@@ -492,6 +585,13 @@ export function registerTools(server: McpServer) {
     {
       featureId: z.string().describe("ID of the feature"),
       customFields: z.object({}).describe("Custom fields data")
+    },
+    {
+      title: "Update feature custom fields",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
     },
     async (params: { featureId: string; customFields: any }) => {
       try {
@@ -536,6 +636,13 @@ export function registerTools(server: McpServer) {
         }).describe("Epic data object")
       }).describe("Epic update data")
     },
+    {
+      title: "Update epic",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     async (params: { epicId: string; epicData: any }) => {
       try {
         const epic = await services.AhaService.updateEpic(params.epicId, params.epicData);
@@ -568,6 +675,13 @@ export function registerTools(server: McpServer) {
     "Delete an epic in Aha.io",
     {
       epicId: z.string().describe("ID of the epic")
+    },
+    {
+      title: "Delete epic",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
     },
     async (params: { epicId: string }) => {
       try {
@@ -613,6 +727,13 @@ export function registerTools(server: McpServer) {
         }).describe("Idea data object")
       }).describe("Idea creation data")
     },
+    {
+      title: "Create idea",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     async (params: { productId: string; ideaData: any }) => {
       try {
         const idea = await services.AhaService.createIdea(params.productId, params.ideaData);
@@ -653,6 +774,13 @@ export function registerTools(server: McpServer) {
           skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)")
         }).describe("Idea data object")
       }).describe("Idea creation data with category")
+    },
+    {
+      title: "Create idea with category",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
     },
     async (params: { productId: string; ideaData: any }) => {
       try {
@@ -695,6 +823,13 @@ export function registerTools(server: McpServer) {
         }).describe("Idea data object")
       }).describe("Idea creation data with score")
     },
+    {
+      title: "Create idea with score",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     async (params: { productId: string; ideaData: any }) => {
       try {
         const idea = await services.AhaService.createIdeaWithScore(params.productId, params.ideaData);
@@ -727,6 +862,13 @@ export function registerTools(server: McpServer) {
     "Delete an idea in Aha.io",
     {
       ideaId: z.string().describe("ID of the idea")
+    },
+    {
+      title: "Delete idea",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
     },
     async (params: { ideaId: string }) => {
       try {
@@ -772,6 +914,13 @@ export function registerTools(server: McpServer) {
         }).describe("Competitor data object")
       }).describe("Competitor creation data")
     },
+    {
+      title: "Create competitor",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     async (params: { productId: string; competitorData: any }) => {
       try {
         const competitor = await services.AhaService.createCompetitor(params.productId, params.competitorData);
@@ -812,6 +961,13 @@ export function registerTools(server: McpServer) {
         }).describe("Competitor data object")
       }).describe("Competitor update data")
     },
+    {
+      title: "Update competitor",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     async (params: { competitorId: string; competitorData: any }) => {
       try {
         const competitor = await services.AhaService.updateCompetitor(params.competitorId, params.competitorData);
@@ -844,6 +1000,13 @@ export function registerTools(server: McpServer) {
     "Delete a competitor in Aha.io",
     {
       competitorId: z.string().describe("ID of the competitor")
+    },
+    {
+      title: "Delete competitor",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
     },
     async (params: { competitorId: string }) => {
       try {
@@ -898,6 +1061,13 @@ export function registerTools(server: McpServer) {
         }).describe("Idea data object")
       }).describe("Idea creation data by portal user")
     },
+    {
+      title: "Create idea as portal user",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     async (params: { productId: string; ideaData: any }) => {
       try {
         const idea = await services.AhaService.createIdeaByPortalUser(params.productId, params.ideaData);
@@ -940,6 +1110,13 @@ export function registerTools(server: McpServer) {
           score: z.number().optional().describe("Score for the idea")
         }).describe("Idea data object")
       }).describe("Idea creation data with portal settings")
+    },
+    {
+      title: "Create idea with portal settings",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
     },
     async (params: { productId: string; ideaData: any }) => {
       try {

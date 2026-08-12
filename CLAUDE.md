@@ -196,6 +196,24 @@ When working with this MCP server, follow these key principles from the Model Co
 - Return structured responses with appropriate content types
 - Use annotations to describe tool behaviors and side effects
 
+#### Tool annotations
+
+Every tool is registered with an annotations argument, and the e2e suite fails if one is
+missing. Conventions used here:
+
+- `title` is a short human-readable label for client UIs.
+- `readOnlyHint` is true only for tools that never write: `aha_search`, `server_status`,
+  `get_server_config`, `server_health_check`, `test_configuration`.
+- `destructiveHint` and `idempotentHint` are **omitted** when `readOnlyHint` is true - the
+  spec only gives them meaning for writers.
+- `destructiveHint: true` covers the deletes plus the two PUT endpoints that replace a whole
+  collection: `aha_update_feature_tags` and `aha_associate_feature_with_goals` drop anything
+  left out of the request.
+- `openWorldHint: true` for anything that reaches Aha.io. That includes
+  `server_health_check`, which calls `/me` when credentials are configured.
+- `idempotentHint` is false for the `create_*` tools (a repeated call creates another record)
+  and true for updates and associations.
+
 ### Resources
 
 - Use unique URIs for resource identification (e.g., `aha://idea/{id}`)

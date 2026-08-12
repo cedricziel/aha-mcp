@@ -113,6 +113,43 @@ describe('E2E Streamable HTTP Transport', () => {
       }, { mode: 'streamable-http', timeout: 15000 });
     }, 20000);
 
+    it('should annotate every tool with behaviour hints', async () => {
+      await withTestClient(async (client) => {
+        const tools = await client.listTools();
+
+        const unannotated = tools.filter(t => !t.annotations).map(t => t.name);
+        expect(unannotated).toEqual([]);
+
+        for (const tool of tools) {
+          const annotations = tool.annotations!;
+          expect(typeof annotations.title).toBe('string');
+          expect(typeof annotations.readOnlyHint).toBe('boolean');
+          expect(typeof annotations.openWorldHint).toBe('boolean');
+
+          // destructiveHint and idempotentHint are only meaningful for writers,
+          // so read-only tools deliberately leave them unset.
+          if (annotations.readOnlyHint) {
+            expect(annotations.destructiveHint).toBeUndefined();
+            expect(annotations.idempotentHint).toBeUndefined();
+          } else {
+            expect(typeof annotations.destructiveHint).toBe('boolean');
+            expect(typeof annotations.idempotentHint).toBe('boolean');
+          }
+        }
+
+        const search = tools.find(t => t.name === 'aha_search');
+        expect(search?.annotations?.readOnlyHint).toBe(true);
+
+        const deleteFeature = tools.find(t => t.name === 'aha_delete_feature');
+        expect(deleteFeature?.annotations?.readOnlyHint).toBe(false);
+        expect(deleteFeature?.annotations?.destructiveHint).toBe(true);
+
+        const createFeature = tools.find(t => t.name === 'aha_create_feature');
+        expect(createFeature?.annotations?.destructiveHint).toBe(false);
+        expect(createFeature?.annotations?.idempotentHint).toBe(false);
+      }, { mode: 'streamable-http', timeout: 15000 });
+    }, 20000);
+
     it('should call a tool via HTTP', async () => {
       await withTestClient(async (client) => {
         // Use a simple tool that doesn't require complex setup

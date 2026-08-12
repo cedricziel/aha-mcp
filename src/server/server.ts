@@ -129,6 +129,12 @@ async function startServer() {
       "server_health_check",
       "Get server health status and diagnostics",
       {},
+      // openWorld: the check calls Aha's /me endpoint when credentials are present.
+      {
+        title: "Check server health",
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
       async () => {
         const healthCheck = await performHealthCheck();
         return {
@@ -145,6 +151,11 @@ async function startServer() {
       "server_status",
       "Get detailed server status and configuration",
       {},
+      {
+        title: "Get server status",
+        readOnlyHint: true,
+        openWorldHint: false,
+      },
       async () => {
         updateServerStatus(serverStatus.status);
         return {
@@ -183,6 +194,14 @@ async function startServer() {
         mode: z.enum(["stdio", "streamable-http"]).optional().describe("Transport mode"),
         port: z.number().optional().describe("Port number for the streamable-http transport"),
         host: z.string().optional().describe("Host address for the streamable-http transport")
+      },
+      // non-destructive: only the fields supplied are merged into ~/.aha-mcp-config.json.
+      {
+        title: "Configure server",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
       async (params) => {
         try {
@@ -230,6 +249,11 @@ async function startServer() {
       "get_server_config",
       "Get current server configuration",
       {},
+      {
+        title: "Get server configuration",
+        readOnlyHint: true,
+        openWorldHint: false,
+      },
       async () => {
         const configSummary = ConfigService.getConfigSummary();
         const currentConfig = ConfigService.getConfig();
@@ -257,6 +281,11 @@ async function startServer() {
       "test_configuration",
       "Test current Aha.io configuration",
       {},
+      {
+        title: "Test Aha.io configuration",
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
       async () => {
         try {
           const config = ConfigService.getConfig();
