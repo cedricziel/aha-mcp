@@ -11,7 +11,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `bun run dev:http` - Start HTTP server in development mode with auto-reload
 - `bun build` - Build the stdio server for production
 - `bun run build:http` - Build the HTTP server for production
-- `bun test` - Run the test suite (no `--preload`; see the note below)
+- `bun run test` - Run the test suite. Prefer this over a bare `bun test`: it passes
+  `--env-file=/dev/null`, because Bun auto-loads `.env` and a populated `AHA_TOKEN` makes the
+  suite issue live API calls against a real Aha account.
 - `bun run mcpb:validate` - Validate `manifest.json` against the MCP bundle schema
 - `bun run mcpb:pack` - Build and pack the Claude Desktop extension to `dist/aha-mcp.mcpb`
 
