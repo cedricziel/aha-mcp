@@ -596,7 +596,11 @@ export class MockAhaService implements IAhaService {
     return { epics: [] } as GoalEpicsResponse;
   }
 
-  async getReleaseFeatures(_releaseId: string): Promise<ReleaseFeaturesResponse> {
+  async getReleaseFeatures(
+    _releaseId: string,
+    _page?: number,
+    _perPage?: number
+  ): Promise<ReleaseFeaturesResponse> {
     return { features: [] } as ReleaseFeaturesResponse;
   }
 

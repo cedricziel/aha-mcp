@@ -1484,14 +1484,31 @@ export class AhaService {
 
   /**
    * Get features associated with a specific release
+   *
+   * Paged, and deliberately so. Measured against a live account, `/releases/{id}/features`
+   * returns **30 records** when asked for no page size, alongside a `pagination` block naming
+   * the real total - so a caller that took the first response for the whole release silently
+   * lost everything past the 30th feature. `per_page` is honoured (5 gave 5 of 16 across 4
+   * pages; 500 gave all 59 of a 59-feature release, so Aha's own ceiling was not observable
+   * below 200), and `page` walks the rest.
+   *
    * @param releaseId The ID of the release
-   * @returns A list of features associated with the release
+   * @param page 1-based page number (optional; Aha defaults to 1)
+   * @param perPage Number of items per page (optional; Aha defaults to 30)
+   * @returns The features on the release, with Aha's pagination block
    */
-  public static async getReleaseFeatures(releaseId: string): Promise<ReleaseFeaturesResponse> {
+  public static async getReleaseFeatures(
+    releaseId: string,
+    page?: number,
+    perPage?: number
+  ): Promise<ReleaseFeaturesResponse> {
     try {
       // Use direct API call since SDK method returns void
       const basePath = `https://${this.subdomain}.aha.io/api/v1`;
-      const url = `${basePath}/releases/${releaseId}/features`;
+      const query = new URLSearchParams();
+      if (page !== undefined) query.set('page', String(page));
+      if (perPage !== undefined) query.set('per_page', String(perPage));
+      const url = `${basePath}/releases/${releaseId}/features${query.size > 0 ? `?${query}` : ''}`;
 
       const response = await fetch(url, {
         headers: {

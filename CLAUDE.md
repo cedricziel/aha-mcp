@@ -152,6 +152,47 @@ Measured against a live account, not taken from `@cedricziel/aha-js`' fixture-de
   emits none. The difference is coverage: every record in this result is the same type and has
   a resource template, so linking is complete rather than partial.
 
+### Release membership
+
+`src/core/tools/release-tools.ts` holds `aha_list_release_features`, wrapping
+`GET /releases/{id}/features` - the same endpoint the `aha://release/{release_id}/features`
+resource has always read. It exists because **`aha_search` cannot enumerate**: it is
+relevance-ranked, it cannot be asked for every record in a scope, and a hit carries no
+per-type fields, so release membership is not visible on one at all. Reported from a real
+session, search surfaced 4 features of a release holding 16, and the only clue the list was
+short was a gap in the `position` values. A partial list that reads as complete is worse than
+an error, which is why this tool is not just a convenience over the resource.
+
+Measured against a live account, not taken from Aha's docs:
+
+- **The endpoint pages, and its default page size is 30.** A release with 59 features answers
+  with 30 and `pagination: { total_records: 59, total_pages: 2, current_page: 1 }`; the same
+  release with `per_page=500` returns all 59 in one page, so Aha's own ceiling was not
+  observable below 200. `per_page=5` on a 16-feature release gave 5 across 4 pages.
+  `AhaService.getReleaseFeatures()` therefore takes `page` and `perPage`, and the tool asks
+  for 200 by default: the common request is "list this release", and Aha's default would
+  answer it with a page that reads like a release.
+- **`pagination` is part of the contract here, not a pass-through extra.** It is described in
+  `releaseFeaturesListOutputSchema`, forwarded whenever Aha sends it, and the text block says
+  `30 of 59 features` plus which page to ask for next. Do not drop it to save tokens - it is
+  the only thing distinguishing 30-of-30 from 30-of-59.
+- **The endpoint returns identity fields only** (`created_at, id, name, product_id,
+  reference_num, resource, url`) - no `workflow_status`, no assignee. This is the same
+  measurement the tier-1 rendering of the matching resource rests on, so the tool's
+  description points at `aha_get_feature` for the state of any one feature rather than
+  implying it returns state.
+- This endpoint is reached with `fetch` rather than through `aha-js`, whose generated method
+  returns `void`, so the query string is hand-built and pinned by a test.
+
+`aha_list_release_features` emits one `resource_link` per feature: every record is a feature
+and features have a single-record template, so coverage is complete - the same test
+`aha_list_key_results` passes and `aha_search` fails. Block count is bounded by `perPage`,
+which the caller sets, rather than by a cap here that would drop links silently.
+
+The sibling gap is still open: `getReleaseEpics` has no tool, so a release organised around
+epics is enumerable only as a resource. Same shape, same argument - add it with a test rather
+than assuming this file's measurements transfer.
+
 ### Error handling
 
 Aha's REST failures are mapped by `src/core/services/aha-errors.ts` rather than surfaced
@@ -258,8 +299,8 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
   does not cover. Reads credentials via `AhaService.getCredentials()` so `configure_server`
   applies at runtime
 - **ConfigService**: Manages runtime configuration with file persistence and validation
-- **Tools**: 48 MCP tools (CRUD, single-record reads, comments, OKRs, search, health checks,
-  configuration), none of which keep local state
+- **Tools**: 49 MCP tools (CRUD, single-record reads, collection reads, comments, OKRs,
+  search, health checks, configuration), none of which keep local state
 - **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes. Every
   registration carries `annotations` from `resourceAnnotations()`, and collection reads are
   rendered per a three-tier policy rather than uniform JSON - see "Resource output: rendering
@@ -345,8 +386,8 @@ missing. Conventions used here:
 
 - `title` is a short human-readable label for client UIs.
 - `readOnlyHint` is true only for tools that never write: `aha_search`, `aha_list_comments`,
-  the five `aha_get_*` readers, `server_status`, `get_server_config`, `server_health_check`,
-  `test_configuration`.
+  `aha_list_release_features`, `aha_list_key_results`, the `aha_get_*` readers,
+  `server_status`, `get_server_config`, `server_health_check`, `test_configuration`.
 - `destructiveHint` and `idempotentHint` are **omitted** when `readOnlyHint` is true - the
   spec only gives them meaning for writers.
 - `destructiveHint: true` covers the deletes plus the two PUT endpoints that replace a whole
