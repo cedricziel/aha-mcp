@@ -11,7 +11,6 @@ import * as z from "zod/v4";
 // different depth than this source file, so resolving "../../package.json" relative to
 // import.meta.url crashed the server on startup for every packaged artifact.
 import packageJson from "../../package.json";
-import { isLocalCacheEnabled } from "../core/tools.js";
 
 /**
  * Count what actually got registered, for the startup log and server_status.
@@ -330,13 +329,11 @@ async function startServer() {
       arch: process.arch,
       working_directory: process.cwd(),
       capabilities: {
-        // Counted from the registry rather than hardcoded: the totals drifted (they read
-        // 40 tools and 12 prompts against an actual 30/14), and the tool count now depends
-        // on whether the local cache is enabled.
+        // Counted from the registry rather than hardcoded, which had drifted (it read
+        // 40 tools and 12 prompts against an actual 30 and 14).
         tools: countRegistered(server, 'tool'),
         resources: countRegistered(server, 'resource'),
         prompts: countRegistered(server, 'prompt'),
-        local_cache_enabled: isLocalCacheEnabled(),
         features: [
           'context-aware',
           'dual-transport',

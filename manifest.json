@@ -4,7 +4,7 @@
   "display_name": "Aha.io MCP Server",
   "version": "0.9.0",
   "description": "Model Context Protocol server for Aha.io product management platform",
-  "long_description": "A comprehensive MCP server that provides seamless integration with Aha.io's API. This extension enables AI assistants to interact with Aha.io workspaces, manage features, ideas, epics, initiatives, competitors and more, with 30 tools, 15 resources and 14 guided prompts.\n\nAll tools query Aha.io directly, so results are always current and nothing is cached locally. The optional local-cache features (the `aha_sync_*` tools and the embedding/semantic-search tools) are disabled here: they require the native `sqlite3` module, which is not bundled in an extension, and a writable data directory. If you need them, install the server from npm (`npx @cedricziel/aha-mcp`) or run the Docker image and set `AHA_ENABLE_LOCAL_CACHE=true`.",
+  "long_description": "A comprehensive MCP server that provides seamless integration with Aha.io's API. This extension enables AI assistants to search and manage Aha.io records - ideas, features, epics, initiatives, goals, requirements, releases and competitors - with 31 tools, 15 resources and 14 guided prompts.\n\nSearch is served by Aha.io's own index via aha_search, so results are always current and nothing is cached locally. Every tool queries Aha.io directly; the extension stores no data and needs no native dependencies.",
   "author": {
     "name": "Cedric Ziel",
     "email": "mail@cedric-ziel.com",
@@ -121,6 +121,10 @@
     {
       "name": "aha_move_feature_to_release",
       "description": "Move a feature to a different release in Aha.io"
+    },
+    {
+      "name": "aha_search",
+      "description": "Search across Aha.io records - ideas, features, epics, initiatives, goals, key results, requirements, releases, tasks, pages, comments and more. Queries Aha.io directly, so results are always current. Supports 'term*' for prefix matching, AND/OR/NOT, and \"quoted phrases\". Use '*' to match everything, which is useful with workspaceId to list a workspace's records."
     },
     {
       "name": "aha_update_competitor",

@@ -17,26 +17,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Notes for changing the build
 
-- `sqlite3` and `sqlite-vec` are native modules and are deliberately `--external` and
-  imported lazily. Keep it that way: bundling them makes `bindings` look for the
-  compiled `.node` next to `build/index.js`, which crashes the server on startup for
-  every packaged artifact. Verify with `node build/index.js --help` after build changes.
-- Do not run the tests with `--preload ./test/setup.ts`. Forcing `MockAhaService`
-  in-process breaks the unit tests that patch the real `AhaService`; the e2e tests get
-  the mock via `AHA_TOKEN=test-token` in the spawned server's environment instead.
+- There are **no native dependencies**, and it should stay that way. The bundle produced by
+  `bun build` runs on its own; nothing is resolved from `node_modules` at runtime. Adding a
+  native module reintroduces the failure that made every packaged artifact crash on startup,
+  because `bindings` resolves the compiled `.node` relative to `build/index.js`. Verify with
+  `node build/index.js --help` after any build change.
+- Do not run the tests with a `--preload` setup file. Forcing `MockAhaService` in-process
+  breaks the unit tests that patch the real `AhaService`; the e2e tests get the mock via
+  `AHA_TOKEN=test-token` in the spawned server's environment instead.
 - `src/core/uri-template.ts` vendors the still-unmerged upstream fix from
   modelcontextprotocol/typescript-sdk#1083. Delete it once that lands, not before -
   without it, resource URIs carrying query parameters do not match.
-- The cache path must never be derived from `process.cwd()`. It used to be, and a desktop
-  extension (cwd `/`) failed every sync with `ENOENT: mkdir '/data'`. Use
-  `defaultDatabasePath()`.
-- `manifest.json`'s tool list must match the *default* surface (currently 30), not the
-  full set. Regenerate it from a running server with the local cache disabled, and keep
-  prompts as `prompts_generated: true` - the schema requires a `text` field on any
-  statically declared prompt, which the server generates at runtime instead.
-- `aha_semantic_search` is not semantic: `generateSimpleEmbedding()` hashes character codes
-  through `Math.sin()`. Do not describe it as embedding- or transformer-based. Aha's own
-  `searchDocuments` GraphQL query at `POST /api/v2/graphql` is the real search facility.
+- `manifest.json`'s tool list must match what the server actually registers. Regenerate it
+  from a running server rather than editing by hand, and keep prompts as
+  `prompts_generated: true` - the schema requires a `text` field on any statically declared
+  prompt, which the server generates at runtime instead.
+
+### Search
+
+Search goes through Aha's GraphQL API (`POST /api/v2/graphql`, `searchDocuments`), wrapped by
+`src/core/services/aha-graphql.ts` and exposed as `aha_search`. GraphQL is undocumented in
+Aha's REST docs and is not covered by `aha-js`, so `scripts/check-graphql.ts` exists to probe
+what a given account and token can actually reach.
+
+Behaviours measured against a live account, not documented upstream - keep the constants in
+`aha-graphql.ts` in step if they change:
+
+- `per` defaults to 20 and is clamped server-side to 10..200. Requests below 10 come back
+  with 10, so the client raises them rather than promising something it will not deliver.
+- `totalCount` saturates at 10000; surfaced as `total_count_is_capped`.
+- Argument and scoping errors arrive as GraphQL errors with an HTTP **200**. A genuine
+  permission or licensing problem is an HTTP **403** - do not conflate them.
+- Most other list queries (`goals`, `initiatives`, `keyResults`, ...) require a `filters`
+  argument *and* a scoping id inside it; `filters: {}` is rejected.
+
+A previous local-cache implementation (SQLite plus a placeholder embedding that hashed
+character codes through `Math.sin()`) was removed in favour of this. Do not reintroduce
+client-side "semantic" ranking without a real embedding model.
 
 ## Runtime Configuration
 
@@ -122,11 +139,13 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
 
 ### Key Components
 
-- **AhaService**: Singleton service class that wraps the `aha-js` library for API interactions
+- **AhaService**: Singleton service class that wraps the `aha-js` library for REST interactions
+- **AhaGraphQLClient**: `src/core/services/aha-graphql.ts`, for the GraphQL API that `aha-js`
+  does not cover. Reads credentials via `AhaService.getCredentials()` so `configure_server`
+  applies at runtime
 - **ConfigService**: Manages runtime configuration with file persistence and validation
-- **Tools**: 30 MCP tools enabled by default (CRUD, health checks, configuration), plus 19
-  sync/embedding tools gated behind `AHA_ENABLE_LOCAL_CACHE=true` (see `isLocalCacheEnabled()`
-  in `src/core/tools.ts`)
+- **Tools**: 31 MCP tools (CRUD, search, health checks, configuration), none of which keep
+  local state
 - **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes
 - **Prompts**: 14 domain-specific workflow prompts with context-aware responses
 - **Authentication**: Runtime configuration with environment variables and config file support

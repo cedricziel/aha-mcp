@@ -42,8 +42,4 @@ export function useRealAhaService(): void {
 export { AhaService } from './aha-service.js';
 export { MockAhaService } from './aha-service.mock.js';
 export type { IAhaService } from './aha-service.interface.js';
-export * from './sync-service.js';
-export * from './embedding-service.js';
-
-// Export database service
-export * from '../database/database.js';
+export * from './aha-graphql.js';

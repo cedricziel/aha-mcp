@@ -14,9 +14,9 @@ Download `aha-mcp-v<version>.mcpb` from the [latest release](https://github.com/
 and open it with Claude Desktop, which will prompt you for your Aha.io subdomain and API
 token. No Node.js or Docker setup and no manual JSON editing required.
 
-The extension exposes 30 tools that query Aha.io directly, so results are always current.
-The optional local-cache tools (`aha_sync_*`) and embedding/semantic-search tools are
-disabled by default — see [Local cache and semantic search](#local-cache-and-semantic-search).
+The extension exposes 31 tools that query Aha.io directly, so results are always current and
+nothing is stored locally. Cross-record search is served by Aha.io's own index — see
+[Search](#-search).
 
 ### Claude Desktop Configuration
 
@@ -645,45 +645,64 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 - **Comprehensive Entity Coverage**: Full CRUD operations for features, epics, ideas, and competitors
 
 #### Technical Achievements
-- **30 MCP tools enabled by default**, all querying Aha.io directly
-- **19 further tools** behind the opt-in local cache (9 sync, 10 embedding)
+- **31 MCP tools**, all querying Aha.io directly — no local state
 - **15 listed MCP resources** covering the entity set, plus templated resource URIs
 - **14 domain-specific prompts** (workflow automation)
 - **25 core CRUD and write operation tools** for complete lifecycle management
+- **Cross-record search** over Aha's own index, covering 20 record types
 - **5 server configuration tools** for runtime configuration
-- **345 tests passing** with comprehensive service coverage
-- **Background job processing** with real-time progress tracking
+- **306 tests passing** with comprehensive service coverage
+- **No native dependencies**, so the server runs anywhere Node does
 - **Comprehensive error handling** with proper Zod schema validation
 
-## 🔍 Local cache and semantic search
+## 🔍 Search
 
-The `aha_sync_*` and embedding tools keep a local SQLite copy of your Aha data. They are
-**disabled by default** and must be enabled explicitly:
+`aha_search` queries Aha.io's own search index through the GraphQL API
+(`POST /api/v2/graphql`, `searchDocuments`). Nothing is cached locally, so results are
+always current and no native dependencies or writable storage are required.
 
-```bash
-export AHA_ENABLE_LOCAL_CACHE=true
+```jsonc
+// Everything matching "alerting", any record type
+{ "query": "alerting" }
+
+// Ideas only, within one workspace
+{ "query": "alerting", "recordTypes": ["Idea"], "workspaceId": "7387509120724661690" }
+
+// List a workspace's ideas: "*" matches everything
+{ "query": "*", "recordTypes": ["Idea"], "workspaceId": "7387509120724661690" }
 ```
 
-Two reasons they are opt-in:
+**What it matches:** record names and descriptions. Comment bodies match too, surfacing as
+`Comment` hits that link to their parent record.
 
-1. **They need infrastructure that is not always present** — the native `sqlite3` module
-   (deliberately not bundled in the desktop extension) and a writable data directory.
-2. **`aha_semantic_search` is not currently semantic.** The embedding function is a
-   placeholder that hashes character codes through `Math.sin()`; it carries no meaning, so
-   similarity scores are not meaningful. Treat these tools as unfinished.
+**Query syntax:** `term*` for prefix matching, `AND` / `OR` / `NOT`, and `"quoted phrases"`.
+`*` matches everything.
 
-The cache location is resolved from `AHA_MCP_DATA_DIR`, then `MCP_CONFIG_DIR`, then
-`~/.aha-mcp/`. It is never derived from the working directory.
+**Record types** (`recordTypes`, omit to search all):
 
-### Searching Aha without the cache
+```
+BusinessModel · Comment · Competitor · Epic · Feature · Goal · Idea · IdeaOrganization
+IdeaTheme · IdeaUser · Initiative · KeyResult · Page · Persona · Project · Release
+ReleasePhase · Requirement · StrategicPositioning · Task
+```
 
-Aha.io provides server-side search, which needs no sync and is always current:
+**Paging:** `perPage` accepts 10–200 and defaults to 20 — Aha raises anything below 10.
+`total_count` stops counting at 10,000, reported as `total_count_is_capped: true`.
 
-| What | Endpoint | Searches |
-|------|----------|----------|
-| Global search | `POST /api/v2/graphql` — `searchDocuments(filters: {query, searchableType})` | Names and descriptions across record types; supports `*` prefix and `AND`/`OR`/`NOT` |
-| Idea search | `GET /api/v1/ideas/related?q=` | Idea name, description, ID |
-| Per-entity filter | `GET /api/v1/features?q=` | **Name only** |
+Use `scripts/check-graphql.ts` to confirm what your own account and token can reach:
+
+```bash
+AHA_COMPANY=mycompany AHA_TOKEN=... bun run scripts/check-graphql.ts
+```
+
+### Why not local embeddings?
+
+Earlier versions synced Aha into SQLite and ranked results with a local "semantic search".
+That has been removed. The embedding function hashed character codes through `Math.sin()`,
+so it carried no semantic signal and its similarity scores were not interpretable. It also
+required the native `sqlite3` module and a writable data directory, which is what broke it
+in packaged installs. Aha's server-side index is keyword-based but real, always current, and
+free of all that machinery.
 
 Aha also hosts its own MCP server at `https://<yourcompany>.aha.io/api/v1/mcp`.
 
