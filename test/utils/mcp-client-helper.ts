@@ -518,6 +518,54 @@ export class TestMCPClient {
 }
 
 /**
+ * One server, shared by every test in a file, started on first use.
+ *
+ * `withTestClient` spawns a fresh server per test, which across the e2e files came to 41
+ * cold `bun run src/index.ts` starts - each one transpiling the whole source tree. On a
+ * two-core CI runner that starved spawns badly enough to time out a test, fail the run, and
+ * in one case take a release with it (#317). Nothing here needs a private server: the tools
+ * keep no local state, and these tests only read.
+ *
+ * The caller owns the lifetime and must `close()` in an `afterAll`, so a server cannot
+ * outlive the file that started it - leaked servers are what caused this in the first place.
+ *
+ * Use `withTestClient` instead when a test genuinely needs its own server, or asserts on
+ * connection failure.
+ */
+export function sharedTestClient(options: TestClientOptions = {}) {
+  let pending: Promise<TestMCPClient> | null = null;
+
+  return {
+    async use<T>(fn: (client: TestMCPClient) => Promise<T>): Promise<T> {
+      if (!pending) {
+        pending = (async () => {
+          const client = new TestMCPClient();
+          try {
+            await client.connect(options);
+          } catch (error) {
+            // Do not cache a failed connect, or every later test in the file reports the
+            // first one's error instead of getting its own chance to start a server.
+            pending = null;
+            await client.disconnect();
+            throw error;
+          }
+          return client;
+        })();
+      }
+
+      return fn(await pending);
+    },
+
+    async close(): Promise<void> {
+      if (!pending) return;
+      const client = await pending.catch(() => null);
+      pending = null;
+      await client?.disconnect();
+    }
+  };
+}
+
+/**
  * Helper function to run a test with automatic client setup and teardown
  */
 export async function withTestClient<T>(
