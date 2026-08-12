@@ -7,6 +7,7 @@ import {
   MIN_PER_PAGE,
   SEARCHABLE_TYPES
 } from "../services/aha-graphql.js";
+import { searchOutputSchema } from "../tool-output.js";
 import { log } from "../logger.js";
 import { describeAhaError } from "../services/aha-errors.js";
 
@@ -21,6 +22,7 @@ export function registerSearchTools(server: McpServer, client: AhaGraphQLClient 
   server.registerTool(
     "aha_search",
     {
+      title: "Search Aha.io",
       description: "Search across Aha.io records - ideas, features, epics, initiatives, goals, key results, " +
           "requirements, releases, tasks, pages, comments and more. Queries Aha.io directly, so " +
           "results are always current. Supports 'term*' for prefix matching, AND/OR/NOT, and " +
@@ -58,6 +60,7 @@ export function registerSearchTools(server: McpServer, client: AhaGraphQLClient 
               `anything below ${MIN_PER_PAGE} to ${MIN_PER_PAGE}.`
           )
       },
+      outputSchema: searchOutputSchema,
       annotations: {
         title: "Search Aha.io",
         readOnlyHint: true,
@@ -74,35 +77,36 @@ export function registerSearchTools(server: McpServer, client: AhaGraphQLClient 
           per: perPage
         });
 
+        const payload = {
+          query,
+          workspace_id: workspaceId ?? null,
+          record_types: recordTypes ?? ("all" as const),
+          total_count: result.totalCount,
+          // Aha stops counting at 10000; say so rather than implying an exact total.
+          total_count_is_capped: result.totalCountIsCapped,
+          page: result.currentPage,
+          total_pages: result.totalPages,
+          is_last_page: result.isLastPage,
+          results: result.results.map(hit => ({
+            name: hit.name,
+            type: hit.searchableType,
+            id: hit.searchableId,
+            workspace_id: hit.projectId,
+            url: hit.url,
+            updated_at: hit.updatedAt
+          }))
+        };
+
         return {
+          // The same payload twice: structuredContent is what a client should read, the
+          // text block is the spec's backwards-compatible copy for clients that ignore it.
           content: [
             {
               type: "text" as const,
-              text: JSON.stringify(
-                {
-                  query,
-                  workspace_id: workspaceId ?? null,
-                  record_types: recordTypes ?? "all",
-                  total_count: result.totalCount,
-                  // Aha stops counting at 10000; say so rather than implying an exact total.
-                  total_count_is_capped: result.totalCountIsCapped,
-                  page: result.currentPage,
-                  total_pages: result.totalPages,
-                  is_last_page: result.isLastPage,
-                  results: result.results.map(hit => ({
-                    name: hit.name,
-                    type: hit.searchableType,
-                    id: hit.searchableId,
-                    workspace_id: hit.projectId,
-                    url: hit.url,
-                    updated_at: hit.updatedAt
-                  }))
-                },
-                null,
-                2
-              )
+              text: JSON.stringify(payload, null, 2)
             }
-          ]
+          ],
+          structuredContent: payload
         };
       } catch (error) {
         const message = describeAhaError(error);

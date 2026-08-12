@@ -2,6 +2,17 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
 import * as services from "./services/index.js";
 import { registerSearchTools } from "./tools/search-tools.js";
+import {
+  commentOutputSchema,
+  competitorOutputSchema,
+  deletionOutputSchema,
+  epicOutputSchema,
+  featureOutputSchema,
+  ideaOutputSchema,
+  initiativeOutputSchema,
+  recordLinks,
+  unwrapRecord
+} from "./tool-output.js";
 import { log } from "./logger.js";
 import { describeAhaError } from "./services/aha-errors.js";
 
@@ -16,11 +27,13 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_create_feature_comment",
     {
+      title: "Create feature comment",
       description: "Create a comment on a feature in Aha.io",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         body: z.string().describe("Comment body")
       },
+      outputSchema: commentOutputSchema,
       annotations: {
         title: "Create feature comment",
         readOnlyHint: false,
@@ -32,14 +45,16 @@ export function registerTools(server: McpServer) {
     async (params: { featureId: string; body: string }) => {
       try {
         const comment = await services.AhaService.createFeatureComment(params.featureId, params.body);
+        const record = unwrapRecord(comment, "comment");
 
         return {
           content: [
             {
               type: "text",
-              text: `Comment created successfully:\n\n${JSON.stringify(comment, null, 2)}`
+              text: `Comment created successfully:\n\n${JSON.stringify(record, null, 2)}`
             }
-          ]
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -63,11 +78,13 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_associate_feature_with_epic",
     {
+      title: "Associate feature with epic",
       description: "Associate a feature with an epic in Aha.io",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         epicId: z.string().describe("ID or name of the epic")
       },
+      outputSchema: featureOutputSchema,
       annotations: {
         title: "Associate feature with epic",
         readOnlyHint: false,
@@ -79,14 +96,17 @@ export function registerTools(server: McpServer) {
     async (params: { featureId: string; epicId: string }) => {
       try {
         const feature = await services.AhaService.associateFeatureWithEpic(params.featureId, params.epicId);
+        const record = unwrapRecord(feature, "feature");
 
         return {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} successfully associated with epic ${params.epicId}:\n\n${JSON.stringify(feature, null, 2)}`
-            }
-          ]
+              text: `Feature ${params.featureId} successfully associated with epic ${params.epicId}:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("feature", record, params.featureId)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -106,11 +126,13 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_move_feature_to_release",
     {
+      title: "Move feature to release",
       description: "Move a feature to a different release in Aha.io",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         releaseId: z.string().describe("ID or key of the target release")
       },
+      outputSchema: featureOutputSchema,
       annotations: {
         title: "Move feature to release",
         readOnlyHint: false,
@@ -122,14 +144,17 @@ export function registerTools(server: McpServer) {
     async (params: { featureId: string; releaseId: string }) => {
       try {
         const feature = await services.AhaService.moveFeatureToRelease(params.featureId, params.releaseId);
+        const record = unwrapRecord(feature, "feature");
 
         return {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} successfully moved to release ${params.releaseId}:\n\n${JSON.stringify(feature, null, 2)}`
-            }
-          ]
+              text: `Feature ${params.featureId} successfully moved to release ${params.releaseId}:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("feature", record, params.featureId)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -149,11 +174,13 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_associate_feature_with_goals",
     {
+      title: "Set feature goals",
       description: "Associate a feature with multiple goals in Aha.io",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         goalIds: z.array(z.number()).describe("Array of goal IDs to associate with the feature")
       },
+      outputSchema: featureOutputSchema,
       // destructive: PUT /features/:id/goals replaces the goal set, so goals left out are unlinked.
       annotations: {
         title: "Set feature goals",
@@ -166,14 +193,17 @@ export function registerTools(server: McpServer) {
     async (params: { featureId: string; goalIds: number[] }) => {
       try {
         const feature = await services.AhaService.associateFeatureWithGoals(params.featureId, params.goalIds);
+        const record = unwrapRecord(feature, "feature");
 
         return {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} successfully associated with goals ${params.goalIds.join(', ')}:\n\n${JSON.stringify(feature, null, 2)}`
-            }
-          ]
+              text: `Feature ${params.featureId} successfully associated with goals ${params.goalIds.join(', ')}:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("feature", record, params.featureId)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -193,11 +223,13 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_update_feature_tags",
     {
+      title: "Set feature tags",
       description: "Update tags for a feature in Aha.io",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         tags: z.array(z.string()).describe("Array of tag strings to associate with the feature")
       },
+      outputSchema: featureOutputSchema,
       // destructive: PUT /features/:id/tags replaces the tag set, so tags left out are removed.
       annotations: {
         title: "Set feature tags",
@@ -210,14 +242,17 @@ export function registerTools(server: McpServer) {
     async (params: { featureId: string; tags: string[] }) => {
       try {
         const feature = await services.AhaService.updateFeatureTags(params.featureId, params.tags);
+        const record = unwrapRecord(feature, "feature");
 
         return {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} tags successfully updated to [${params.tags.join(', ')}]:\n\n${JSON.stringify(feature, null, 2)}`
-            }
-          ]
+              text: `Feature ${params.featureId} tags successfully updated to [${params.tags.join(', ')}]:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("feature", record, params.featureId)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -237,6 +272,7 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_create_epic_in_product",
     {
+      title: "Create epic in product",
       description: "Create an epic within a specific product in Aha.io",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
@@ -247,6 +283,7 @@ export function registerTools(server: McpServer) {
           }).describe("Epic data object")
         }).describe("Epic creation data")
       },
+      outputSchema: epicOutputSchema,
       annotations: {
         title: "Create epic in product",
         readOnlyHint: false,
@@ -258,14 +295,17 @@ export function registerTools(server: McpServer) {
     async (params: { productId: string; epicData: any }) => {
       try {
         const epic = await services.AhaService.createEpicInProduct(params.productId, params.epicData);
+        const record = unwrapRecord(epic, "epic");
 
         return {
           content: [
             {
               type: "text",
-              text: `Epic successfully created in product ${params.productId}:\n\n${JSON.stringify(epic, null, 2)}`
-            }
-          ]
+              text: `Epic successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("epic", record)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -285,6 +325,7 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_create_epic_in_release",
     {
+      title: "Create epic in release",
       description: "Create an epic within a specific release in Aha.io",
       inputSchema: {
         releaseId: z.string().describe("ID of the release"),
@@ -295,6 +336,7 @@ export function registerTools(server: McpServer) {
           }).describe("Epic data object")
         }).describe("Epic creation data")
       },
+      outputSchema: epicOutputSchema,
       annotations: {
         title: "Create epic in release",
         readOnlyHint: false,
@@ -306,14 +348,17 @@ export function registerTools(server: McpServer) {
     async (params: { releaseId: string; epicData: any }) => {
       try {
         const epic = await services.AhaService.createEpicInRelease(params.releaseId, params.epicData);
+        const record = unwrapRecord(epic, "epic");
 
         return {
           content: [
             {
               type: "text",
-              text: `Epic successfully created in release ${params.releaseId}:\n\n${JSON.stringify(epic, null, 2)}`
-            }
-          ]
+              text: `Epic successfully created in release ${params.releaseId}:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("epic", record)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -333,6 +378,7 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_create_initiative_in_product",
     {
+      title: "Create initiative in product",
       description: "Create an initiative within a specific product in Aha.io",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
@@ -343,6 +389,7 @@ export function registerTools(server: McpServer) {
           }).describe("Initiative data object")
         }).describe("Initiative creation data")
       },
+      outputSchema: initiativeOutputSchema,
       annotations: {
         title: "Create initiative in product",
         readOnlyHint: false,
@@ -354,14 +401,17 @@ export function registerTools(server: McpServer) {
     async (params: { productId: string; initiativeData: any }) => {
       try {
         const initiative = await services.AhaService.createInitiativeInProduct(params.productId, params.initiativeData);
+        const record = unwrapRecord(initiative, "initiative");
 
         return {
           content: [
             {
               type: "text",
-              text: `Initiative successfully created in product ${params.productId}:\n\n${JSON.stringify(initiative, null, 2)}`
-            }
-          ]
+              text: `Initiative successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("initiative", record)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -385,6 +435,7 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_create_feature",
     {
+      title: "Create feature",
       description: "Create a feature within a specific release in Aha.io",
       inputSchema: {
         releaseId: z.string().describe("ID of the release"),
@@ -395,6 +446,7 @@ export function registerTools(server: McpServer) {
           }).describe("Feature data object")
         }).describe("Feature creation data")
       },
+      outputSchema: featureOutputSchema,
       annotations: {
         title: "Create feature",
         readOnlyHint: false,
@@ -406,14 +458,21 @@ export function registerTools(server: McpServer) {
     async (params: { releaseId: string; featureData: any }) => {
       try {
         const feature = await services.AhaService.createFeature(params.releaseId, params.featureData);
+        const record = unwrapRecord(feature, "feature");
 
         return {
           content: [
             {
               type: "text",
-              text: `Feature successfully created in release ${params.releaseId}:\n\n${JSON.stringify(feature, null, 2)}`
-            }
-          ]
+              text: `Feature successfully created in release ${params.releaseId}:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("feature", record)
+          ],
+          // Unlike the other writers, this endpoint is not typed to return a body. An empty
+          // record still validates - every field of featureOutputSchema is optional - where a
+          // missing structuredContent would fail output validation and sink the call. With no
+          // identifier to link to, recordLinks yields nothing rather than a broken URI.
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -433,6 +492,7 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_update_feature",
     {
+      title: "Update feature",
       description: "Update a feature in Aha.io",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
@@ -443,6 +503,7 @@ export function registerTools(server: McpServer) {
           }).describe("Feature data object")
         }).describe("Feature update data")
       },
+      outputSchema: featureOutputSchema,
       annotations: {
         title: "Update feature",
         readOnlyHint: false,
@@ -454,14 +515,17 @@ export function registerTools(server: McpServer) {
     async (params: { featureId: string; featureData: any }) => {
       try {
         const feature = await services.AhaService.updateFeature(params.featureId, params.featureData);
+        const record = unwrapRecord(feature, "feature");
 
         return {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} successfully updated:\n\n${JSON.stringify(feature, null, 2)}`
-            }
-          ]
+              text: `Feature ${params.featureId} successfully updated:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("feature", record, params.featureId)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -481,10 +545,12 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_delete_feature",
     {
+      title: "Delete feature",
       description: "Delete a feature in Aha.io",
       inputSchema: {
         featureId: z.string().describe("ID of the feature")
       },
+      outputSchema: deletionOutputSchema,
       annotations: {
         title: "Delete feature",
         readOnlyHint: false,
@@ -503,7 +569,8 @@ export function registerTools(server: McpServer) {
               type: "text",
               text: `Feature ${params.featureId} successfully deleted`
             }
-          ]
+          ],
+          structuredContent: { deleted: true as const, record_type: "feature" as const, id: params.featureId }
         };
       } catch (error) {
         return {
@@ -523,11 +590,13 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_update_feature_progress",
     {
+      title: "Update feature progress",
       description: "Update a feature's progress in Aha.io",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         progress: z.number().min(0).max(100).describe("Progress percentage (0-100)")
       },
+      outputSchema: featureOutputSchema,
       annotations: {
         title: "Update feature progress",
         readOnlyHint: false,
@@ -539,14 +608,17 @@ export function registerTools(server: McpServer) {
     async (params: { featureId: string; progress: number }) => {
       try {
         const feature = await services.AhaService.updateFeatureProgress(params.featureId, params.progress);
+        const record = unwrapRecord(feature, "feature");
 
         return {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} progress updated to ${params.progress}%:\n\n${JSON.stringify(feature, null, 2)}`
-            }
-          ]
+              text: `Feature ${params.featureId} progress updated to ${params.progress}%:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("feature", record, params.featureId)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -566,11 +638,13 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_update_feature_score",
     {
+      title: "Update feature score",
       description: "Update a feature's score in Aha.io",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         score: z.number().describe("Score value")
       },
+      outputSchema: featureOutputSchema,
       annotations: {
         title: "Update feature score",
         readOnlyHint: false,
@@ -582,14 +656,17 @@ export function registerTools(server: McpServer) {
     async (params: { featureId: string; score: number }) => {
       try {
         const feature = await services.AhaService.updateFeatureScore(params.featureId, params.score);
+        const record = unwrapRecord(feature, "feature");
 
         return {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} score updated to ${params.score}:\n\n${JSON.stringify(feature, null, 2)}`
-            }
-          ]
+              text: `Feature ${params.featureId} score updated to ${params.score}:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("feature", record, params.featureId)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -609,6 +686,7 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_update_feature_custom_fields",
     {
+      title: "Update feature custom fields",
       description: "Update a feature's custom fields in Aha.io",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
@@ -618,6 +696,7 @@ export function registerTools(server: McpServer) {
           "Custom fields as a key/value object, keyed by the custom field's API key"
         )
       },
+      outputSchema: featureOutputSchema,
       annotations: {
         title: "Update feature custom fields",
         readOnlyHint: false,
@@ -629,14 +708,17 @@ export function registerTools(server: McpServer) {
     async (params: { featureId: string; customFields: Record<string, any> }) => {
       try {
         const feature = await services.AhaService.updateFeatureCustomFields(params.featureId, params.customFields);
+        const record = unwrapRecord(feature, "feature");
 
         return {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} custom fields updated:\n\n${JSON.stringify(feature, null, 2)}`
-            }
-          ]
+              text: `Feature ${params.featureId} custom fields updated:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("feature", record, params.featureId)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -660,6 +742,7 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_update_epic",
     {
+      title: "Update epic",
       description: "Update an epic in Aha.io",
       inputSchema: {
         epicId: z.string().describe("ID of the epic"),
@@ -670,6 +753,7 @@ export function registerTools(server: McpServer) {
           }).describe("Epic data object")
         }).describe("Epic update data")
       },
+      outputSchema: epicOutputSchema,
       annotations: {
         title: "Update epic",
         readOnlyHint: false,
@@ -681,14 +765,17 @@ export function registerTools(server: McpServer) {
     async (params: { epicId: string; epicData: any }) => {
       try {
         const epic = await services.AhaService.updateEpic(params.epicId, params.epicData);
+        const record = unwrapRecord(epic, "epic");
 
         return {
           content: [
             {
               type: "text",
-              text: `Epic ${params.epicId} successfully updated:\n\n${JSON.stringify(epic, null, 2)}`
-            }
-          ]
+              text: `Epic ${params.epicId} successfully updated:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("epic", record, params.epicId)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -708,10 +795,12 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_delete_epic",
     {
+      title: "Delete epic",
       description: "Delete an epic in Aha.io",
       inputSchema: {
         epicId: z.string().describe("ID of the epic")
       },
+      outputSchema: deletionOutputSchema,
       annotations: {
         title: "Delete epic",
         readOnlyHint: false,
@@ -730,7 +819,8 @@ export function registerTools(server: McpServer) {
               type: "text",
               text: `Epic ${params.epicId} successfully deleted`
             }
-          ]
+          ],
+          structuredContent: { deleted: true as const, record_type: "epic" as const, id: params.epicId }
         };
       } catch (error) {
         return {
@@ -754,6 +844,7 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_create_idea",
     {
+      title: "Create idea",
       description: "Create an idea in a product in Aha.io",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
@@ -765,6 +856,7 @@ export function registerTools(server: McpServer) {
           }).describe("Idea data object")
         }).describe("Idea creation data")
       },
+      outputSchema: ideaOutputSchema,
       annotations: {
         title: "Create idea",
         readOnlyHint: false,
@@ -776,14 +868,17 @@ export function registerTools(server: McpServer) {
     async (params: { productId: string; ideaData: any }) => {
       try {
         const idea = await services.AhaService.createIdea(params.productId, params.ideaData);
+        const record = unwrapRecord(idea, "idea");
 
         return {
           content: [
             {
               type: "text",
-              text: `Idea successfully created in product ${params.productId}:\n\n${JSON.stringify(idea, null, 2)}`
-            }
-          ]
+              text: `Idea successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("idea", record)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -803,6 +898,7 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_create_idea_with_category",
     {
+      title: "Create idea with category",
       description: "Create an idea with a category in a product in Aha.io",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
@@ -815,6 +911,7 @@ export function registerTools(server: McpServer) {
           }).describe("Idea data object")
         }).describe("Idea creation data with category")
       },
+      outputSchema: ideaOutputSchema,
       annotations: {
         title: "Create idea with category",
         readOnlyHint: false,
@@ -826,14 +923,17 @@ export function registerTools(server: McpServer) {
     async (params: { productId: string; ideaData: any }) => {
       try {
         const idea = await services.AhaService.createIdeaWithCategory(params.productId, params.ideaData);
+        const record = unwrapRecord(idea, "idea");
 
         return {
           content: [
             {
               type: "text",
-              text: `Idea with category successfully created in product ${params.productId}:\n\n${JSON.stringify(idea, null, 2)}`
-            }
-          ]
+              text: `Idea with category successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("idea", record)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -853,6 +953,7 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_create_idea_with_score",
     {
+      title: "Create idea with score",
       description: "Create an idea with a score in a product in Aha.io",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
@@ -865,6 +966,7 @@ export function registerTools(server: McpServer) {
           }).describe("Idea data object")
         }).describe("Idea creation data with score")
       },
+      outputSchema: ideaOutputSchema,
       annotations: {
         title: "Create idea with score",
         readOnlyHint: false,
@@ -876,14 +978,17 @@ export function registerTools(server: McpServer) {
     async (params: { productId: string; ideaData: any }) => {
       try {
         const idea = await services.AhaService.createIdeaWithScore(params.productId, params.ideaData);
+        const record = unwrapRecord(idea, "idea");
 
         return {
           content: [
             {
               type: "text",
-              text: `Idea with score successfully created in product ${params.productId}:\n\n${JSON.stringify(idea, null, 2)}`
-            }
-          ]
+              text: `Idea with score successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("idea", record)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -903,10 +1008,12 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_delete_idea",
     {
+      title: "Delete idea",
       description: "Delete an idea in Aha.io",
       inputSchema: {
         ideaId: z.string().describe("ID of the idea")
       },
+      outputSchema: deletionOutputSchema,
       annotations: {
         title: "Delete idea",
         readOnlyHint: false,
@@ -925,7 +1032,8 @@ export function registerTools(server: McpServer) {
               type: "text",
               text: `Idea ${params.ideaId} successfully deleted`
             }
-          ]
+          ],
+          structuredContent: { deleted: true as const, record_type: "idea" as const, id: params.ideaId }
         };
       } catch (error) {
         return {
@@ -949,6 +1057,7 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_create_competitor",
     {
+      title: "Create competitor",
       description: "Create a competitor in a product in Aha.io",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
@@ -960,6 +1069,7 @@ export function registerTools(server: McpServer) {
           }).describe("Competitor data object")
         }).describe("Competitor creation data")
       },
+      outputSchema: competitorOutputSchema,
       annotations: {
         title: "Create competitor",
         readOnlyHint: false,
@@ -971,14 +1081,17 @@ export function registerTools(server: McpServer) {
     async (params: { productId: string; competitorData: any }) => {
       try {
         const competitor = await services.AhaService.createCompetitor(params.productId, params.competitorData);
+        const record = unwrapRecord(competitor, "competitor");
 
         return {
           content: [
             {
               type: "text",
-              text: `Competitor successfully created in product ${params.productId}:\n\n${JSON.stringify(competitor, null, 2)}`
-            }
-          ]
+              text: `Competitor successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("competitor", record)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -998,6 +1111,7 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_update_competitor",
     {
+      title: "Update competitor",
       description: "Update a competitor in Aha.io",
       inputSchema: {
         competitorId: z.string().describe("ID of the competitor"),
@@ -1009,6 +1123,7 @@ export function registerTools(server: McpServer) {
           }).describe("Competitor data object")
         }).describe("Competitor update data")
       },
+      outputSchema: competitorOutputSchema,
       annotations: {
         title: "Update competitor",
         readOnlyHint: false,
@@ -1020,14 +1135,17 @@ export function registerTools(server: McpServer) {
     async (params: { competitorId: string; competitorData: any }) => {
       try {
         const competitor = await services.AhaService.updateCompetitor(params.competitorId, params.competitorData);
+        const record = unwrapRecord(competitor, "competitor");
 
         return {
           content: [
             {
               type: "text",
-              text: `Competitor ${params.competitorId} successfully updated:\n\n${JSON.stringify(competitor, null, 2)}`
-            }
-          ]
+              text: `Competitor ${params.competitorId} successfully updated:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("competitor", record, params.competitorId)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -1047,10 +1165,12 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_delete_competitor",
     {
+      title: "Delete competitor",
       description: "Delete a competitor in Aha.io",
       inputSchema: {
         competitorId: z.string().describe("ID of the competitor")
       },
+      outputSchema: deletionOutputSchema,
       annotations: {
         title: "Delete competitor",
         readOnlyHint: false,
@@ -1069,7 +1189,8 @@ export function registerTools(server: McpServer) {
               type: "text",
               text: `Competitor ${params.competitorId} successfully deleted`
             }
-          ]
+          ],
+          structuredContent: { deleted: true as const, record_type: "competitor" as const, id: params.competitorId }
         };
       } catch (error) {
         return {
@@ -1097,6 +1218,7 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_create_idea_by_portal_user",
     {
+      title: "Create idea as portal user",
       description: "Create an idea by a portal user in Aha.io",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
@@ -1113,6 +1235,7 @@ export function registerTools(server: McpServer) {
           }).describe("Idea data object")
         }).describe("Idea creation data by portal user")
       },
+      outputSchema: ideaOutputSchema,
       annotations: {
         title: "Create idea as portal user",
         readOnlyHint: false,
@@ -1124,14 +1247,17 @@ export function registerTools(server: McpServer) {
     async (params: { productId: string; ideaData: any }) => {
       try {
         const idea = await services.AhaService.createIdeaByPortalUser(params.productId, params.ideaData);
+        const record = unwrapRecord(idea, "idea");
 
         return {
           content: [
             {
               type: "text",
-              text: `Idea by portal user successfully created in product ${params.productId}:\n\n${JSON.stringify(idea, null, 2)}`
-            }
-          ]
+              text: `Idea by portal user successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("idea", record)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {
@@ -1151,6 +1277,7 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "aha_create_idea_with_portal_settings",
     {
+      title: "Create idea with portal settings",
       description: "Create an idea with enhanced portal settings in Aha.io",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
@@ -1165,6 +1292,7 @@ export function registerTools(server: McpServer) {
           }).describe("Idea data object")
         }).describe("Idea creation data with portal settings")
       },
+      outputSchema: ideaOutputSchema,
       annotations: {
         title: "Create idea with portal settings",
         readOnlyHint: false,
@@ -1176,14 +1304,17 @@ export function registerTools(server: McpServer) {
     async (params: { productId: string; ideaData: any }) => {
       try {
         const idea = await services.AhaService.createIdeaWithPortalSettings(params.productId, params.ideaData);
+        const record = unwrapRecord(idea, "idea");
 
         return {
           content: [
             {
               type: "text",
-              text: `Idea with portal settings successfully created in product ${params.productId}:\n\n${JSON.stringify(idea, null, 2)}`
-            }
-          ]
+              text: `Idea with portal settings successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+            },
+            ...recordLinks("idea", record)
+          ],
+          structuredContent: record
         };
       } catch (error) {
         return {

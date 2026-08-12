@@ -202,6 +202,56 @@ describe('E2E Streamable HTTP Transport', () => {
       }, { mode: 'streamable-http', timeout: 15000 });
     }, 20000);
 
+    it('should give every tool a display title in both spec locations', async () => {
+      await withTestClient(async (client) => {
+        const tools = await client.listTools();
+
+        // Tool.title is the current spec field; annotations.title is what pre-2025-06-18
+        // clients read, and the spec gives it precedence over `name` when `title` is
+        // absent. Both are populated so no client falls back to the underscored name -
+        // this asserts they stay in step rather than drifting apart.
+        const untitled = tools.filter(t => !t.title).map(t => t.name);
+        expect(untitled).toEqual([]);
+
+        for (const tool of tools) {
+          expect(tool.title).toBe(tool.annotations!.title);
+        }
+      }, { mode: 'streamable-http', timeout: 15000 });
+    }, 20000);
+
+    it('should declare a JSON Schema dialect the spec permits', async () => {
+      await withTestClient(async (client) => {
+        const tools = await client.listTools();
+
+        // The SDK converts Zod with a hardcoded draft-07 target, which the spec allows as an
+        // explicit dialect even though it recommends 2020-12. Pinned so an SDK upgrade that
+        // changes the target shows up here rather than in a client.
+        const dialects = new Set(
+          tools.map(t => (t.inputSchema as any).$schema ?? '2020-12 (no $schema, per spec default)')
+        );
+        for (const dialect of dialects) {
+          expect(['http://json-schema.org/draft-07/schema#', '2020-12 (no $schema, per spec default)'])
+            .toContain(dialect);
+        }
+
+        for (const tool of tools) {
+          // MUST be a valid schema object with an object root.
+          expect((tool.inputSchema as any).type).toBe('object');
+        }
+      }, { mode: 'streamable-http', timeout: 15000 });
+    }, 20000);
+
+    it('should accept a call on a no-argument tool with arguments omitted', async () => {
+      await withTestClient(async (client) => {
+        // `arguments` is optional in CallToolRequest, so leaving it out must not read as a
+        // malformed request.
+        const result: any = await client.callToolWithoutArguments('server_status');
+
+        expect(result.isError).toBeFalsy();
+        expect(result.structuredContent?.version).toBeDefined();
+      }, { mode: 'streamable-http', timeout: 15000 });
+    }, 20000);
+
     it('should call a tool via HTTP', async () => {
       await withTestClient(async (client) => {
         // Use a simple tool that doesn't require complex setup

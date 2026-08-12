@@ -182,8 +182,10 @@ export class MockAhaService implements IAhaService {
     // Mock delete - no-op
   }
 
-  async createFeature(_releaseId: string, _featureData: any): Promise<void> {
-    // Mock create - no-op
+  async createFeature(_releaseId: string, featureData: any): Promise<unknown> {
+    // The real endpoint is not typed to return a body, so echo the request back the way a
+    // create would: enough for a caller to see structuredContent arrive.
+    return { id: 'MOCK-FEATURE-1', reference_num: 'MOCK-1', ...featureData };
   }
 
   async listProducts(

@@ -160,6 +160,7 @@ The Aha.io integration can be configured using multiple methods, with the follow
 - `MCP_PORT`: Port number for HTTP-based modes (default: 3001)
 - `MCP_HOST`: Host address for HTTP-based modes (default: 0.0.0.0)
 - `MCP_AUTH_TOKEN`: Authentication token for HTTP-based modes (optional)
+- `MCP_TOOL_RATE_LIMIT_PER_MINUTE`: Tool calls allowed per minute (default: 120, `0` disables)
 
 #### Transport Modes
 
@@ -706,6 +707,7 @@ The Docker image supports all the same environment variables as the npm package:
 | `MCP_PORT` | Port for streamable-http mode | `3001` |
 | `MCP_HOST` | Host for streamable-http mode | `0.0.0.0` |
 | `MCP_AUTH_TOKEN` | Bearer token for the streamable-http transport | - |
+| `MCP_TOOL_RATE_LIMIT_PER_MINUTE` | Tool calls allowed per minute (`0` disables) | `120` |
 | `MCP_CONFIG_DIR` | Configuration directory | `/home/mcp/.config` |
 
 ### Health Checks

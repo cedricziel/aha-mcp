@@ -71,7 +71,7 @@ export interface IAhaService {
   getFeature(featureId: string): Promise<Feature>;
   updateFeature(featureId: string, featureData: any): Promise<Feature>;
   deleteFeature(featureId: string): Promise<void>;
-  createFeature(releaseId: string, featureData: any): Promise<void>;
+  createFeature(releaseId: string, featureData: any): Promise<unknown>;
 
   // Products
   listProducts(
