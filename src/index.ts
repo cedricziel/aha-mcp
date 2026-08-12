@@ -101,7 +101,8 @@ async function startSSETransport(server: any, port: number, host: string) {
     exposedHeaders: ['Content-Type', 'Access-Control-Allow-Origin']
   }));
 
-  app.options('*', cors());
+  // Preflight requests are handled by the cors() middleware above, with the options
+  // configured there. Express 5's path-to-regexp rejects a bare '*' route.
 
   // Keep track of active connections
   const connections = new Map<string, SSEServerTransport>();
@@ -272,7 +273,8 @@ async function startStreamableHTTPTransport(server: any, port: number, host: str
     exposedHeaders: ['Content-Type', 'MCP-Protocol-Version', 'Mcp-Session-Id', 'Access-Control-Allow-Origin']
   }));
 
-  app.options('*', cors());
+  // Preflight requests are handled by the cors() middleware above, with the options
+  // configured there. Express 5's path-to-regexp rejects a bare '*' route.
 
   // Create a single transport instance with session ID generation (stateful mode)
   const transport = new StreamableHTTPServerTransport({

@@ -3,19 +3,14 @@ import { registerResources } from "../core/resources.js";
 import { registerTools } from "../core/tools.js";
 import { registerPrompts } from "../core/prompts.js";
 import { registerSampling } from "../core/sampling.js";
-import { readFileSync } from "fs";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
 import * as services from "../core/services/index.js";
 import { ConfigService } from "../core/config.js";
 import { log } from "../core/logger.js";
 import * as z from "zod/v4";
-
-// Get package.json info for server metadata
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const packageJsonPath = join(__dirname, "..", "..", "package.json");
-const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+// Imported rather than read from disk at runtime: the bundled build/index.js sits at a
+// different depth than this source file, so resolving "../../package.json" relative to
+// import.meta.url crashed the server on startup for every packaged artifact.
+import packageJson from "../../package.json";
 
 // Server status tracking
 let serverStatus = {

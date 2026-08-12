@@ -64,27 +64,21 @@ RUN bun install --frozen-lockfile --production --ignore-scripts
 # Copy pre-built sqlite-vec from builder stage (this doesn't need architecture-specific compilation)
 COPY --from=builder /app/node_modules/sqlite-vec ./node_modules/sqlite-vec/
 
-# Rebuild sqlite3 for the target architecture in production stage
+# Rebuild sqlite3 for the target architecture in production stage.
+# sqlite3 is kept out of the bundle (--external), so `bindings` resolves the compiled
+# module relative to node_modules/sqlite3 itself - no symlink shims needed.
 RUN cd node_modules/sqlite3 && bun run install --build-from-source
-
-# Create binding directory structure and symlink for the compiled sqlite3 native module
-# This addresses the specific paths that sqlite3 checks for architecture-specific bindings
-RUN mkdir -p /app/lib/binding/node-v137-linux-arm64/ /app/lib/binding/node-v137-linux-x64/ && \
-    ln -sf /app/node_modules/sqlite3/build/Release/node_sqlite3.node /app/lib/binding/node-v137-linux-arm64/node_sqlite3.node && \
-    ln -sf /app/node_modules/sqlite3/build/Release/node_sqlite3.node /app/lib/binding/node-v137-linux-x64/node_sqlite3.node
 
 # Install OpenTelemetry auto-instrumentation separately (not in package.json)
 RUN bun install @opentelemetry/auto-instrumentations-node
 
-# Copy built application from builder stage
+# Copy built application from builder stage.
+# `bun run build` already places schema.sql next to index.js, and the server metadata is
+# compiled into the bundle, so no schema/package.json shims are needed here.
 COPY --from=builder /app/build ./build
 
-# Copy database schema file from builder stage to the exact location where it's expected
-COPY --from=builder /app/src/core/database/schema.sql ./build/schema.sql
-
-# Copy package.json for runtime metadata
+# Copy package.json so the runtime can still be inspected in the image
 COPY package.json ./
-COPY package.json /package.json
 
 # Create directories for configuration and data with proper permissions
 RUN mkdir -p /home/mcp/.config /app/data && \

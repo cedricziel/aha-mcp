@@ -22,8 +22,9 @@ app.use(cors({
   exposedHeaders: ['Content-Type', 'Access-Control-Allow-Origin']
 }));
 
-// Add OPTIONS handling for preflight requests
-app.options('*', cors());
+// Preflight requests are handled by the cors() middleware registered above, using the
+// options configured there. (An explicit app.options('*') route would also need Express 5
+// wildcard syntax, which path-to-regexp now rejects.)
 
 // Keep track of active connections with session IDs
 const connections = new Map<string, SSEServerTransport>();
