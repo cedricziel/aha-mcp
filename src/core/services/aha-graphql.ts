@@ -61,6 +61,11 @@ export interface SearchHit {
   searchableType: string;
   searchableId: string | null;
   projectId: string | null;
+  /**
+   * Absolute link to the record in Aha, e.g. `https://acme.aha.io/features/PRJ1-1`.
+   * `searchDocuments` returns an app path rather than a URL, so the client resolves it
+   * against the account host before handing it out - see `toAbsoluteUrl`.
+   */
   url: string;
   updatedAt: string;
 }
@@ -121,6 +126,22 @@ export class AhaGraphQLClient {
     return `https://${subdomain}.aha.io/api/v2/graphql`;
   }
 
+  /** The account's Aha host, e.g. `https://acme.aha.io`. */
+  host(): string {
+    return new URL(this.endpoint()).origin;
+  }
+
+  /**
+   * `searchDocuments` returns app paths - `/features/PRJ1-1`, not a URL - which is no use to
+   * a caller that wants to open the record. Resolve against the account host. Anything that
+   * already carries a scheme is passed through, in case Aha starts returning absolute URLs.
+   */
+  private toAbsoluteUrl(url: string, host: string): string {
+    if (!url) return url;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(url)) return url;
+    return `${host}${url.startsWith('/') ? '' : '/'}${url}`;
+  }
+
   /**
    * Search across Aha records.
    *
@@ -155,13 +176,17 @@ export class AhaGraphQLClient {
     }>(SEARCH_DOCUMENTS_QUERY, { filters, page, per });
 
     const page_ = data.searchDocuments;
+    const host = this.host();
     return {
       totalCount: page_.totalCount,
       totalCountIsCapped: page_.totalCount >= TOTAL_COUNT_CEILING,
       currentPage: page_.currentPage,
       totalPages: page_.totalPages,
       isLastPage: page_.isLastPage,
-      results: page_.nodes ?? []
+      results: (page_.nodes ?? []).map(node => ({
+        ...node,
+        url: this.toAbsoluteUrl(node.url, host)
+      }))
     };
   }
 
