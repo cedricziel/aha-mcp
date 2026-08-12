@@ -1376,13 +1376,24 @@ export class AhaService {
    * whatever Aha sends back is undeclared. The tool treats a missing body as an empty
    * record rather than assuming a feature came back.
    */
-  public static async createFeature(releaseId: string, _featureData: any): Promise<unknown> {
+  public static async createFeature(releaseId: string, featureData: any): Promise<unknown> {
     const defaultApi = this.getDefaultApi();
 
+    // Aha documents the body as `{"feature": {...}}`, so tolerate either shape from callers:
+    // the tool sends it already wrapped, but a bare record should not silently create nothing.
+    // https://www.aha.io/api/resources/features/create_a_feature
+    const payload = featureData?.feature ? featureData : { feature: featureData ?? {} };
+
     try {
-      const response = await defaultApi.releasesReleaseIdFeaturesPost({
-        releaseId: releaseId
-      });
+      // `releasesReleaseIdFeaturesPost` is generated as `(releaseId, options)` - the operation
+      // is declared without a request body, so there was no parameter to put the feature in
+      // and every create sent an empty POST. The payload goes through axios' own `data`
+      // option, which the generated client spreads into the request config; that is the only
+      // route to a body until the operation is regenerated with one.
+      const response = await defaultApi.releasesReleaseIdFeaturesPost(
+        { releaseId: releaseId },
+        { data: payload, headers: { "Content-Type": "application/json" } }
+      );
       return response.data;
     } catch (error) {
       log.error('Error creating feature in release', error as Error, { operation: 'createFeature', release_id: releaseId });
