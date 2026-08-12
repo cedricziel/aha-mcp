@@ -522,7 +522,7 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 #### Technical Achievements
 - **31 MCP tools**, all querying Aha.io directly — no local state
 - **15 listed MCP resources** covering the entity set, plus templated resource URIs
-- **14 domain-specific prompts** (workflow automation)
+- **17 domain-specific prompts** (workflow automation)
 - **25 core CRUD and write operation tools** for complete lifecycle management
 - **Cross-record search** over Aha's own index, covering 20 record types
 - **5 server configuration tools** for runtime configuration

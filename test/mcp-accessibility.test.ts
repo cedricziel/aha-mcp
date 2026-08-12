@@ -262,10 +262,13 @@ describe('MCP Server Accessibility', () => {
         'sprint_planning',
         'epic_breakdown',
         'competitor_analysis',
-        'risk_assessment',
-        'success_metrics',
         'stakeholder_communication',
-        'product_idea_discovery'
+        'product_idea_discovery',
+        'idea_triage',
+        'release_readiness',
+        'feature_description_draft',
+        'quarterly_roadmap_review',
+        'customer_demand_rollup'
       ];
 
       expectedPrompts.forEach(promptName => {
@@ -437,9 +440,16 @@ describe('MCP Server Accessibility', () => {
       expect(developmentPrompts).toBeGreaterThanOrEqual(3);
       
       const analysisPrompts = Array.from(promptHandlers.keys()).filter(name => 
-        ['competitor_analysis', 'risk_assessment', 'success_metrics'].includes(name)
+        ['competitor_analysis', 'customer_demand_rollup', 'quarterly_roadmap_review'].includes(name)
       ).length;
       expect(analysisPrompts).toBeGreaterThanOrEqual(3);
+
+      // The account-workflow prompts, which drive tools and resources rather than templating
+      // a question.
+      const workflowPrompts = Array.from(promptHandlers.keys()).filter(name =>
+        ['idea_triage', 'release_readiness', 'feature_description_draft'].includes(name)
+      ).length;
+      expect(workflowPrompts).toBe(3);
     });
 
     it('should demonstrate full MCP server functionality', async () => {
