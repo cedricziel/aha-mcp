@@ -105,6 +105,23 @@ describe('E2E Streamable HTTP Transport', () => {
       }, { mode: 'streamable-http', timeout: 15000 });
     }, 20000);
 
+    it('should complete a workspace argument via HTTP', async () => {
+      await withTestClient(async (client) => {
+        // The spawned server runs against MockAhaService, whose workspaces are PROD1..PROD3.
+        const values = await client.complete('product_roadmap', 'product_id', 'PROD');
+
+        expect(values).toContain('PROD1');
+      }, { mode: 'streamable-http', timeout: 15000 });
+    }, 20000);
+
+    it('should offer nothing for an unknown workspace rather than erroring', async () => {
+      await withTestClient(async (client) => {
+        const values = await client.complete('product_roadmap', 'product_id', 'zzzznope');
+
+        expect(values).toEqual([]);
+      }, { mode: 'streamable-http', timeout: 15000 });
+    }, 20000);
+
     it('should get a prompt via HTTP', async () => {
       await withTestClient(async (client) => {
         const messages = await client.getPrompt('aha_resource_discovery', {
