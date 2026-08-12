@@ -17,49 +17,51 @@ import { log } from "../logger.js";
  * current, and covers names, descriptions and comment bodies across record types.
  */
 export function registerSearchTools(server: McpServer, client: AhaGraphQLClient = ahaGraphQLClient) {
-  server.tool(
+  server.registerTool(
     "aha_search",
-    "Search across Aha.io records - ideas, features, epics, initiatives, goals, key results, " +
-      "requirements, releases, tasks, pages, comments and more. Queries Aha.io directly, so " +
-      "results are always current. Supports 'term*' for prefix matching, AND/OR/NOT, and " +
-      "\"quoted phrases\". Use '*' to match everything, which is useful with workspaceId to " +
-      "list a workspace's records.",
     {
-      query: z
-        .string()
-        .min(1)
-        .describe(
-          "Search term. Matches record names and descriptions, and comment bodies. " +
-            "Supports 'term*' prefix matching, AND/OR/NOT, and \"quoted phrases\". Use '*' to match all."
-        ),
-      workspaceId: z
-        .string()
-        .optional()
-        .describe(
-          "Restrict results to one workspace (Aha project id). Get ids from the aha://products resource."
-        ),
-      recordTypes: z
-        .array(z.enum(SEARCHABLE_TYPES))
-        .optional()
-        .describe(
-          `Restrict to these record types. Any of: ${SEARCHABLE_TYPES.join(", ")}. Omit to search all.`
-        ),
-      page: z.number().int().min(1).optional().describe("Page number, starting at 1."),
-      perPage: z
-        .number()
-        .int()
-        .min(MIN_PER_PAGE)
-        .max(MAX_PER_PAGE)
-        .optional()
-        .describe(
-          `Results per page, ${MIN_PER_PAGE}-${MAX_PER_PAGE} (default 20). Aha.io raises ` +
-            `anything below ${MIN_PER_PAGE} to ${MIN_PER_PAGE}.`
-        )
-    },
-    {
-      title: "Search Aha.io",
-      readOnlyHint: true,
-      openWorldHint: true,
+      description: "Search across Aha.io records - ideas, features, epics, initiatives, goals, key results, " +
+          "requirements, releases, tasks, pages, comments and more. Queries Aha.io directly, so " +
+          "results are always current. Supports 'term*' for prefix matching, AND/OR/NOT, and " +
+          "\"quoted phrases\". Use '*' to match everything, which is useful with workspaceId to " +
+          "list a workspace's records.",
+      inputSchema: {
+        query: z
+          .string()
+          .min(1)
+          .describe(
+            "Search term. Matches record names and descriptions, and comment bodies. " +
+              "Supports 'term*' prefix matching, AND/OR/NOT, and \"quoted phrases\". Use '*' to match all."
+          ),
+        workspaceId: z
+          .string()
+          .optional()
+          .describe(
+            "Restrict results to one workspace (Aha project id). Get ids from the aha://products resource."
+          ),
+        recordTypes: z
+          .array(z.enum(SEARCHABLE_TYPES))
+          .optional()
+          .describe(
+            `Restrict to these record types. Any of: ${SEARCHABLE_TYPES.join(", ")}. Omit to search all.`
+          ),
+        page: z.number().int().min(1).optional().describe("Page number, starting at 1."),
+        perPage: z
+          .number()
+          .int()
+          .min(MIN_PER_PAGE)
+          .max(MAX_PER_PAGE)
+          .optional()
+          .describe(
+            `Results per page, ${MIN_PER_PAGE}-${MAX_PER_PAGE} (default 20). Aha.io raises ` +
+              `anything below ${MIN_PER_PAGE} to ${MIN_PER_PAGE}.`
+          )
+      },
+      annotations: {
+        title: "Search Aha.io",
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async ({ query, workspaceId, recordTypes, page, perPage }) => {
       try {

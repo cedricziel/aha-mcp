@@ -12,19 +12,21 @@ import { log } from "./logger.js";
 export function registerTools(server: McpServer) {
 
   // Create feature comment tool
-  server.tool(
+  server.registerTool(
     "aha_create_feature_comment",
-    "Create a comment on a feature in Aha.io",
     {
-      featureId: z.string().describe("ID of the feature"),
-      body: z.string().describe("Comment body")
-    },
-    {
-      title: "Create feature comment",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
+      description: "Create a comment on a feature in Aha.io",
+      inputSchema: {
+        featureId: z.string().describe("ID of the feature"),
+        body: z.string().describe("Comment body")
+      },
+      annotations: {
+        title: "Create feature comment",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params: { featureId: string; body: string }) => {
       try {
@@ -57,19 +59,21 @@ export function registerTools(server: McpServer) {
   // ============================
 
   // Associate feature with epic tool
-  server.tool(
+  server.registerTool(
     "aha_associate_feature_with_epic",
-    "Associate a feature with an epic in Aha.io",
     {
-      featureId: z.string().describe("ID of the feature"),
-      epicId: z.string().describe("ID or name of the epic")
-    },
-    {
-      title: "Associate feature with epic",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
+      description: "Associate a feature with an epic in Aha.io",
+      inputSchema: {
+        featureId: z.string().describe("ID of the feature"),
+        epicId: z.string().describe("ID or name of the epic")
+      },
+      annotations: {
+        title: "Associate feature with epic",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params: { featureId: string; epicId: string }) => {
       try {
@@ -98,19 +102,21 @@ export function registerTools(server: McpServer) {
   );
 
   // Move feature to release tool
-  server.tool(
+  server.registerTool(
     "aha_move_feature_to_release",
-    "Move a feature to a different release in Aha.io",
     {
-      featureId: z.string().describe("ID of the feature"),
-      releaseId: z.string().describe("ID or key of the target release")
-    },
-    {
-      title: "Move feature to release",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
+      description: "Move a feature to a different release in Aha.io",
+      inputSchema: {
+        featureId: z.string().describe("ID of the feature"),
+        releaseId: z.string().describe("ID or key of the target release")
+      },
+      annotations: {
+        title: "Move feature to release",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params: { featureId: string; releaseId: string }) => {
       try {
@@ -139,20 +145,22 @@ export function registerTools(server: McpServer) {
   );
 
   // Associate feature with goals tool
-  server.tool(
+  server.registerTool(
     "aha_associate_feature_with_goals",
-    "Associate a feature with multiple goals in Aha.io",
     {
-      featureId: z.string().describe("ID of the feature"),
-      goalIds: z.array(z.number()).describe("Array of goal IDs to associate with the feature")
-    },
-    // destructive: PUT /features/:id/goals replaces the goal set, so goals left out are unlinked.
-    {
-      title: "Set feature goals",
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: true,
+      description: "Associate a feature with multiple goals in Aha.io",
+      inputSchema: {
+        featureId: z.string().describe("ID of the feature"),
+        goalIds: z.array(z.number()).describe("Array of goal IDs to associate with the feature")
+      },
+      // destructive: PUT /features/:id/goals replaces the goal set, so goals left out are unlinked.
+      annotations: {
+        title: "Set feature goals",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params: { featureId: string; goalIds: number[] }) => {
       try {
@@ -181,20 +189,22 @@ export function registerTools(server: McpServer) {
   );
 
   // Update feature tags tool
-  server.tool(
+  server.registerTool(
     "aha_update_feature_tags",
-    "Update tags for a feature in Aha.io",
     {
-      featureId: z.string().describe("ID of the feature"),
-      tags: z.array(z.string()).describe("Array of tag strings to associate with the feature")
-    },
-    // destructive: PUT /features/:id/tags replaces the tag set, so tags left out are removed.
-    {
-      title: "Set feature tags",
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: true,
+      description: "Update tags for a feature in Aha.io",
+      inputSchema: {
+        featureId: z.string().describe("ID of the feature"),
+        tags: z.array(z.string()).describe("Array of tag strings to associate with the feature")
+      },
+      // destructive: PUT /features/:id/tags replaces the tag set, so tags left out are removed.
+      annotations: {
+        title: "Set feature tags",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params: { featureId: string; tags: string[] }) => {
       try {
@@ -223,24 +233,26 @@ export function registerTools(server: McpServer) {
   );
 
   // Create epic in product tool
-  server.tool(
+  server.registerTool(
     "aha_create_epic_in_product",
-    "Create an epic within a specific product in Aha.io",
     {
-      productId: z.string().describe("ID of the product"),
-      epicData: z.object({
-        epic: z.object({
-          name: z.string().describe("Name of the epic"),
-          description: z.string().optional().describe("Description of the epic")
-        }).describe("Epic data object")
-      }).describe("Epic creation data")
-    },
-    {
-      title: "Create epic in product",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
+      description: "Create an epic within a specific product in Aha.io",
+      inputSchema: {
+        productId: z.string().describe("ID of the product"),
+        epicData: z.object({
+          epic: z.object({
+            name: z.string().describe("Name of the epic"),
+            description: z.string().optional().describe("Description of the epic")
+          }).describe("Epic data object")
+        }).describe("Epic creation data")
+      },
+      annotations: {
+        title: "Create epic in product",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params: { productId: string; epicData: any }) => {
       try {
@@ -269,24 +281,26 @@ export function registerTools(server: McpServer) {
   );
 
   // Create epic in release tool
-  server.tool(
+  server.registerTool(
     "aha_create_epic_in_release",
-    "Create an epic within a specific release in Aha.io",
     {
-      releaseId: z.string().describe("ID of the release"),
-      epicData: z.object({
-        epic: z.object({
-          name: z.string().describe("Name of the epic"),
-          description: z.string().optional().describe("Description of the epic")
-        }).describe("Epic data object")
-      }).describe("Epic creation data")
-    },
-    {
-      title: "Create epic in release",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
+      description: "Create an epic within a specific release in Aha.io",
+      inputSchema: {
+        releaseId: z.string().describe("ID of the release"),
+        epicData: z.object({
+          epic: z.object({
+            name: z.string().describe("Name of the epic"),
+            description: z.string().optional().describe("Description of the epic")
+          }).describe("Epic data object")
+        }).describe("Epic creation data")
+      },
+      annotations: {
+        title: "Create epic in release",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params: { releaseId: string; epicData: any }) => {
       try {
@@ -315,24 +329,26 @@ export function registerTools(server: McpServer) {
   );
 
   // Create initiative in product tool
-  server.tool(
+  server.registerTool(
     "aha_create_initiative_in_product",
-    "Create an initiative within a specific product in Aha.io",
     {
-      productId: z.string().describe("ID of the product"),
-      initiativeData: z.object({
-        initiative: z.object({
-          name: z.string().describe("Name of the initiative"),
-          description: z.string().optional().describe("Description of the initiative")
-        }).describe("Initiative data object")
-      }).describe("Initiative creation data")
-    },
-    {
-      title: "Create initiative in product",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
+      description: "Create an initiative within a specific product in Aha.io",
+      inputSchema: {
+        productId: z.string().describe("ID of the product"),
+        initiativeData: z.object({
+          initiative: z.object({
+            name: z.string().describe("Name of the initiative"),
+            description: z.string().optional().describe("Description of the initiative")
+          }).describe("Initiative data object")
+        }).describe("Initiative creation data")
+      },
+      annotations: {
+        title: "Create initiative in product",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params: { productId: string; initiativeData: any }) => {
       try {
@@ -365,24 +381,26 @@ export function registerTools(server: McpServer) {
   // ============================
 
   // Create feature tool
-  server.tool(
+  server.registerTool(
     "aha_create_feature",
-    "Create a feature within a specific release in Aha.io",
     {
-      releaseId: z.string().describe("ID of the release"),
-      featureData: z.object({
-        feature: z.object({
-          name: z.string().describe("Name of the feature"),
-          description: z.string().optional().describe("Description of the feature")
-        }).describe("Feature data object")
-      }).describe("Feature creation data")
-    },
-    {
-      title: "Create feature",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
+      description: "Create a feature within a specific release in Aha.io",
+      inputSchema: {
+        releaseId: z.string().describe("ID of the release"),
+        featureData: z.object({
+          feature: z.object({
+            name: z.string().describe("Name of the feature"),
+            description: z.string().optional().describe("Description of the feature")
+          }).describe("Feature data object")
+        }).describe("Feature creation data")
+      },
+      annotations: {
+        title: "Create feature",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params: { releaseId: string; featureData: any }) => {
       try {
@@ -411,24 +429,26 @@ export function registerTools(server: McpServer) {
   );
 
   // Update feature tool
-  server.tool(
+  server.registerTool(
     "aha_update_feature",
-    "Update a feature in Aha.io",
     {
-      featureId: z.string().describe("ID of the feature"),
-      featureData: z.object({
-        feature: z.object({
-          name: z.string().optional().describe("Name of the feature"),
-          description: z.string().optional().describe("Description of the feature")
-        }).describe("Feature data object")
-      }).describe("Feature update data")
-    },
-    {
-      title: "Update feature",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
+      description: "Update a feature in Aha.io",
+      inputSchema: {
+        featureId: z.string().describe("ID of the feature"),
+        featureData: z.object({
+          feature: z.object({
+            name: z.string().optional().describe("Name of the feature"),
+            description: z.string().optional().describe("Description of the feature")
+          }).describe("Feature data object")
+        }).describe("Feature update data")
+      },
+      annotations: {
+        title: "Update feature",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params: { featureId: string; featureData: any }) => {
       try {
@@ -457,18 +477,20 @@ export function registerTools(server: McpServer) {
   );
 
   // Delete feature tool
-  server.tool(
+  server.registerTool(
     "aha_delete_feature",
-    "Delete a feature in Aha.io",
     {
-      featureId: z.string().describe("ID of the feature")
-    },
-    {
-      title: "Delete feature",
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: true,
+      description: "Delete a feature in Aha.io",
+      inputSchema: {
+        featureId: z.string().describe("ID of the feature")
+      },
+      annotations: {
+        title: "Delete feature",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params: { featureId: string }) => {
       try {
@@ -497,19 +519,21 @@ export function registerTools(server: McpServer) {
   );
 
   // Update feature progress tool
-  server.tool(
+  server.registerTool(
     "aha_update_feature_progress",
-    "Update a feature's progress in Aha.io",
     {
-      featureId: z.string().describe("ID of the feature"),
-      progress: z.number().min(0).max(100).describe("Progress percentage (0-100)")
-    },
-    {
-      title: "Update feature progress",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
+      description: "Update a feature's progress in Aha.io",
+      inputSchema: {
+        featureId: z.string().describe("ID of the feature"),
+        progress: z.number().min(0).max(100).describe("Progress percentage (0-100)")
+      },
+      annotations: {
+        title: "Update feature progress",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params: { featureId: string; progress: number }) => {
       try {
@@ -538,19 +562,21 @@ export function registerTools(server: McpServer) {
   );
 
   // Update feature score tool
-  server.tool(
+  server.registerTool(
     "aha_update_feature_score",
-    "Update a feature's score in Aha.io",
     {
-      featureId: z.string().describe("ID of the feature"),
-      score: z.number().describe("Score value")
-    },
-    {
-      title: "Update feature score",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
+      description: "Update a feature's score in Aha.io",
+      inputSchema: {
+        featureId: z.string().describe("ID of the feature"),
+        score: z.number().describe("Score value")
+      },
+      annotations: {
+        title: "Update feature score",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params: { featureId: string; score: number }) => {
       try {
@@ -579,19 +605,21 @@ export function registerTools(server: McpServer) {
   );
 
   // Update feature custom fields tool
-  server.tool(
+  server.registerTool(
     "aha_update_feature_custom_fields",
-    "Update a feature's custom fields in Aha.io",
     {
-      featureId: z.string().describe("ID of the feature"),
-      customFields: z.object({}).describe("Custom fields data")
-    },
-    {
-      title: "Update feature custom fields",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
+      description: "Update a feature's custom fields in Aha.io",
+      inputSchema: {
+        featureId: z.string().describe("ID of the feature"),
+        customFields: z.object({}).describe("Custom fields data")
+      },
+      annotations: {
+        title: "Update feature custom fields",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params: { featureId: string; customFields: any }) => {
       try {
@@ -624,24 +652,26 @@ export function registerTools(server: McpServer) {
   // ============================
 
   // Update epic tool
-  server.tool(
+  server.registerTool(
     "aha_update_epic",
-    "Update an epic in Aha.io",
     {
-      epicId: z.string().describe("ID of the epic"),
-      epicData: z.object({
-        epic: z.object({
-          name: z.string().optional().describe("Name of the epic"),
-          description: z.string().optional().describe("Description of the epic")
-        }).describe("Epic data object")
-      }).describe("Epic update data")
-    },
-    {
-      title: "Update epic",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
+      description: "Update an epic in Aha.io",
+      inputSchema: {
+        epicId: z.string().describe("ID of the epic"),
+        epicData: z.object({
+          epic: z.object({
+            name: z.string().optional().describe("Name of the epic"),
+            description: z.string().optional().describe("Description of the epic")
+          }).describe("Epic data object")
+        }).describe("Epic update data")
+      },
+      annotations: {
+        title: "Update epic",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params: { epicId: string; epicData: any }) => {
       try {
@@ -670,18 +700,20 @@ export function registerTools(server: McpServer) {
   );
 
   // Delete epic tool
-  server.tool(
+  server.registerTool(
     "aha_delete_epic",
-    "Delete an epic in Aha.io",
     {
-      epicId: z.string().describe("ID of the epic")
-    },
-    {
-      title: "Delete epic",
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: true,
+      description: "Delete an epic in Aha.io",
+      inputSchema: {
+        epicId: z.string().describe("ID of the epic")
+      },
+      annotations: {
+        title: "Delete epic",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params: { epicId: string }) => {
       try {
@@ -714,25 +746,27 @@ export function registerTools(server: McpServer) {
   // ============================
 
   // Create idea tool
-  server.tool(
+  server.registerTool(
     "aha_create_idea",
-    "Create an idea in a product in Aha.io",
     {
-      productId: z.string().describe("ID of the product"),
-      ideaData: z.object({
-        idea: z.object({
-          name: z.string().describe("Name of the idea"),
-          description: z.string().optional().describe("Description of the idea"),
-          skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)")
-        }).describe("Idea data object")
-      }).describe("Idea creation data")
-    },
-    {
-      title: "Create idea",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
+      description: "Create an idea in a product in Aha.io",
+      inputSchema: {
+        productId: z.string().describe("ID of the product"),
+        ideaData: z.object({
+          idea: z.object({
+            name: z.string().describe("Name of the idea"),
+            description: z.string().optional().describe("Description of the idea"),
+            skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)")
+          }).describe("Idea data object")
+        }).describe("Idea creation data")
+      },
+      annotations: {
+        title: "Create idea",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params: { productId: string; ideaData: any }) => {
       try {
@@ -761,26 +795,28 @@ export function registerTools(server: McpServer) {
   );
 
   // Create idea with category tool
-  server.tool(
+  server.registerTool(
     "aha_create_idea_with_category",
-    "Create an idea with a category in a product in Aha.io",
     {
-      productId: z.string().describe("ID of the product"),
-      ideaData: z.object({
-        idea: z.object({
-          name: z.string().describe("Name of the idea"),
-          description: z.string().optional().describe("Description of the idea"),
-          category: z.string().describe("Category for the idea"),
-          skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)")
-        }).describe("Idea data object")
-      }).describe("Idea creation data with category")
-    },
-    {
-      title: "Create idea with category",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
+      description: "Create an idea with a category in a product in Aha.io",
+      inputSchema: {
+        productId: z.string().describe("ID of the product"),
+        ideaData: z.object({
+          idea: z.object({
+            name: z.string().describe("Name of the idea"),
+            description: z.string().optional().describe("Description of the idea"),
+            category: z.string().describe("Category for the idea"),
+            skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)")
+          }).describe("Idea data object")
+        }).describe("Idea creation data with category")
+      },
+      annotations: {
+        title: "Create idea with category",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params: { productId: string; ideaData: any }) => {
       try {
@@ -809,26 +845,28 @@ export function registerTools(server: McpServer) {
   );
 
   // Create idea with score tool
-  server.tool(
+  server.registerTool(
     "aha_create_idea_with_score",
-    "Create an idea with a score in a product in Aha.io",
     {
-      productId: z.string().describe("ID of the product"),
-      ideaData: z.object({
-        idea: z.object({
-          name: z.string().describe("Name of the idea"),
-          description: z.string().optional().describe("Description of the idea"),
-          score: z.number().describe("Score for the idea"),
-          skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)")
-        }).describe("Idea data object")
-      }).describe("Idea creation data with score")
-    },
-    {
-      title: "Create idea with score",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
+      description: "Create an idea with a score in a product in Aha.io",
+      inputSchema: {
+        productId: z.string().describe("ID of the product"),
+        ideaData: z.object({
+          idea: z.object({
+            name: z.string().describe("Name of the idea"),
+            description: z.string().optional().describe("Description of the idea"),
+            score: z.number().describe("Score for the idea"),
+            skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)")
+          }).describe("Idea data object")
+        }).describe("Idea creation data with score")
+      },
+      annotations: {
+        title: "Create idea with score",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params: { productId: string; ideaData: any }) => {
       try {
@@ -857,18 +895,20 @@ export function registerTools(server: McpServer) {
   );
 
   // Delete idea tool
-  server.tool(
+  server.registerTool(
     "aha_delete_idea",
-    "Delete an idea in Aha.io",
     {
-      ideaId: z.string().describe("ID of the idea")
-    },
-    {
-      title: "Delete idea",
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: true,
+      description: "Delete an idea in Aha.io",
+      inputSchema: {
+        ideaId: z.string().describe("ID of the idea")
+      },
+      annotations: {
+        title: "Delete idea",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params: { ideaId: string }) => {
       try {
@@ -901,25 +941,27 @@ export function registerTools(server: McpServer) {
   // ============================
 
   // Create competitor tool
-  server.tool(
+  server.registerTool(
     "aha_create_competitor",
-    "Create a competitor in a product in Aha.io",
     {
-      productId: z.string().describe("ID of the product"),
-      competitorData: z.object({
-        competitor: z.object({
-          name: z.string().describe("Name of the competitor"),
-          description: z.string().optional().describe("Description of the competitor"),
-          website: z.string().optional().describe("Website URL of the competitor")
-        }).describe("Competitor data object")
-      }).describe("Competitor creation data")
-    },
-    {
-      title: "Create competitor",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
+      description: "Create a competitor in a product in Aha.io",
+      inputSchema: {
+        productId: z.string().describe("ID of the product"),
+        competitorData: z.object({
+          competitor: z.object({
+            name: z.string().describe("Name of the competitor"),
+            description: z.string().optional().describe("Description of the competitor"),
+            website: z.string().optional().describe("Website URL of the competitor")
+          }).describe("Competitor data object")
+        }).describe("Competitor creation data")
+      },
+      annotations: {
+        title: "Create competitor",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params: { productId: string; competitorData: any }) => {
       try {
@@ -948,25 +990,27 @@ export function registerTools(server: McpServer) {
   );
 
   // Update competitor tool
-  server.tool(
+  server.registerTool(
     "aha_update_competitor",
-    "Update a competitor in Aha.io",
     {
-      competitorId: z.string().describe("ID of the competitor"),
-      competitorData: z.object({
-        competitor: z.object({
-          name: z.string().optional().describe("Name of the competitor"),
-          description: z.string().optional().describe("Description of the competitor"),
-          website: z.string().optional().describe("Website URL of the competitor")
-        }).describe("Competitor data object")
-      }).describe("Competitor update data")
-    },
-    {
-      title: "Update competitor",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
+      description: "Update a competitor in Aha.io",
+      inputSchema: {
+        competitorId: z.string().describe("ID of the competitor"),
+        competitorData: z.object({
+          competitor: z.object({
+            name: z.string().optional().describe("Name of the competitor"),
+            description: z.string().optional().describe("Description of the competitor"),
+            website: z.string().optional().describe("Website URL of the competitor")
+          }).describe("Competitor data object")
+        }).describe("Competitor update data")
+      },
+      annotations: {
+        title: "Update competitor",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params: { competitorId: string; competitorData: any }) => {
       try {
@@ -995,18 +1039,20 @@ export function registerTools(server: McpServer) {
   );
 
   // Delete competitor tool
-  server.tool(
+  server.registerTool(
     "aha_delete_competitor",
-    "Delete a competitor in Aha.io",
     {
-      competitorId: z.string().describe("ID of the competitor")
-    },
-    {
-      title: "Delete competitor",
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: true,
+      description: "Delete a competitor in Aha.io",
+      inputSchema: {
+        competitorId: z.string().describe("ID of the competitor")
+      },
+      annotations: {
+        title: "Delete competitor",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params: { competitorId: string }) => {
       try {
@@ -1043,30 +1089,32 @@ export function registerTools(server: McpServer) {
   // ============================
 
   // Create idea by portal user tool
-  server.tool(
+  server.registerTool(
     "aha_create_idea_by_portal_user",
-    "Create an idea by a portal user in Aha.io",
     {
-      productId: z.string().describe("ID of the product"),
-      ideaData: z.object({
-        idea: z.object({
-          name: z.string().describe("Name of the idea"),
-          description: z.string().optional().describe("Description of the idea"),
-          submitted_idea_portal_id: z.string().optional().describe("ID of the ideas portal"),
-          skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)"),
-          created_by_portal_user: z.object({
-            id: z.number().describe("ID of the portal user"),
-            name: z.string().describe("Name of the portal user")
-          }).describe("Portal user information")
-        }).describe("Idea data object")
-      }).describe("Idea creation data by portal user")
-    },
-    {
-      title: "Create idea as portal user",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
+      description: "Create an idea by a portal user in Aha.io",
+      inputSchema: {
+        productId: z.string().describe("ID of the product"),
+        ideaData: z.object({
+          idea: z.object({
+            name: z.string().describe("Name of the idea"),
+            description: z.string().optional().describe("Description of the idea"),
+            submitted_idea_portal_id: z.string().optional().describe("ID of the ideas portal"),
+            skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)"),
+            created_by_portal_user: z.object({
+              id: z.number().describe("ID of the portal user"),
+              name: z.string().describe("Name of the portal user")
+            }).describe("Portal user information")
+          }).describe("Idea data object")
+        }).describe("Idea creation data by portal user")
+      },
+      annotations: {
+        title: "Create idea as portal user",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params: { productId: string; ideaData: any }) => {
       try {
@@ -1095,28 +1143,30 @@ export function registerTools(server: McpServer) {
   );
 
   // Create idea with portal settings tool
-  server.tool(
+  server.registerTool(
     "aha_create_idea_with_portal_settings",
-    "Create an idea with enhanced portal settings in Aha.io",
     {
-      productId: z.string().describe("ID of the product"),
-      ideaData: z.object({
-        idea: z.object({
-          name: z.string().describe("Name of the idea"),
-          description: z.string().optional().describe("Description of the idea"),
-          submitted_idea_portal_id: z.string().optional().describe("ID of the ideas portal"),
-          skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)"),
-          category: z.string().optional().describe("Category for the idea"),
-          score: z.number().optional().describe("Score for the idea")
-        }).describe("Idea data object")
-      }).describe("Idea creation data with portal settings")
-    },
-    {
-      title: "Create idea with portal settings",
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
+      description: "Create an idea with enhanced portal settings in Aha.io",
+      inputSchema: {
+        productId: z.string().describe("ID of the product"),
+        ideaData: z.object({
+          idea: z.object({
+            name: z.string().describe("Name of the idea"),
+            description: z.string().optional().describe("Description of the idea"),
+            submitted_idea_portal_id: z.string().optional().describe("ID of the ideas portal"),
+            skip_portal: z.boolean().optional().describe("Skip portal submission (default: false)"),
+            category: z.string().optional().describe("Category for the idea"),
+            score: z.number().optional().describe("Score for the idea")
+          }).describe("Idea data object")
+        }).describe("Idea creation data with portal settings")
+      },
+      annotations: {
+        title: "Create idea with portal settings",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params: { productId: string; ideaData: any }) => {
       try {
