@@ -260,7 +260,10 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
 - **ConfigService**: Manages runtime configuration with file persistence and validation
 - **Tools**: 48 MCP tools (CRUD, single-record reads, comments, OKRs, search, health checks,
   configuration), none of which keep local state
-- **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes
+- **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes. Every
+  registration carries `annotations` from `resourceAnnotations()`, and collection reads are
+  rendered per a three-tier policy rather than uniform JSON - see "Resource output: rendering
+  tiers and `resourceAnnotations`" below
 - **Read tools vs read resources**: `src/core/tools/record-tools.ts` registers `aha_get_*`
   for feature, epic, idea, initiative, release, goal and key result, wrapping the same
   service getters the `aha://{type}/{id}` resources call. The duplication is deliberate and should stay.
@@ -440,6 +443,84 @@ here rather than in a client.
 - Implement proper resource discovery through list/read patterns
 - Validate resource access and handle missing resources gracefully
 - Support both text and binary content types as needed
+
+#### Resource output: rendering tiers and `resourceAnnotations`
+
+Every one of the 56 `registerResource` calls now attaches `annotations` from
+`resourceAnnotations()` (`src/core/resource-output.ts`), and collection reads no longer come
+back as one uniform `JSON.stringify(x, null, 2)` with `mimeType: "application/json"`. This is
+the resource-side counterpart to "Tool output" above - same motivation, opposite constraint,
+covered separately below.
+
+Collections are rendered per record type, decided against what the live Aha list endpoint
+actually returns rather than the permissive `aha-types.ts` interfaces (those describe every
+field a record can carry across every endpoint that returns one, not what a specific list
+endpoint populates):
+
+- **Tier 1** (11 registrations - `features`, `epics`, `users`, `release_features`,
+  `release_epics`, `goal_epics`, `initiative_epics`, `me_assigned_records`,
+  `idea_organizations`): `renderCollection()`, a markdown link list, `text/markdown`. These
+  endpoints return only identity fields. Verified against a live account:
+  `/products/{id}/features` returns `created_at, id, name, product_id, reference_num,
+  resource, url` - no `description`, no `workflow_status`, no `assigned_to_user`, no
+  `progress`, no `due_date`. A link list is near-lossless for that shape.
+- **Tier 2** (6 registrations - `ideas`, `product_releases`, `products`): `renderTable()`, a
+  markdown table, `text/markdown`. These carry a handful of real scalar columns beyond
+  identity - ideas add `description` and `workflow_status`, releases add `start_date`,
+  `release_date`, `owner` - enough to be worth a column, not enough to need the nested
+  structure JSON alone can carry.
+- **Tier 3** (23 registrations - all 9 comment resources, `goals`, `initiatives`,
+  `competitors`, `todos`, `endorsements`, `votes`, `custom_fields`, `custom_field_options`,
+  `release_phases`, `strategic_models`, `me_pending_tasks`): JSON kept unchanged, annotations
+  added. Goals nest `features`/`initiatives`/`key_results`/`releases` arrays that a flat
+  table or a link list would either flatten away or drop outright.
+- **Single-record** (16 registrations, `aha://feature/{id}` and siblings): JSON kept
+  unconditionally, `resourceAnnotations(record)` passed so a fetched record's `updated_at`
+  becomes `lastModified` the same way `recordLinks()` does for tools. Someone reading one
+  specific record wants the data, not a summary of it, so tiering never applies here.
+
+**Two rules in this scheme must not be undone:**
+
+- **A record type whose interface does not reliably carry `reference_num` or `name` cannot be
+  tier 1.** `renderCollection` labels every record by one of those two fields and silently
+  drops any record with neither - dropped, not rendered with a blank label. Check the actual
+  interface in `src/core/types/aha-types.ts` before assigning tier 1; do not assume a type
+  has one just because most Aha records do.
+- **Comments are tier 3, permanently.** Aha's `Comment` carries only `id`, `body`, `url` -
+  never `reference_num` or `name`. Routing comments through `renderCollection` would silently
+  delete every comment body: the nine `*_comments` resources would render as a heading and a
+  count, with the one thing anyone reading a comment wants gone. The body *is* the payload;
+  there is nothing to index by. If a future type has this shape, the fix is routing it to
+  tier 3, never loosening `renderCollection` to emit unlabelled bullets - a bullet with no
+  label is worse than no bullet, and a bullet with a truncated body is worse than JSON.
+
+**This is not the same move as the tool-side text-block change above.** Trimming a tool's
+text block to a one-line summary was safe because the record still travelled in
+`structuredContent` - the client never lost the data, only a duplicate copy of it. Resources
+have no `structuredContent` and no `outputSchema`; the content block is the only channel a
+resource read has. Dropping JSON there is data loss, not de-duplication. That asymmetry is
+the entire reason tier 3 exists, and it is why the default for a collection whose shape has
+not been checked against a real response is tier 3, never tier 1 or 2: a conservative miss
+here costs tokens, an aggressive miss destroys data.
+
+**The tiering was validated, not guessed, for the types it covers.** An A/B benchmark
+(Claude Sonnet, 5 repeats per cell, 89 runs total) compared raw JSON against the tier-2 table
+rendering: ideas scored 30/30 correct both ways, at a median cost of $0.0428 (JSON) versus
+$0.0377 (table); releases scored 12/15 versus 11/14 correct, at $0.1946 versus $0.0433.
+Correctness was statistically indistinguishable between the two renderings, the token saving
+is real and largest on the fattest record types, and a drilldown question (one that needs a
+field the table omits) costs the table an extra resource read that erases its advantage for
+that access pattern - so the table is a net win for scanning, not for every workload. Goals
+was **not** benchmarked; its tier-3 placement rests on the nested-array reasoning above, not
+on measurement. `scripts/bench/` exists to re-run this comparison if a renderer changes -
+see that directory's own README for how, not this file.
+
+`resourceAnnotations()` re-implements its own `isoTimestamp` Zulu-timestamp guard rather than
+importing the equivalent one from `tool-output.ts`, and that duplication is deliberate, not
+an oversight to clean up: the reasoning behind the guard belongs to whichever module owns it,
+and the SDK types `lastModified` as `z.iso.datetime()`, which rejects a non-Zulu offset and
+fails the whole read if a rejected annotation slips through. Four duplicated lines here beat
+a shared export whose only reason to exist would be being called from two places.
 
 ### Security & Validation
 
