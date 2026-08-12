@@ -2,17 +2,9 @@
 # Stage 1: Build stage
 FROM oven/bun:1.2-alpine AS builder
 
-# Install build dependencies for native modules (sqlite-vec)
-RUN apk add --no-cache \
-    python3 \
-    python3-dev \
-    py3-setuptools \
-    make \
-    gcc \
-    g++ \
-    musl-dev \
-    sqlite-dev \
-    pkgconf
+# No native modules, so no compiler toolchain is needed. This previously installed
+# python3/gcc/g++/make/musl-dev/sqlite-dev to build sqlite3 and sqlite-vec for the local
+# cache, which has been replaced by Aha's server-side search.
 
 # Set working directory
 WORKDIR /app
@@ -20,33 +12,24 @@ WORKDIR /app
 # Copy package files
 COPY package.json bun.lock ./
 
-# Install dependencies including native modules
+# Install dependencies
 RUN bun install --frozen-lockfile
 
 # Copy source code
 COPY src/ ./src/
 COPY tsconfig.json ./
 
-# Build the application
+# Build the application. `bun build` inlines every dependency, so the result runs without
+# node_modules; the production stage only needs the OpenTelemetry loader.
 RUN bun run build
 
 # Stage 2: Production stage
 FROM oven/bun:1.2-alpine AS production
 
-# Install runtime dependencies and build tools for native modules
+# Install runtime dependencies
 RUN apk add --no-cache \
     tini \
-    wget \
-    sqlite \
-    sqlite-libs \
-    python3 \
-    py3-setuptools \
-    make \
-    gcc \
-    g++ \
-    musl-dev \
-    sqlite-dev \
-    pkgconf
+    wget
 
 # Create non-root user
 RUN addgroup -g 1001 -S mcp && \
@@ -55,34 +38,20 @@ RUN addgroup -g 1001 -S mcp && \
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json bun.lock ./
-
-# Install only production dependencies in production stage (ignore prepare scripts)  
-RUN bun install --frozen-lockfile --production --ignore-scripts
-
-# Copy pre-built sqlite-vec from builder stage (this doesn't need architecture-specific compilation)
-COPY --from=builder /app/node_modules/sqlite-vec ./node_modules/sqlite-vec/
-
-# Rebuild sqlite3 for the target architecture in production stage.
-# sqlite3 is kept out of the bundle (--external), so `bindings` resolves the compiled
-# module relative to node_modules/sqlite3 itself - no symlink shims needed.
-RUN cd node_modules/sqlite3 && bun run install --build-from-source
-
-# Install OpenTelemetry auto-instrumentation separately (not in package.json)
+# Install OpenTelemetry auto-instrumentation separately (not in package.json).
+# The ENTRYPOINT --require needs it on disk; nothing else is resolved at runtime.
 RUN bun install @opentelemetry/auto-instrumentations-node
 
-# Copy built application from builder stage.
-# `bun run build` already places schema.sql next to index.js, and the server metadata is
-# compiled into the bundle, so no schema/package.json shims are needed here.
+# Copy built application from builder stage. The bundle is self-contained: server metadata
+# is compiled in, and there is no schema file or native binding to place alongside it.
 COPY --from=builder /app/build ./build
 
 # Copy package.json so the runtime can still be inspected in the image
 COPY package.json ./
 
-# Create directories for configuration and data with proper permissions
-RUN mkdir -p /home/mcp/.config /app/data && \
-    chown -R mcp:mcp /home/mcp /app/data
+# Create the configuration directory with proper permissions
+RUN mkdir -p /home/mcp/.config && \
+    chown -R mcp:mcp /home/mcp
 
 # Copy the built entry point and make it executable
 RUN chmod +x ./build/index.js
@@ -104,12 +73,12 @@ ENV OTEL_LOGS_EXPORTER=console
 ENV OTEL_TRACES_EXPORTER=console
 ENV OTEL_METRICS_EXPORTER=console
 
-# Expose port for SSE mode (default 3001)
+# Expose port for HTTP-based modes (default 3001)
 EXPOSE 3001
 
-# Health check for SSE mode
+# Health check for HTTP-based modes
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD if [ "$MCP_TRANSPORT_MODE" = "sse" ]; then \
+  CMD if [ "$MCP_TRANSPORT_MODE" = "sse" ] || [ "$MCP_TRANSPORT_MODE" = "streamable-http" ]; then \
         wget --no-verbose --tries=1 --spider http://localhost:${MCP_PORT:-3001}/health || exit 1; \
       else \
         echo "stdio mode - no health check needed"; \

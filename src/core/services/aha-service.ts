@@ -148,6 +148,17 @@ export class AhaService {
   }
 
   /**
+   * Current credentials, for callers that need to reach Aha.io outside the generated
+   * aha-js REST client - notably the GraphQL API, which aha-js does not cover.
+   *
+   * Read through this rather than from process.env so that credentials supplied at runtime
+   * via configure_server are picked up too.
+   */
+  public static getCredentials(): { subdomain: string | null; accessToken: string | null } {
+    return { subdomain: this.subdomain, accessToken: this.accessToken };
+  }
+
+  /**
    * Get the current user (me) information
    * @returns The current user information
    */
