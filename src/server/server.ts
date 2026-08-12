@@ -178,9 +178,11 @@ async function startServer() {
       {
         company: z.string().optional().describe("Aha.io company subdomain"),
         token: z.string().optional().describe("Aha.io API token"),
-        mode: z.enum(["stdio", "sse"]).optional().describe("Transport mode"),
-        port: z.number().optional().describe("Port number for SSE mode"),
-        host: z.string().optional().describe("Host address for SSE mode")
+        // This previously read ["stdio", "sse"], so the recommended transport could not be
+        // configured through this tool at all, and the removed one still could.
+        mode: z.enum(["stdio", "streamable-http"]).optional().describe("Transport mode"),
+        port: z.number().optional().describe("Port number for the streamable-http transport"),
+        host: z.string().optional().describe("Host address for the streamable-http transport")
       },
       async (params) => {
         try {

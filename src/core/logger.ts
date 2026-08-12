@@ -28,7 +28,7 @@ export const log = {
         level: 'info',
         message,
         timestamp: new Date().toISOString(),
-        transport: 'sse',
+        transport: 'http',
         ...attributes
       }));
     }
@@ -78,8 +78,9 @@ export const log = {
    */
   debug: (message: string, attributes?: Record<string, any>) => {
     const config = ConfigService.getConfig();
-    // Only log debug messages in SSE mode or if explicitly enabled
-    if (config.mode === 'sse' || process.env.DEBUG) {
+    // Only log debug messages on the HTTP transport or if explicitly enabled. stdio is
+    // excluded because anything on stdout would corrupt the JSON-RPC stream.
+    if (config.mode === 'streamable-http' || process.env.DEBUG) {
       const logData = JSON.stringify({
         level: 'debug',
         message,
