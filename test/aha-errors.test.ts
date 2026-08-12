@@ -138,3 +138,40 @@ describe('toMcpError', () => {
     expect(toMcpError(original)).toBe(original);
   });
 });
+
+describe('local system errors', () => {
+  /** What Node throws when the config file cannot be written. */
+  const systemError = () =>
+    Object.assign(new Error("EACCES: permission denied, open '/Users/someone/.aha-mcp-config.json'"), {
+      code: 'EACCES',
+      syscall: 'open',
+      path: '/Users/someone/.aha-mcp-config.json'
+    });
+
+  it('withholds the path but names the code', () => {
+    const message = describeAhaError(systemError());
+
+    expect(message).toContain('EACCES');
+    // A remote client over streamable-http has no business seeing a local path.
+    expect(message).not.toContain('/Users/someone');
+    expect(message).toMatch(/server log/);
+  });
+
+  it('still passes through messages this codebase authors', () => {
+    // Deliberately narrow: blanket redaction would make configure_server undebuggable.
+    const authored = new Error('Company subdomain is required.');
+
+    expect(describeAhaError(authored)).toBe('Company subdomain is required.');
+  });
+
+  it('does not mistake an axios transport failure for a local one', () => {
+    // Those carry a code too, but the hostname is worth telling the caller about.
+    const dns = Object.assign(new Error('getaddrinfo ENOTFOUND nope.aha.io'), {
+      isAxiosError: true,
+      code: 'ENOTFOUND',
+      syscall: 'getaddrinfo'
+    });
+
+    expect(describeAhaError(dns)).toMatch(/Could not reach Aha/);
+  });
+});

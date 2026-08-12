@@ -182,8 +182,13 @@ export class MockAhaService implements IAhaService {
     // Mock delete - no-op
   }
 
-  async createFeature(_releaseId: string, _featureData: any): Promise<void> {
-    // Mock create - no-op
+  async createFeature(_releaseId: string, featureData: any): Promise<unknown> {
+    // Shaped as `{ feature: { ... } }`, which is what Aha returns and what the create path
+    // unwraps. Spreading `featureData` at the root instead put its own `feature` key there,
+    // so `unwrapRecord` descended into it and the identifiers were lost - leaving
+    // structuredContent without an id and recordLinks with nothing to link to.
+    const inner = featureData?.feature ?? featureData ?? {};
+    return { feature: { id: 'MOCK-FEATURE-1', reference_num: 'MOCK-1', ...inner } };
   }
 
   async listProducts(

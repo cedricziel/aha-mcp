@@ -254,6 +254,62 @@ missing. Conventions used here:
 - `idempotentHint` is false for the `create_*` tools (a repeated call creates another record)
   and true for updates and associations.
 
+Tools carry a display title in **both** spec locations: top-level `title` (the current
+field) and `annotations.title` (what pre-2025-06-18 clients read, and what the spec gives
+precedence over `name`). They must stay identical; the e2e suite asserts it.
+
+#### Tool output: `outputSchema` and `structuredContent`
+
+Every tool declares an `outputSchema` and returns `structuredContent`, with the serialised
+JSON repeated in a text block for clients that ignore structured results. Schemas live in
+`src/core/tool-output.ts`. Two rules there are load-bearing:
+
+- **Anything wrapping an Aha record uses `z.looseObject`.** A raw Zod shape converts to
+  `additionalProperties: false`, and the SDK *client* rejects a result carrying keys the
+  schema does not list - which would break every record-returning tool on the first field
+  Aha adds. Payloads the server builds itself (deletions, search, the server/config tools)
+  are closed objects.
+- **Only describe fields Aha reliably returns, permissively typed.** The server validates
+  its own `structuredContent` and turns a mismatch into a protocol error, so a wrong guess
+  about a field's type fails the call rather than degrading. Undescribed fields still reach
+  the client verbatim.
+
+`structuredContent` is always the record itself, never Aha's wrapper: `unwrapRecord()`
+flattens the `{ idea: ... }` / `{ initiative: ... }` responses so one contract covers every
+record type. A response with no body becomes `{}` - every record field is optional, whereas
+a missing `structuredContent` fails output validation and sinks the call.
+
+Tools that touch a single record also return a `resource_link` to its `aha://` URI via
+`recordLinks()`, so a client can re-read current state instead of trusting the point-in-time
+copy. No identifier, no link: a link to an unreadable URI is worse than none.
+
+#### Tool errors
+
+Failures return `isError: true` with a plain-text message, never a success-shaped result
+whose body says `success: false` - clients render the latter as a successful call. Output
+validation is skipped for `isError` results at both ends, which is what lets a tool with an
+`outputSchema` report a failure at all.
+
+#### Tool rate limiting
+
+`src/core/rate-limit.ts` wraps `server.registerTool` so every tool spends a token from a
+process-wide bucket first; refusals come back as `isError` results naming the seconds to
+wait. It is installed in `startServer()` **before** any registration - tools registered
+earlier would not be covered. The bucket is deliberately global rather than per-session:
+what it protects is Aha's API, which all sessions share. Default 120/minute, set
+`MCP_TOOL_RATE_LIMIT_PER_MINUTE` to change it or `0` to disable.
+
+#### Schema dialects
+
+Input and output schemas are advertised as draft-07, because `toJsonSchemaCompat` in the
+SDK converts Zod with a hardcoded `draft-7` target and never passes `target` for tools. The
+spec permits an explicit dialect and only *recommends* 2020-12, so this conforms; it changes
+when the SDK lets the target through, not before. Zero-argument tools use
+`z.strictObject({}).optional()` and emit no `$schema`, so they default to 2020-12 - and,
+unlike the raw `{}` shape they replaced, they accept a `tools/call` with `arguments` omitted
+entirely, which the spec allows. An e2e test pins the dialects so an SDK upgrade surfaces
+here rather than in a client.
+
 ### Resources
 
 - Use unique URIs for resource identification (e.g., `aha://idea/{id}`)
@@ -265,7 +321,7 @@ missing. Conventions used here:
 
 - Validate all inputs rigorously using Zod schemas
 - Implement proper authentication via environment variables
-- Rate limit API requests to external services
+- Rate limit tool invocations (`src/core/rate-limit.ts`), which the tools spec requires
 - Sanitize user inputs before API calls
 - Handle errors without exposing internal implementation details
 

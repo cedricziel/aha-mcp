@@ -428,6 +428,17 @@ export class TestMCPClient {
   }
 
   /**
+   * Call a tool without an `arguments` member at all, which CallToolRequest permits for
+   * tools that take no parameters. `callTool` above always sends one, so it cannot cover
+   * this case.
+   */
+  async callToolWithoutArguments(name: string): Promise<any> {
+    this.ensureConnected();
+
+    return this.client!.callTool({ name });
+  }
+
+  /**
    * Check if client is connected
    */
   isConnected(): boolean {

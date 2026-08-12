@@ -1370,9 +1370,13 @@ export class AhaService {
    * Create a feature within a specific release
    * @param releaseId The ID of the release
    * @param featureData The feature data to create
-   * @returns The created feature response
+   * @returns The created feature response, if the endpoint returned a body
+   *
+   * `unknown` rather than `Feature`: aha-js types this endpoint's response as `void`, so
+   * whatever Aha sends back is undeclared. The tool treats a missing body as an empty
+   * record rather than assuming a feature came back.
    */
-  public static async createFeature(releaseId: string, _featureData: any): Promise<void> {
+  public static async createFeature(releaseId: string, _featureData: any): Promise<unknown> {
     const defaultApi = this.getDefaultApi();
 
     try {

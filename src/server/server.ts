@@ -6,6 +6,14 @@ import { registerSampling } from "../core/sampling.js";
 import { buildServerInstructions } from "../core/instructions.js";
 import * as services from "../core/services/index.js";
 import { ConfigService } from "../core/config.js";
+import { installToolRateLimit } from "../core/rate-limit.js";
+import {
+  configureServerOutputSchema,
+  healthCheckOutputSchema,
+  serverConfigOutputSchema,
+  serverStatusOutputSchema,
+  testConfigurationOutputSchema
+} from "../core/tool-output.js";
 import { log } from "../core/logger.js";
 import { describeAhaError } from "../core/services/aha-errors.js";
 import * as z from "zod/v4";
@@ -130,12 +138,21 @@ async function startServer() {
       { instructions: buildServerInstructions(config.company) }
     );
 
+    // Before any registerTool call: the limiter works by wrapping the registrar, so tools
+    // registered ahead of this line would not be covered.
+    installToolRateLimit(server);
+
     // Add health check tool
     server.registerTool(
       "server_health_check",
       {
+        title: "Check server health",
         description: "Get server health status and diagnostics",
-        inputSchema: {},
+        // strictObject({}).optional(): a raw `{}` shape made `arguments` mandatory, so
+        // `tools/call` with no arguments at all - which the spec allows - failed input
+        // validation. Strict still rejects arguments this tool would ignore.
+        inputSchema: z.strictObject({}).optional(),
+        outputSchema: healthCheckOutputSchema,
         // openWorld: the check calls Aha's /me endpoint when credentials are present.
         annotations: {
           title: "Check server health",
@@ -145,11 +162,16 @@ async function startServer() {
       },
       async () => {
         const healthCheck = await performHealthCheck();
+        // Dates are serialised for structuredContent rather than handed over as Date
+        // objects: output validation runs on the value before it is serialised, so a Date
+        // where the schema says string would fail the call.
+        const payload = { ...healthCheck, timestamp: healthCheck.timestamp.toISOString() };
         return {
           content: [{
             type: "text",
-            text: JSON.stringify(healthCheck, null, 2)
-          }]
+            text: JSON.stringify(payload, null, 2)
+          }],
+          structuredContent: payload
         };
       }
     );
@@ -158,8 +180,13 @@ async function startServer() {
     server.registerTool(
       "server_status",
       {
+        title: "Get server status",
         description: "Get detailed server status and configuration",
-        inputSchema: {},
+        // strictObject({}).optional(): a raw `{}` shape made `arguments` mandatory, so
+        // `tools/call` with no arguments at all - which the spec allows - failed input
+        // validation. Strict still rejects arguments this tool would ignore.
+        inputSchema: z.strictObject({}).optional(),
+        outputSchema: serverStatusOutputSchema,
         annotations: {
           title: "Get server status",
           readOnlyHint: true,
@@ -168,26 +195,36 @@ async function startServer() {
       },
       async () => {
         updateServerStatus(serverStatus.status);
+        const payload = {
+          ...serverStatus,
+          // Same reason as server_health_check: ISO strings, not Date objects.
+          startTime: serverStatus.startTime.toISOString(),
+          lastHealthCheck: serverStatus.lastHealthCheck?.toISOString() ?? null,
+          ahaConnection: {
+            ...serverStatus.ahaConnection,
+            lastChecked: serverStatus.ahaConnection.lastChecked?.toISOString() ?? null
+          },
+          systemInfo: {
+            nodeVersion: process.version,
+            platform: process.platform,
+            arch: process.arch,
+            pid: process.pid,
+            workingDirectory: process.cwd(),
+            memoryUsage: {
+              heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+              heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+              external: Math.round(process.memoryUsage().external / 1024 / 1024),
+              rss: Math.round(process.memoryUsage().rss / 1024 / 1024)
+            }
+          }
+        };
+
         return {
           content: [{
             type: "text",
-            text: JSON.stringify({
-              ...serverStatus,
-              systemInfo: {
-                nodeVersion: process.version,
-                platform: process.platform,
-                arch: process.arch,
-                pid: process.pid,
-                workingDirectory: process.cwd(),
-                memoryUsage: {
-                  heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-                  heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-                  external: Math.round(process.memoryUsage().external / 1024 / 1024),
-                  rss: Math.round(process.memoryUsage().rss / 1024 / 1024)
-                }
-              }
-            }, null, 2)
-          }]
+            text: JSON.stringify(payload, null, 2)
+          }],
+          structuredContent: payload
         };
       }
     );
@@ -196,6 +233,7 @@ async function startServer() {
     server.registerTool(
       "configure_server",
       {
+        title: "Configure server",
         description: "Configure server settings (company, token, mode)",
         inputSchema: {
           company: z.string().optional().describe("Aha.io company subdomain"),
@@ -206,6 +244,7 @@ async function startServer() {
           port: z.number().optional().describe("Port number for the streamable-http transport"),
           host: z.string().optional().describe("Host address for the streamable-http transport")
         },
+        outputSchema: configureServerOutputSchema,
         // non-destructive: only the fields supplied are merged into ~/.aha-mcp-config.json.
         annotations: {
           title: "Configure server",
@@ -232,26 +271,30 @@ async function startServer() {
             services.AhaService.initialize(newConfig.token || undefined, newConfig.company || undefined);
           }
 
+          const payload = {
+            success: true as const,
+            message: "Configuration updated successfully",
+            config: ConfigService.getConfigSummary() as Record<string, unknown>,
+            note: "Server restart may be required for transport mode changes"
+          };
+
           return {
             content: [{
               type: "text",
-              text: JSON.stringify({
-                success: true,
-                message: "Configuration updated successfully",
-                config: ConfigService.getConfigSummary(),
-                note: "Server restart may be required for transport mode changes"
-              }, null, 2)
-            }]
+              text: JSON.stringify(payload, null, 2)
+            }],
+            structuredContent: payload
           };
         } catch (error) {
+          // A rejected configuration is a tool execution error: isError lets the client show
+          // it as a failure and gives the model something to correct, which a success-shaped
+          // result carrying `success: false` does not.
           return {
             content: [{
               type: "text",
-              text: JSON.stringify({
-                success: false,
-                error: describeAhaError(error)
-              }, null, 2)
-            }]
+              text: `Configuration update failed: ${describeAhaError(error)}`
+            }],
+            isError: true
           };
         }
       }
@@ -260,8 +303,13 @@ async function startServer() {
     server.registerTool(
       "get_server_config",
       {
+        title: "Get server configuration",
         description: "Get current server configuration",
-        inputSchema: {},
+        // strictObject({}).optional(): a raw `{}` shape made `arguments` mandatory, so
+        // `tools/call` with no arguments at all - which the spec allows - failed input
+        // validation. Strict still rejects arguments this tool would ignore.
+        inputSchema: z.strictObject({}).optional(),
+        outputSchema: serverConfigOutputSchema,
         annotations: {
           title: "Get server configuration",
           readOnlyHint: true,
@@ -271,22 +319,25 @@ async function startServer() {
       async () => {
         const configSummary = ConfigService.getConfigSummary();
         const currentConfig = ConfigService.getConfig();
-        
+
+        const payload = {
+          ...(configSummary as Record<string, unknown>),
+          validation: ConfigService.validateConfig(currentConfig),
+          environmentOverrides: {
+            company: !!process.env.AHA_COMPANY,
+            token: !!process.env.AHA_TOKEN,
+            mode: !!process.env.MCP_TRANSPORT_MODE,
+            port: !!process.env.MCP_PORT,
+            host: !!process.env.MCP_HOST
+          }
+        };
+
         return {
           content: [{
             type: "text",
-            text: JSON.stringify({
-              ...configSummary,
-              validation: ConfigService.validateConfig(currentConfig),
-              environmentOverrides: {
-                company: !!process.env.AHA_COMPANY,
-                token: !!process.env.AHA_TOKEN,
-                mode: !!process.env.MCP_TRANSPORT_MODE,
-                port: !!process.env.MCP_PORT,
-                host: !!process.env.MCP_HOST
-              }
-            }, null, 2)
-          }]
+            text: JSON.stringify(payload, null, 2)
+          }],
+          structuredContent: payload
         };
       }
     );
@@ -294,8 +345,13 @@ async function startServer() {
     server.registerTool(
       "test_configuration",
       {
+        title: "Test Aha.io configuration",
         description: "Test current Aha.io configuration",
-        inputSchema: {},
+        // strictObject({}).optional(): a raw `{}` shape made `arguments` mandatory, so
+        // `tools/call` with no arguments at all - which the spec allows - failed input
+        // validation. Strict still rejects arguments this tool would ignore.
+        inputSchema: z.strictObject({}).optional(),
+        outputSchema: testConfigurationOutputSchema,
         annotations: {
           title: "Test Aha.io configuration",
           readOnlyHint: true,
@@ -305,52 +361,54 @@ async function startServer() {
       async () => {
         try {
           const config = ConfigService.getConfig();
-          
+
+          // Both failure paths below carry isError. They used to return a success-shaped
+          // result whose body said `success: false`, which clients render as a successful
+          // call and the spec reserves for results the model should treat as fact.
           if (!ConfigService.isConfigComplete(config)) {
             return {
               content: [{
                 type: "text",
-                text: JSON.stringify({
-                  success: false,
-                  error: "Configuration is incomplete. Company and token are required.",
-                  config: ConfigService.getConfigSummary()
-                }, null, 2)
-              }]
+                text: "Configuration is incomplete. Company and token are required.\n\n" +
+                  JSON.stringify(ConfigService.getConfigSummary(), null, 2)
+              }],
+              isError: true
             };
           }
 
           // Test connection by trying to get current user
           const user = await services.AhaService.getMe();
-          
+
+          const payload = {
+            success: true as const,
+            message: "Configuration test successful",
+            connection: {
+              status: "connected",
+              user: {
+                name: user.name || 'Unknown',
+                email: user.email || 'Unknown',
+                id: user.id || 'Unknown'
+              },
+              company: config.company ?? 'not configured'
+            }
+          };
+
           return {
             content: [{
               type: "text",
-              text: JSON.stringify({
-                success: true,
-                message: "Configuration test successful",
-                connection: {
-                  status: "connected",
-                  user: {
-                    name: user.name || 'Unknown',
-                    email: user.email || 'Unknown',
-                    id: user.id || 'Unknown'
-                  },
-                  company: config.company
-                }
-              }, null, 2)
-            }]
+              text: JSON.stringify(payload, null, 2)
+            }],
+            structuredContent: payload
           };
         } catch (error) {
           const errorMessage = describeAhaError(error);
           return {
             content: [{
               type: "text",
-              text: JSON.stringify({
-                success: false,
-                error: errorMessage,
-                suggestion: "Check your company subdomain and API token"
-              }, null, 2)
-            }]
+              text: `Configuration test failed: ${errorMessage}\n\n` +
+                "Check your company subdomain and API token."
+            }],
+            isError: true
           };
         }
       }
