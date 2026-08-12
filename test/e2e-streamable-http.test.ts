@@ -99,6 +99,22 @@ describe('E2E Streamable HTTP Transport', () => {
     }, 20000);
   });
 
+  describe('Server Instructions', () => {
+    it('should return instructions in the initialize response', async () => {
+      await withTestClient(async (client) => {
+        const instructions = client.getInstructions();
+
+        expect(instructions).toBeDefined();
+        // Says what the server is, and asks for links rather than descriptions.
+        expect(instructions).toContain('reference_num');
+        expect(instructions).toMatch(/markdown link/i);
+        // The spawned server runs with AHA_COMPANY=test-company, so the configured
+        // subdomain should have made it into the initialize response.
+        expect(instructions).toContain('https://test-company.aha.io');
+      }, { mode: 'streamable-http', timeout: 15000 });
+    }, 20000);
+  });
+
   describe('Tool Operations', () => {
     it('should list tools via HTTP', async () => {
       await withTestClient(async (client) => {

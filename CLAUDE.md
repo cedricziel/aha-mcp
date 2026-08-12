@@ -151,6 +151,18 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
   local state
 - **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes
 - **Prompts**: 14 domain-specific workflow prompts with context-aware responses
+- **Instructions**: `src/core/instructions.ts`, passed to `McpServer` and returned in the
+  `initialize` response. The only always-on context the server gets - prompts need
+  invoking and tool descriptions are per-tool - so it is where session-wide guidance
+  lives: what Aha is, that `reference_num` rather than `id` is the identifier people
+  recognise, and that records should be linked by their absolute `url`. It costs context
+  in every session, so keep it to what a client cannot infer from the tool list, and treat
+  it as guidance: clients differ in how prominently they surface it, and anything that
+  must hold belongs in the data instead. `buildServerInstructions()` interpolates the
+  configured company subdomain, which is fixed at `initialize` time - a later
+  `configure_server` cannot revise instructions the client already holds, so never let
+  anything depend on that host being current. Record `url`s always reflect live
+  credentials.
 - **Authentication**: Runtime configuration with environment variables and config file support
 
 Tool, resource and prompt counts are also mirrored in `manifest.json` for the desktop
