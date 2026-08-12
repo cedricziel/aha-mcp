@@ -3,6 +3,7 @@ import { registerResources } from "../core/resources.js";
 import { registerTools } from "../core/tools.js";
 import { registerPrompts } from "../core/prompts.js";
 import { registerSampling } from "../core/sampling.js";
+import { buildServerInstructions } from "../core/instructions.js";
 import * as services from "../core/services/index.js";
 import { ConfigService } from "../core/config.js";
 import { log } from "../core/logger.js";
@@ -114,15 +115,19 @@ async function startServer() {
     }
     
     // Create a new MCP server instance with enhanced metadata
-    const server = new McpServer({
-      name: "Aha.io MCP Server",
-      version: packageJson.version,
-      description: packageJson.description,
-      author: packageJson.author,
-      homepage: packageJson.homepage,
-      repository: packageJson.repository,
-      license: packageJson.license
-    });
+    const server = new McpServer(
+      {
+        name: "Aha.io MCP Server",
+        version: packageJson.version,
+        description: packageJson.description,
+        author: packageJson.author,
+        homepage: packageJson.homepage,
+        repository: packageJson.repository,
+        license: packageJson.license
+      },
+      // Returned in the initialize response, so clients have this before the first call.
+      { instructions: buildServerInstructions(config.company) }
+    );
 
     // Add health check tool
     server.registerTool(

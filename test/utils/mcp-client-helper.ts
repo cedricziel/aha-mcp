@@ -372,6 +372,14 @@ export class TestMCPClient {
   }
 
   /**
+   * The server's instructions, as returned in the initialize response.
+   */
+  getInstructions(): string | undefined {
+    this.ensureConnected();
+    return this.client!.getInstructions();
+  }
+
+  /**
    * List all available tools
    */
   async listTools(): Promise<Tool[]> {
