@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'bun:test';
-import { withTestClient } from './utils/mcp-client-helper';
+import { describe, it, expect, afterAll } from 'bun:test';
+import { sharedTestClient } from './utils/mcp-client-helper';
 
 /**
  * E2E tests for ResourceTemplate URI matching
@@ -23,9 +23,13 @@ import { withTestClient } from './utils/mcp-client-helper';
  */
 
 describe('ResourceTemplate URI Matching E2E', () => {
+  // One server for the file; see sharedTestClient. These tests only read.
+  const shared = sharedTestClient();
+  afterAll(() => shared.close());
+
   describe('Base URI Access (No Query Params)', () => {
     it('should access aha://features', async () => {
-      await withTestClient(async (client) => {
+      await shared.use(async (client) => {
         // This should work with the base URI registration
         const contents = await client.readResource('aha://features');
 
@@ -48,7 +52,7 @@ describe('ResourceTemplate URI Matching E2E', () => {
     }, { timeout: 30000 });
 
     it('should access aha://products', async () => {
-      await withTestClient(async (client) => {
+      await shared.use(async (client) => {
         const contents = await client.readResource('aha://products');
 
         expect(contents).toBeDefined();
@@ -70,7 +74,7 @@ describe('ResourceTemplate URI Matching E2E', () => {
     }, { timeout: 30000 });
 
     it('should access aha://initiatives', async () => {
-      await withTestClient(async (client) => {
+      await shared.use(async (client) => {
         const contents = await client.readResource('aha://initiatives');
 
         expect(contents).toBeDefined();
@@ -93,7 +97,7 @@ describe('ResourceTemplate URI Matching E2E', () => {
     }, { timeout: 30000 });
 
     it('should access aha://goals', async () => {
-      await withTestClient(async (client) => {
+      await shared.use(async (client) => {
         const contents = await client.readResource('aha://goals');
 
         expect(contents).toBeDefined();
@@ -116,7 +120,7 @@ describe('ResourceTemplate URI Matching E2E', () => {
     }, { timeout: 30000 });
 
     it('should access aha://strategic-models', async () => {
-      await withTestClient(async (client) => {
+      await shared.use(async (client) => {
         const contents = await client.readResource('aha://strategic-models');
 
         expect(contents).toBeDefined();
@@ -139,7 +143,7 @@ describe('ResourceTemplate URI Matching E2E', () => {
     }, { timeout: 30000 });
 
     it('should access aha://idea-organizations', async () => {
-      await withTestClient(async (client) => {
+      await shared.use(async (client) => {
         const contents = await client.readResource('aha://idea-organizations');
 
         expect(contents).toBeDefined();
@@ -162,7 +166,7 @@ describe('ResourceTemplate URI Matching E2E', () => {
     }, { timeout: 30000 });
 
     it('should access aha://ideas', async () => {
-      await withTestClient(async (client) => {
+      await shared.use(async (client) => {
         const contents = await client.readResource('aha://ideas');
 
         expect(contents).toBeDefined();
@@ -187,7 +191,7 @@ describe('ResourceTemplate URI Matching E2E', () => {
 
   describe('Template URI Access (With Query Params)', () => {
     it('should access aha://features?page=1', async () => {
-      await withTestClient(async (client) => {
+      await shared.use(async (client) => {
         // This should work with the template URI registration
         const contents = await client.readResource('aha://features?page=1');
 
@@ -208,7 +212,7 @@ describe('ResourceTemplate URI Matching E2E', () => {
     }, { timeout: 30000 });
 
     it('should access aha://products?page=1', async () => {
-      await withTestClient(async (client) => {
+      await shared.use(async (client) => {
         const contents = await client.readResource('aha://products?page=1');
 
         expect(contents).toBeDefined();
@@ -228,7 +232,7 @@ describe('ResourceTemplate URI Matching E2E', () => {
     }, { timeout: 30000 });
 
     it('should access aha://initiatives?onlyActive=true', async () => {
-      await withTestClient(async (client) => {
+      await shared.use(async (client) => {
         const contents = await client.readResource('aha://initiatives?onlyActive=true');
 
         expect(contents).toBeDefined();
@@ -250,7 +254,7 @@ describe('ResourceTemplate URI Matching E2E', () => {
     }, { timeout: 30000 });
 
     it('should access aha://goals?page=1', async () => {
-      await withTestClient(async (client) => {
+      await shared.use(async (client) => {
         const contents = await client.readResource('aha://goals?page=1');
 
         expect(contents).toBeDefined();
@@ -272,7 +276,7 @@ describe('ResourceTemplate URI Matching E2E', () => {
 
   describe('Resource Discovery', () => {
     it('should list base URIs in resources/list', async () => {
-      await withTestClient(async (client) => {
+      await shared.use(async (client) => {
         const resources = await client.listResources();
 
         // Verify that base URIs are discoverable

@@ -11,6 +11,7 @@ import {
   ideaOutputSchema,
   initiativeOutputSchema,
   recordLinks,
+  recordSummary,
   unwrapRecord
 } from "./tool-output.js";
 import { log } from "./logger.js";
@@ -28,7 +29,7 @@ export function registerTools(server: McpServer) {
     "aha_create_feature_comment",
     {
       title: "Create feature comment",
-      description: "Create a comment on a feature in Aha.io",
+      description: "Create a comment on a feature in Aha.io. Returns the created comment.",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         body: z.string().describe("Comment body")
@@ -51,7 +52,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Comment created successfully:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Created comment", record, { detail: `on feature ${params.featureId}` })
             }
           ],
           structuredContent: record
@@ -79,7 +80,7 @@ export function registerTools(server: McpServer) {
     "aha_associate_feature_with_epic",
     {
       title: "Associate feature with epic",
-      description: "Associate a feature with an epic in Aha.io",
+      description: "Associate a feature with an epic in Aha.io. Returns the updated feature and a link to it.",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         epicId: z.string().describe("ID or name of the epic")
@@ -102,7 +103,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} successfully associated with epic ${params.epicId}:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Associated feature", record, { fallbackId: params.featureId, detail: `epic ${params.epicId}` })
             },
             ...recordLinks("feature", record, params.featureId)
           ],
@@ -127,7 +128,7 @@ export function registerTools(server: McpServer) {
     "aha_move_feature_to_release",
     {
       title: "Move feature to release",
-      description: "Move a feature to a different release in Aha.io",
+      description: "Move a feature to a different release in Aha.io. Returns the updated feature and a link to it.",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         releaseId: z.string().describe("ID or key of the target release")
@@ -150,7 +151,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} successfully moved to release ${params.releaseId}:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Moved feature", record, { fallbackId: params.featureId, detail: `release ${params.releaseId}` })
             },
             ...recordLinks("feature", record, params.featureId)
           ],
@@ -175,7 +176,7 @@ export function registerTools(server: McpServer) {
     "aha_associate_feature_with_goals",
     {
       title: "Set feature goals",
-      description: "Associate a feature with multiple goals in Aha.io",
+      description: "Associate a feature with multiple goals in Aha.io. Replaces the feature's whole goal set, so goals left out are unlinked. Returns the updated feature and a link to it.",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         goalIds: z.array(z.number()).describe("Array of goal IDs to associate with the feature")
@@ -199,7 +200,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} successfully associated with goals ${params.goalIds.join(', ')}:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Set goals on feature", record, { fallbackId: params.featureId, detail: `goals ${params.goalIds.join(", ")}` })
             },
             ...recordLinks("feature", record, params.featureId)
           ],
@@ -224,7 +225,7 @@ export function registerTools(server: McpServer) {
     "aha_update_feature_tags",
     {
       title: "Set feature tags",
-      description: "Update tags for a feature in Aha.io",
+      description: "Update tags for a feature in Aha.io. Replaces the feature's whole tag set, so tags left out are removed. Returns the updated feature and a link to it.",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         tags: z.array(z.string()).describe("Array of tag strings to associate with the feature")
@@ -248,7 +249,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} tags successfully updated to [${params.tags.join(', ')}]:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Set tags on feature", record, { fallbackId: params.featureId, detail: `tags ${params.tags.join(", ")}` })
             },
             ...recordLinks("feature", record, params.featureId)
           ],
@@ -273,7 +274,7 @@ export function registerTools(server: McpServer) {
     "aha_create_epic_in_product",
     {
       title: "Create epic in product",
-      description: "Create an epic within a specific product in Aha.io",
+      description: "Create an epic within a specific product in Aha.io. Returns the created epic and a link to it.",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
         epicData: z.object({
@@ -301,7 +302,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Epic successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Created epic", record, { detail: `product ${params.productId}` })
             },
             ...recordLinks("epic", record)
           ],
@@ -326,7 +327,7 @@ export function registerTools(server: McpServer) {
     "aha_create_epic_in_release",
     {
       title: "Create epic in release",
-      description: "Create an epic within a specific release in Aha.io",
+      description: "Create an epic within a specific release in Aha.io. Returns the created epic and a link to it.",
       inputSchema: {
         releaseId: z.string().describe("ID of the release"),
         epicData: z.object({
@@ -354,7 +355,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Epic successfully created in release ${params.releaseId}:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Created epic", record, { detail: `release ${params.releaseId}` })
             },
             ...recordLinks("epic", record)
           ],
@@ -379,7 +380,7 @@ export function registerTools(server: McpServer) {
     "aha_create_initiative_in_product",
     {
       title: "Create initiative in product",
-      description: "Create an initiative within a specific product in Aha.io",
+      description: "Create an initiative within a specific product in Aha.io. Returns the created initiative and a link to it.",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
         initiativeData: z.object({
@@ -407,7 +408,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Initiative successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Created initiative", record, { detail: `product ${params.productId}` })
             },
             ...recordLinks("initiative", record)
           ],
@@ -436,7 +437,7 @@ export function registerTools(server: McpServer) {
     "aha_create_feature",
     {
       title: "Create feature",
-      description: "Create a feature within a specific release in Aha.io",
+      description: "Create a feature within a specific release in Aha.io. Returns the created feature and a link to it.",
       inputSchema: {
         releaseId: z.string().describe("ID of the release"),
         featureData: z.object({
@@ -464,7 +465,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Feature successfully created in release ${params.releaseId}:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Created feature", record, { detail: `release ${params.releaseId}` })
             },
             ...recordLinks("feature", record)
           ],
@@ -493,7 +494,7 @@ export function registerTools(server: McpServer) {
     "aha_update_feature",
     {
       title: "Update feature",
-      description: "Update a feature in Aha.io",
+      description: "Update a feature's name or description in Aha.io. Returns the updated feature and a link to it.",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         featureData: z.object({
@@ -521,7 +522,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} successfully updated:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Updated feature", record, { fallbackId: params.featureId })
             },
             ...recordLinks("feature", record, params.featureId)
           ],
@@ -546,7 +547,7 @@ export function registerTools(server: McpServer) {
     "aha_delete_feature",
     {
       title: "Delete feature",
-      description: "Delete a feature in Aha.io",
+      description: "Delete a feature in Aha.io. Returns a confirmation naming the deleted feature; there is no record to return.",
       inputSchema: {
         featureId: z.string().describe("ID of the feature")
       },
@@ -567,7 +568,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} successfully deleted`
+              text: `Deleted feature ${params.featureId}`
             }
           ],
           structuredContent: { deleted: true as const, record_type: "feature" as const, id: params.featureId }
@@ -591,7 +592,7 @@ export function registerTools(server: McpServer) {
     "aha_update_feature_progress",
     {
       title: "Update feature progress",
-      description: "Update a feature's progress in Aha.io",
+      description: "Update a feature's progress percentage in Aha.io. Returns the updated feature and a link to it.",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         progress: z.number().min(0).max(100).describe("Progress percentage (0-100)")
@@ -614,7 +615,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} progress updated to ${params.progress}%:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Updated feature", record, { fallbackId: params.featureId, detail: `progress ${params.progress}%` })
             },
             ...recordLinks("feature", record, params.featureId)
           ],
@@ -639,7 +640,7 @@ export function registerTools(server: McpServer) {
     "aha_update_feature_score",
     {
       title: "Update feature score",
-      description: "Update a feature's score in Aha.io",
+      description: "Update a feature's score in Aha.io. Returns the updated feature and a link to it.",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         score: z.number().describe("Score value")
@@ -662,7 +663,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} score updated to ${params.score}:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Updated feature", record, { fallbackId: params.featureId, detail: `score ${params.score}` })
             },
             ...recordLinks("feature", record, params.featureId)
           ],
@@ -687,7 +688,7 @@ export function registerTools(server: McpServer) {
     "aha_update_feature_custom_fields",
     {
       title: "Update feature custom fields",
-      description: "Update a feature's custom fields in Aha.io",
+      description: "Update a feature's custom fields in Aha.io. Returns the updated feature and a link to it.",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
         // Not z.object({}): zod strips keys a shape does not declare, so every custom field
@@ -714,7 +715,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} custom fields updated:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Updated feature", record, { fallbackId: params.featureId, detail: `custom fields ${Object.keys(params.customFields).join(", ")}` })
             },
             ...recordLinks("feature", record, params.featureId)
           ],
@@ -743,7 +744,7 @@ export function registerTools(server: McpServer) {
     "aha_update_epic",
     {
       title: "Update epic",
-      description: "Update an epic in Aha.io",
+      description: "Update an epic's name or description in Aha.io. Returns the updated epic and a link to it.",
       inputSchema: {
         epicId: z.string().describe("ID of the epic"),
         epicData: z.object({
@@ -771,7 +772,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Epic ${params.epicId} successfully updated:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Updated epic", record, { fallbackId: params.epicId })
             },
             ...recordLinks("epic", record, params.epicId)
           ],
@@ -796,7 +797,7 @@ export function registerTools(server: McpServer) {
     "aha_delete_epic",
     {
       title: "Delete epic",
-      description: "Delete an epic in Aha.io",
+      description: "Delete an epic in Aha.io. Returns a confirmation naming the deleted epic; there is no record to return.",
       inputSchema: {
         epicId: z.string().describe("ID of the epic")
       },
@@ -817,7 +818,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Epic ${params.epicId} successfully deleted`
+              text: `Deleted epic ${params.epicId}`
             }
           ],
           structuredContent: { deleted: true as const, record_type: "epic" as const, id: params.epicId }
@@ -845,7 +846,7 @@ export function registerTools(server: McpServer) {
     "aha_create_idea",
     {
       title: "Create idea",
-      description: "Create an idea in a product in Aha.io",
+      description: "Create an idea in a product in Aha.io. Returns the created idea and a link to it.",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
         ideaData: z.object({
@@ -874,7 +875,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Idea successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Created idea", record, { detail: `product ${params.productId}` })
             },
             ...recordLinks("idea", record)
           ],
@@ -899,7 +900,7 @@ export function registerTools(server: McpServer) {
     "aha_create_idea_with_category",
     {
       title: "Create idea with category",
-      description: "Create an idea with a category in a product in Aha.io",
+      description: "Create an idea with a category in a product in Aha.io. Returns the created idea and a link to it.",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
         ideaData: z.object({
@@ -929,7 +930,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Idea with category successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Created idea", record, { detail: `product ${params.productId}, category ${params.ideaData.idea.category}` })
             },
             ...recordLinks("idea", record)
           ],
@@ -954,7 +955,7 @@ export function registerTools(server: McpServer) {
     "aha_create_idea_with_score",
     {
       title: "Create idea with score",
-      description: "Create an idea with a score in a product in Aha.io",
+      description: "Create an idea with a score in a product in Aha.io. Returns the created idea and a link to it.",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
         ideaData: z.object({
@@ -984,7 +985,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Idea with score successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Created idea", record, { detail: `product ${params.productId}, score ${params.ideaData.idea.score}` })
             },
             ...recordLinks("idea", record)
           ],
@@ -1009,7 +1010,7 @@ export function registerTools(server: McpServer) {
     "aha_delete_idea",
     {
       title: "Delete idea",
-      description: "Delete an idea in Aha.io",
+      description: "Delete an idea in Aha.io. Returns a confirmation naming the deleted idea; there is no record to return.",
       inputSchema: {
         ideaId: z.string().describe("ID of the idea")
       },
@@ -1030,7 +1031,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Idea ${params.ideaId} successfully deleted`
+              text: `Deleted idea ${params.ideaId}`
             }
           ],
           structuredContent: { deleted: true as const, record_type: "idea" as const, id: params.ideaId }
@@ -1058,7 +1059,7 @@ export function registerTools(server: McpServer) {
     "aha_create_competitor",
     {
       title: "Create competitor",
-      description: "Create a competitor in a product in Aha.io",
+      description: "Create a competitor in a product in Aha.io. Returns the created competitor and a link to it.",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
         competitorData: z.object({
@@ -1087,7 +1088,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Competitor successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Created competitor", record, { detail: `product ${params.productId}` })
             },
             ...recordLinks("competitor", record)
           ],
@@ -1112,7 +1113,7 @@ export function registerTools(server: McpServer) {
     "aha_update_competitor",
     {
       title: "Update competitor",
-      description: "Update a competitor in Aha.io",
+      description: "Update a competitor in Aha.io. Returns the updated competitor and a link to it.",
       inputSchema: {
         competitorId: z.string().describe("ID of the competitor"),
         competitorData: z.object({
@@ -1141,7 +1142,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Competitor ${params.competitorId} successfully updated:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Updated competitor", record, { fallbackId: params.competitorId })
             },
             ...recordLinks("competitor", record, params.competitorId)
           ],
@@ -1166,7 +1167,7 @@ export function registerTools(server: McpServer) {
     "aha_delete_competitor",
     {
       title: "Delete competitor",
-      description: "Delete a competitor in Aha.io",
+      description: "Delete a competitor in Aha.io. Returns a confirmation naming the deleted competitor; there is no record to return.",
       inputSchema: {
         competitorId: z.string().describe("ID of the competitor")
       },
@@ -1187,7 +1188,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Competitor ${params.competitorId} successfully deleted`
+              text: `Deleted competitor ${params.competitorId}`
             }
           ],
           structuredContent: { deleted: true as const, record_type: "competitor" as const, id: params.competitorId }
@@ -1219,7 +1220,7 @@ export function registerTools(server: McpServer) {
     "aha_create_idea_by_portal_user",
     {
       title: "Create idea as portal user",
-      description: "Create an idea by a portal user in Aha.io",
+      description: "Create an idea in a product in Aha.io, attributed to an ideas-portal user rather than to the API token's owner. Returns the created idea and a link to it.",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
         ideaData: z.object({
@@ -1253,7 +1254,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Idea by portal user successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Created idea", record, { detail: `product ${params.productId}, submitted as a portal user` })
             },
             ...recordLinks("idea", record)
           ],
@@ -1278,7 +1279,7 @@ export function registerTools(server: McpServer) {
     "aha_create_idea_with_portal_settings",
     {
       title: "Create idea with portal settings",
-      description: "Create an idea with enhanced portal settings in Aha.io",
+      description: "Create an idea in a product in Aha.io with ideas-portal settings, category and score in one call. Returns the created idea and a link to it.",
       inputSchema: {
         productId: z.string().describe("ID of the product"),
         ideaData: z.object({
@@ -1310,7 +1311,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Idea with portal settings successfully created in product ${params.productId}:\n\n${JSON.stringify(record, null, 2)}`
+              text: recordSummary("Created idea", record, { detail: `product ${params.productId}` })
             },
             ...recordLinks("idea", record)
           ],

@@ -61,11 +61,29 @@ function identifier(value: unknown): string | undefined {
 }
 
 /**
+ * Aha timestamps are UTC ISO 8601 (`2024-01-15T10:30:00.000Z`), which is what the SDK's
+ * `lastModified` annotation accepts. It is typed as `z.iso.datetime()`, which rejects a
+ * numeric offset, so anything that is not plainly Zulu is dropped rather than risking a
+ * validation failure on the way out - an omitted annotation costs a hint, a rejected one
+ * costs the call.
+ */
+function isoTimestamp(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(value) ? value : undefined;
+}
+
+/**
  * A `resource_link` back to the record a tool just touched, so a client can re-read its
  * full current state - or subscribe to it - instead of relying on the point-in-time copy in
  * the result. Returns an array so call sites can spread it: there is nothing worth linking
  * to when the response carried no identifier, and a link to an unreadable URI is worse than
  * no link.
+ *
+ * `title` is what the 2025-06-18 spec tells hosts to display, falling back to `name`; both
+ * are set because clients disagree on which they read. The annotations say what the link is
+ * for rather than describing it again: it is the one item in the result worth surfacing to
+ * a person, hence `priority: 1`, and `lastModified` lets a client tell a fresh read from a
+ * stale one without fetching.
  */
 export function recordLinks(
   recordType: LinkableRecordType,
@@ -75,15 +93,60 @@ export function recordLinks(
   const id = identifier(record.reference_num) ?? identifier(record.id) ?? fallbackId;
   if (!id) return [];
 
+  const name = identifier(record.name);
+  const lastModified = isoTimestamp(record.updated_at);
+
   return [
     {
       type: "resource_link" as const,
       uri: `aha://${recordType}/${id}`,
-      name: identifier(record.name) ?? `${recordType} ${id}`,
+      name: name ?? `${recordType} ${id}`,
+      title: name ? `${id} - ${name}` : `${recordType} ${id}`,
       description: `The ${recordType} this call touched. Read it for the record's current full state.`,
-      mimeType: "application/json"
+      mimeType: "application/json",
+      annotations: {
+        audience: ["user" as const, "assistant" as const],
+        priority: 1,
+        ...(lastModified ? { lastModified } : {})
+      }
     }
   ];
+}
+
+/**
+ * The one-line human summary that every writing tool returns as its text content.
+ *
+ * This block used to be the record re-serialised as indented JSON, which duplicated
+ * `structuredContent` verbatim: double the tokens, and nothing a client could render as
+ * anything but a blob. The record itself still travels in `structuredContent`, and the
+ * `resource_link` alongside is the durable pointer - so the text block's job is to say what
+ * happened, to whom, in a form a person and a model can both read at a glance.
+ *
+ * @param lead What happened, ending in the record type - "Created feature", "Set tags on feature"
+ * @param record The record Aha returned, which may be empty for endpoints that answer with no body
+ * @param options `fallbackId` names the record when the response carried no identifier;
+ *   `detail` carries operation-specific context that is not evident from the record itself
+ */
+export function recordSummary(
+  lead: string,
+  record: Record<string, unknown>,
+  options: { fallbackId?: string; detail?: string } = {}
+): string {
+  const id = identifier(record.reference_num) ?? identifier(record.id) ?? options.fallbackId;
+  const name = identifier(record.name);
+  const url = identifier(record.url);
+
+  let line = lead;
+  if (id) line += ` ${id}`;
+  if (name) line += ` "${name}"`;
+  if (options.detail) line += ` (${options.detail})`;
+  if (url) line += ` - ${url}`;
+
+  // Aha answers some writes with an empty body. Saying so beats a bare verb that reads like
+  // the call returned something.
+  if (!id && !name) line += " - Aha returned no record body; the write itself succeeded";
+
+  return line;
 }
 
 /** Fields common to every Aha record returned by a tool. */

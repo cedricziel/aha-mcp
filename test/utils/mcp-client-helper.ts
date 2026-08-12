@@ -10,7 +10,7 @@ import type { Subprocess } from 'bun';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-/** Thrown when the server subprocess died before serving, so callers can retry a new port. */
+/** Thrown when a server subprocess failed to serve, so callers can retry on a new port. */
 class ServerStartupError extends Error {}
 
 /**
@@ -154,7 +154,12 @@ export class TestMCPClient {
 
     // Kill before reading stderr; see readServerStderr().
     this.serverProcess?.kill();
-    throw new Error(
+
+    // ServerStartupError, not Error, so connect() retries this on a fresh port and a fresh
+    // subprocess. A cold start takes about a second unloaded, so a budget in the seconds is
+    // already generous - when it is exceeded on CI the spawn has been starved, not slowed,
+    // and another attempt beats waiting longer on a process that is already losing.
+    throw new ServerStartupError(
       `Server did not become ready on port ${port} within ${timeout}ms.${await this.readServerStderr()}`
     );
   }
@@ -215,6 +220,14 @@ export class TestMCPClient {
       // be taken in between - especially with several test files running at once. Retry on a
       // fresh port rather than reporting a timeout for what is a lost race.
       const attempts = options.port ? 1 : 3;
+
+      // `timeout` is the budget for becoming ready in total, not per attempt, so retrying
+      // does not push a test past its own bun timeout. Three 5s attempts fit where one 15s
+      // wait did, and each one is still five times the ~1s a cold start actually needs.
+      // No floor: a caller that passes a deliberately tiny budget wants a fast failure, and
+      // clamping it upwards let a server actually start when the test needed it not to.
+      const readinessTimeout = Math.floor(timeout / attempts);
+
       for (let attempt = 1; ; attempt++) {
         this.httpPort = options.port || (await this.findAvailablePort());
         this.httpBaseUrl = `http://${host}:${this.httpPort}`;
@@ -237,7 +250,7 @@ export class TestMCPClient {
         trackServer(this.serverProcess);
 
         try {
-          await this.waitForHttpServer(this.httpPort, timeout);
+          await this.waitForHttpServer(this.httpPort, readinessTimeout);
           break;
         } catch (error) {
           untrackServer(this.serverProcess);
@@ -502,6 +515,54 @@ export class TestMCPClient {
     this.client = null;
     this.transport = null;
   }
+}
+
+/**
+ * One server, shared by every test in a file, started on first use.
+ *
+ * `withTestClient` spawns a fresh server per test, which across the e2e files came to 41
+ * cold `bun run src/index.ts` starts - each one transpiling the whole source tree. On a
+ * two-core CI runner that starved spawns badly enough to time out a test, fail the run, and
+ * in one case take a release with it (#317). Nothing here needs a private server: the tools
+ * keep no local state, and these tests only read.
+ *
+ * The caller owns the lifetime and must `close()` in an `afterAll`, so a server cannot
+ * outlive the file that started it - leaked servers are what caused this in the first place.
+ *
+ * Use `withTestClient` instead when a test genuinely needs its own server, or asserts on
+ * connection failure.
+ */
+export function sharedTestClient(options: TestClientOptions = {}) {
+  let pending: Promise<TestMCPClient> | null = null;
+
+  return {
+    async use<T>(fn: (client: TestMCPClient) => Promise<T>): Promise<T> {
+      if (!pending) {
+        pending = (async () => {
+          const client = new TestMCPClient();
+          try {
+            await client.connect(options);
+          } catch (error) {
+            // Do not cache a failed connect, or every later test in the file reports the
+            // first one's error instead of getting its own chance to start a server.
+            pending = null;
+            await client.disconnect();
+            throw error;
+          }
+          return client;
+        })();
+      }
+
+      return fn(await pending);
+    },
+
+    async close(): Promise<void> {
+      if (!pending) return;
+      const client = await pending.catch(() => null);
+      pending = null;
+      await client?.disconnect();
+    }
+  };
 }
 
 /**

@@ -60,7 +60,12 @@ describe('aha_update_feature_custom_fields', () => {
     });
 
     expect(result.isError).toBeFalsy();
-    expect(result.content[0].text).toContain('JIRA-7');
+    // The values live in structuredContent; the text block names the record and which
+    // fields were written, rather than restating the record as JSON.
+    expect(result.structuredContent.custom_fields).toEqual({ external_id: 'JIRA-7' });
+    expect(result.content[0].text).toContain('FEAT-2');
+    expect(result.content[0].text).toContain('Test feature');
+    expect(result.content[0].text).toContain('external_id');
   });
 
   it('advertises an open object in its input schema', async () => {

@@ -43,6 +43,8 @@
     "test:watch": "bun test --watch --env-file=/dev/null",
     "prepublishOnly": "bun run build",
     "prepare": "husky",
+    "manifest:sync": "bun run scripts/sync-manifest.ts",
+    "manifest:check": "bun run scripts/sync-manifest.ts --check",
     "mcpb:validate": "mcpb validate manifest.json",
     "mcpb:pack": "bun run build && mcpb pack . dist/aha-mcp.mcpb",
     "docker:build": "docker build -t ghcr.io/cedricziel/aha-mcp .",

@@ -18,6 +18,41 @@ import { describeAhaError } from "../services/aha-errors.js";
  * with a placeholder embedding function. Aha's own search index is server-side, always
  * current, and covers names, descriptions and comment bodies across record types.
  */
+/** The payload `aha_search` builds, which is also what it validates against its output schema. */
+type SearchPayload = {
+  query: string;
+  total_count: number;
+  total_count_is_capped: boolean;
+  page: number;
+  total_pages: number;
+  results: { name: string | null; type: string; url: string }[];
+};
+
+/**
+ * Render the result set as markdown links rather than as the payload re-serialised.
+ *
+ * `structuredContent` already carries the machine copy, so repeating it as indented JSON
+ * bought nothing and cost the whole payload a second time. Links are the form the server
+ * instructions ask for anyway - building them here means the hits reach the user without
+ * being re-emitted through generation, where a URL can be mangled.
+ */
+function renderResults(payload: SearchPayload): string {
+  if (payload.results.length === 0) {
+    return `No matches for "${payload.query}".`;
+  }
+
+  const count = payload.total_count_is_capped
+    ? `More than ${payload.total_count} matches (Aha stops counting there)`
+    : `${payload.total_count} ${payload.total_count === 1 ? "match" : "matches"}`;
+  const pages = payload.total_pages > 1 ? `, page ${payload.page} of ${payload.total_pages}` : "";
+
+  const lines = payload.results.map(
+    hit => `- [${hit.name ?? "Untitled"}](${hit.url}) - ${hit.type}`
+  );
+
+  return `${count} for "${payload.query}"${pages}:\n${lines.join("\n")}`;
+}
+
 export function registerSearchTools(server: McpServer, client: AhaGraphQLClient = ahaGraphQLClient) {
   server.registerTool(
     "aha_search",
@@ -27,7 +62,8 @@ export function registerSearchTools(server: McpServer, client: AhaGraphQLClient 
           "requirements, releases, tasks, pages, comments and more. Queries Aha.io directly, so " +
           "results are always current. Supports 'term*' for prefix matching, AND/OR/NOT, and " +
           "\"quoted phrases\". Use '*' to match everything, which is useful with workspaceId to " +
-          "list a workspace's records.",
+          "list a workspace's records. Returns each hit's name, type and absolute Aha.io URL, " +
+          "already rendered as markdown links, plus paging counts.",
       inputSchema: {
         query: z
           .string()
@@ -98,12 +134,10 @@ export function registerSearchTools(server: McpServer, client: AhaGraphQLClient 
         };
 
         return {
-          // The same payload twice: structuredContent is what a client should read, the
-          // text block is the spec's backwards-compatible copy for clients that ignore it.
           content: [
             {
               type: "text" as const,
-              text: JSON.stringify(payload, null, 2)
+              text: renderResults(payload)
             }
           ],
           structuredContent: payload
