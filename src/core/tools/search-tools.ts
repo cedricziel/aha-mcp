@@ -56,6 +56,11 @@ export function registerSearchTools(server: McpServer, client: AhaGraphQLClient 
             `anything below ${MIN_PER_PAGE} to ${MIN_PER_PAGE}.`
         )
     },
+    {
+      title: "Search Aha.io",
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     async ({ query, workspaceId, recordTypes, page, perPage }) => {
       try {
         const result = await client.searchDocuments({
