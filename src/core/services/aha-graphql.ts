@@ -151,15 +151,36 @@ export class AhaGraphQLClient {
    *  - `*` suffix does prefix matching, `AND`/`OR`/`NOT` and "quoted phrases" are honoured
    *  - `projectId` constrains results to one workspace with no cross-workspace leakage
    *  - unrecognised `searchableType` values are not an error, they just match nothing
+   *  - **there is no match-all query.** A bare `*` is not one: on its own it returns an
+   *    arbitrary subset (4116 hits on an account where `APPO11Y*` alone returned 7963),
+   *    and combined with `projectId` it returns **zero**, for every workspace tried. This
+   *    is rejected below rather than passed through, because the empty result reads as an
+   *    empty workspace and gets diagnosed as a broken `projectId` filter - which is what
+   *    happened when the tool description recommended exactly that combination.
+   *  - `projectId` must be a **string**. Passing the same id as a number is not an error;
+   *    it silently matches nothing, so it is coerced below.
    */
   async searchDocuments(params: SearchDocumentsParams): Promise<SearchDocumentsResult> {
     const query = params.query?.trim();
     if (!query) {
-      throw new Error('A search query is required. Use "*" to match everything.');
+      throw new Error(
+        'A search query is required. Aha.io has no match-all query; search for a term, or ' +
+          'use prefix matching such as "a*".'
+      );
+    }
+    if (/^\*+$/.test(query)) {
+      throw new Error(
+        'Aha.io does not support "*" as a match-all query: on its own it returns an ' +
+          'arbitrary subset of records, and scoped to a workspace it returns nothing at ' +
+          'all. Search for a term instead - prefix matching ("a*"), a reference prefix ' +
+          '("PRJ1*"), or several alternatives ("a* OR b* OR c*") - and narrow with ' +
+          'recordTypes. To enumerate a workspace rather than search it, read its records ' +
+          'through the list resources, e.g. aha://features or aha://ideas/{product_id}.'
+      );
     }
 
     const filters: Record<string, unknown> = { query };
-    if (params.projectId) filters.projectId = params.projectId;
+    if (params.projectId) filters.projectId = String(params.projectId);
     if (params.searchableType?.length) filters.searchableType = params.searchableType;
 
     const per = Math.min(Math.max(params.per ?? 20, MIN_PER_PAGE), MAX_PER_PAGE);

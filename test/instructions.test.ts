@@ -25,4 +25,19 @@ describe('buildServerInstructions', () => {
     // `resource` is the API endpoint; offering it as a link sends the user to JSON.
     expect(instructions).toMatch(/never offer it as the link/i);
   });
+
+  /**
+   * A client that surfaces tools but not resources sees writers it cannot verify against,
+   * because search returns none of the fields a write replaces. This is the only always-on
+   * channel the server has to say so, so it names the read tools by name.
+   */
+  it('tells the session to read a record before writing to it', () => {
+    const instructions = buildServerInstructions('acme');
+
+    expect(instructions).toMatch(/read a record before you change it/i);
+    expect(instructions).toContain('aha_get_feature');
+    // The two PUTs that replace a collection rather than adding to it.
+    expect(instructions).toContain('aha_update_feature_tags');
+    expect(instructions).toContain('aha_associate_feature_with_goals');
+  });
 });

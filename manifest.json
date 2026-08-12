@@ -4,7 +4,7 @@
   "display_name": "Aha.io MCP Server",
   "version": "4.0.0",
   "description": "Model Context Protocol server for Aha.io product management platform",
-  "long_description": "A comprehensive MCP server that provides seamless integration with Aha.io's API. This extension enables AI assistants to search and manage Aha.io records - ideas, features, epics, initiatives, goals, requirements, releases and competitors - with 31 tools, 15 resources and 14 guided prompts.\n\nSearch is served by Aha.io's own index via aha_search, so results are always current and nothing is cached locally. Every tool queries Aha.io directly; the extension stores no data and needs no native dependencies.",
+  "long_description": "A comprehensive MCP server that provides seamless integration with Aha.io's API. This extension enables AI assistants to search and manage Aha.io records - ideas, features, epics, initiatives, goals, requirements, releases and competitors - with 36 tools, 15 resources and 17 guided prompts.\n\nSearch is served by Aha.io's own index via aha_search, so results are always current and nothing is cached locally. Search returns names, types and links; aha_get_feature and its siblings return a full record - workflow status, release, assignee and custom field values - so a change can be checked against what the record says now. Every tool queries Aha.io directly; the extension stores no data and needs no native dependencies.",
   "author": {
     "name": "Cedric Ziel",
     "email": "mail@cedric-ziel.com",
@@ -119,12 +119,32 @@
       "description": "Delete an idea in Aha.io. Returns a confirmation naming the deleted idea; there is no record to return."
     },
     {
+      "name": "aha_get_epic",
+      "description": "Read one epic from Aha.io by reference number (e.g. PRJ1-E-4) or internal id. Returns the full current record - including workflow status, release, initiative, assignee, progress and custom field values - as structuredContent, a one-line summary naming its status, and a link to the epic. aha_search returns none of these fields, so use this to see a epic's current values, and always read before you write to one."
+    },
+    {
+      "name": "aha_get_feature",
+      "description": "Read one feature from Aha.io by reference number (e.g. PRJ1-123) or internal id. Returns the full current record - including workflow status, release, epic, initiative, assignee, tags, score, progress and custom field values - as structuredContent, a one-line summary naming its status, and a link to the feature. aha_search returns none of these fields, so use this to see a feature's current values, and always read before you write to one."
+    },
+    {
+      "name": "aha_get_idea",
+      "description": "Read one idea from Aha.io by reference number (e.g. PRJ1-I-7) or internal id. Returns the full current record - including workflow status, score, endorsement and vote counts, categories and custom field values - as structuredContent, a one-line summary naming its status, and a link to the idea. aha_search returns none of these fields, so use this to see a idea's current values, and always read before you write to one."
+    },
+    {
+      "name": "aha_get_initiative",
+      "description": "Read one initiative from Aha.io by reference number (e.g. PRJ1-S-2) or internal id. Returns the full current record - including workflow status, progress, timeframe, goals and custom field values - as structuredContent, a one-line summary naming its status, and a link to the initiative. aha_search returns none of these fields, so use this to see a initiative's current values, and always read before you write to one."
+    },
+    {
+      "name": "aha_get_release",
+      "description": "Read one release from Aha.io by reference number (e.g. PRJ1-R-3) or internal id. Returns the full current record - including workflow status, progress, whether it has been released, its release date, parking-lot flag, goals and custom field values - as structuredContent, a one-line summary naming its status, and a link to the release. aha_search returns none of these fields, so use this to see a release's current values, and always read before you write to one."
+    },
+    {
       "name": "aha_move_feature_to_release",
       "description": "Move a feature to a different release in Aha.io. Returns the updated feature and a link to it."
     },
     {
       "name": "aha_search",
-      "description": "Search across Aha.io records - ideas, features, epics, initiatives, goals, key results, requirements, releases, tasks, pages, comments and more. Queries Aha.io directly, so results are always current. Supports 'term*' for prefix matching, AND/OR/NOT, and \"quoted phrases\". Use '*' to match everything, which is useful with workspaceId to list a workspace's records. Returns each hit's name, type and absolute Aha.io URL, already rendered as markdown links, plus paging counts."
+      "description": "Search across Aha.io records - ideas, features, epics, initiatives, goals, key results, requirements, releases, tasks, pages, comments and more. Queries Aha.io directly, so results are always current. Supports 'term*' for prefix matching, AND/OR/NOT, and \"quoted phrases\". There is no match-all query: '*' is rejected, because Aha.io returns nothing for it once workspaceId is set. Returns each hit's name, type and absolute Aha.io URL, already rendered as markdown links, plus paging counts - not workflow status, release or custom fields. Read a specific record with aha_get_feature, aha_get_epic, aha_get_idea, aha_get_initiative or aha_get_release when you need its current field values, and always do so before writing to it."
     },
     {
       "name": "aha_update_competitor",

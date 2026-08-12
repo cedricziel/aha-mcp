@@ -2,10 +2,17 @@
  * Server instructions, returned in the `initialize` response and surfaced by clients as
  * standing context for the whole session - no tool call or prompt needed.
  *
- * Two jobs: say what this server is connected to, and get records linked rather than
- * described. Every byte here costs context in every session, so keep it to things a client
- * cannot work out from the tool list: the identity of the system, which identifier a human
- * recognises, and what to do with `url`.
+ * Three jobs: say what this server is connected to, get records linked rather than
+ * described, and get records read before they are written. Every byte here costs context in
+ * every session, so keep it to things a client cannot work out from the tool list: the
+ * identity of the system, which identifier a human recognises, what to do with `url`, and
+ * that these writes land on shared production data.
+ *
+ * The read-before-write sentence earns its place because the alternative is silent: Aha's
+ * writes replace values rather than merging them, `aha_search` cannot return the fields a
+ * writer is about to overwrite, and a model that never calls `aha_get_*` first will not
+ * notice any of that. It is the one instruction here whose absence corrupts data rather
+ * than merely costing a round trip.
  *
  * Guidance, not enforcement - clients vary in how prominently they surface this. Anything
  * that must hold belongs in the data instead.
@@ -29,6 +36,8 @@ export function buildServerInstructions(subdomain?: string | null): string {
     : 'the account this server is configured against';
 
   return `Aha! (aha.io) is the product management tool used for ${account}, and these tools read and write it directly. Its records are the live, shared source of truth rather than a scratch copy: ideas are incoming customer requests, features and epics are planned work, releases group work by date, and goals and initiatives hold the strategy that work rolls up to.
+
+Read a record before you change it. \`aha_search\` returns only a name, type, id and URL - never workflow status, release membership or custom field values - so read the record itself with \`aha_get_feature\`, \`aha_get_epic\`, \`aha_get_idea\`, \`aha_get_initiative\` or \`aha_get_release\` before writing to it, and report what it currently says if a change looks like it would overwrite someone else's work. Two of these tools replace a whole collection rather than adding to it: \`aha_update_feature_tags\` and \`aha_associate_feature_with_goals\` drop anything left out of the request.
 
 Records carry two identifiers. \`reference_num\` - PROJA-134, IDEASB-I-6375 - is the one people use and the one the Aha UI shows. \`id\` is an internal number nobody recognises. Name a record by its reference number.
 

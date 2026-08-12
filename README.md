@@ -432,7 +432,21 @@ aha://custom-field/CF-123/options # Get options for custom field
 
 ### Available Tools
 
-**Note**: Read operations (list/get) are handled through MCP resources. Tools are focused on write operations and relationship management.
+**Note**: List operations are handled through MCP resources. Tools cover search, single-record
+reads, write operations and relationship management.
+
+#### Record Read Tools
+- `aha_get_feature`: Read one feature, including workflow status, release, assignee, tags, score and custom field values
+- `aha_get_epic`: Read one epic
+- `aha_get_idea`: Read one idea
+- `aha_get_initiative`: Read one initiative
+- `aha_get_release`: Read one release
+
+These return the full record as `structuredContent`. They duplicate what
+`aha://feature/{id}` and friends already serve, deliberately: a client is free to surface
+resources to its model or not, and several do not — on those, every read here was
+unreachable, leaving write tools with no way to see what they were about to replace.
+`aha_search` is not a substitute, as it cannot return per-record fields.
 
 #### Write Operation Tools
 - `aha_create_feature_comment`: Create a comment on a feature
@@ -473,11 +487,14 @@ aha://custom-field/CF-123/options # Get options for custom field
 - `aha_associate_feature_with_goals`: Associate a feature with multiple goals
 - `aha_update_feature_tags`: Update tags for a feature
 
-**Note**: The MCP server follows best practices by separating read and write operations:
-- **Resources** are used for all read operations (list/get) and provide comprehensive access to Aha.io entities with advanced filtering capabilities through URI parameters
-- **Tools** are reserved for write operations (create/update/delete) and relationship management (associate/move) that modify data in Aha.io
+**Note**: reads are offered through both interfaces, by design:
+- **Resources** cover the full read surface — every entity type, with filtering through URI parameters, and lists as well as single records
+- **Tools** cover writes (create/update/delete), relationship management (associate/move), search, and single-record reads for the five most-written types
 
-This separation ensures a clean architecture where resources handle data retrieval and tools handle data modification.
+The overlap is deliberate. Resources are the richer read surface, but the MCP spec leaves it
+to each client whether to expose them to its model, and tool-only clients are common. Keeping
+reads tool-accessible for the types that have write tools is what stops an agent from changing
+a field it cannot see.
 
 ### 🚀 Phase 8 - Complete CRUD Operations & Advanced Features
 
@@ -521,13 +538,14 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 - **Comprehensive Entity Coverage**: Full CRUD operations for features, epics, ideas, and competitors
 
 #### Technical Achievements
-- **31 MCP tools**, all querying Aha.io directly — no local state
+- **36 MCP tools**, all querying Aha.io directly — no local state
 - **15 listed MCP resources** covering the entity set, plus templated resource URIs
 - **17 domain-specific prompts** (workflow automation)
 - **25 core CRUD and write operation tools** for complete lifecycle management
 - **Cross-record search** over Aha's own index, covering 20 record types
+- **5 single-record read tools**, so a write can be checked against the record's current state on clients that do not surface resources
 - **5 server configuration tools** for runtime configuration
-- **306 tests passing** with comprehensive service coverage
+- **437 tests passing** with comprehensive service coverage
 - **No native dependencies**, so the server runs anywhere Node does
 - **Comprehensive error handling** with proper Zod schema validation
 
@@ -544,15 +562,27 @@ always current and no native dependencies or writable storage are required.
 // Ideas only, within one workspace
 { "query": "alerting", "recordTypes": ["Idea"], "workspaceId": "7387509120724661690" }
 
-// List a workspace's ideas: "*" matches everything
-{ "query": "*", "recordTypes": ["Idea"], "workspaceId": "7387509120724661690" }
+// Sweep a workspace broadly: alternatives, because there is no match-all
+{ "query": "a* OR e* OR i* OR o* OR u*", "recordTypes": ["Idea"], "workspaceId": "7387509120724661690" }
 ```
 
 **What it matches:** record names and descriptions. Comment bodies match too, surfacing as
 `Comment` hits that link to their parent record.
 
 **Query syntax:** `term*` for prefix matching, `AND` / `OR` / `NOT`, and `"quoted phrases"`.
-`*` matches everything.
+
+**There is no match-all query.** A bare `*` is rejected: on its own Aha returns an arbitrary
+subset for it, and combined with `workspaceId` it returns nothing at all — an empty result
+that reads like an empty workspace. Search for a term, or enumerate a workspace through the
+list resources (`aha://features`, `aha://ideas/{product_id}`) instead of searching it.
+
+**What it does not return:** workflow status, release membership, assignee or custom field
+values. Aha's `searchDocuments` cannot select per-type fields, so a hit carries only its
+name, type, id, workspace, URL and `updated_at`. Read the record itself for anything else:
+
+```jsonc
+{ "featureId": "PRJ1-123" }   // aha_get_feature — full record, including custom fields
+```
 
 **Record types** (`recordTypes`, omit to search all):
 

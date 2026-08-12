@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
 import * as services from "./services/index.js";
 import { registerSearchTools } from "./tools/search-tools.js";
+import { registerRecordTools } from "./tools/record-tools.js";
 import {
   commentOutputSchema,
   competitorOutputSchema,
@@ -1333,4 +1334,9 @@ export function registerTools(server: McpServer) {
 
   // Search, served by Aha's own index rather than a local copy of the data.
   registerSearchTools(server);
+
+  // Single-record reads. Registered as tools, not only as aha:// resources, because a client
+  // that does not surface resources to its model would otherwise see writers with no way to
+  // read what they are about to overwrite.
+  registerRecordTools(server);
 }

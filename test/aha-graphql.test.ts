@@ -140,9 +140,58 @@ describe('AhaGraphQLClient', () => {
       expect(calls[0].body.variables.filters).not.toHaveProperty('searchableType');
     });
 
-    it('rejects a blank query, pointing at the wildcard', async () => {
+    it('coerces a workspace id to a string, which a number silently is not', async () => {
+      // Aha accepts a numeric projectId without complaint and matches nothing at all, so a
+      // caller passing the id as a number would get an empty result with no hint why. Real
+      // workspace ids (7387506590217164236) also exceed 2^53, so a number cannot even hold
+      // one exactly - which is why the API surface types this as a string throughout.
+      const { client, calls } = stub(page());
+      await client.searchDocuments({ query: 'alert', projectId: 12345 as any });
+
+      expect(calls[0].body.variables.filters.projectId).toBe('12345');
+    });
+
+    it('rejects a blank query, without promising a match-all', async () => {
       const { client } = stub(page());
-      await expect(client.searchDocuments({ query: '   ' })).rejects.toThrow(/\*/);
+      await expect(client.searchDocuments({ query: '   ' })).rejects.toThrow(/no match-all/);
+    });
+
+    /**
+     * `*` was documented by this server as a match-all and is not one: alone it returns an
+     * arbitrary subset, and with `projectId` set it returns zero for every workspace tried.
+     * The empty result is the damaging part - it reads as an empty workspace, and gets
+     * diagnosed as a broken workspace filter - so it is refused before the request goes out.
+     */
+    it('refuses a wildcard-only query rather than returning nothing', async () => {
+      const { client, calls } = stub(page());
+
+      for (const query of ['*', '**', ' * ']) {
+        await expect(client.searchDocuments({ query })).rejects.toThrow(
+          /does not support "\*" as a match-all/
+        );
+      }
+
+      expect(calls).toHaveLength(0);
+    });
+
+    it('says what to do instead when it refuses a wildcard', async () => {
+      const { client } = stub(page());
+      const error = await client.searchDocuments({ query: '*' }).catch((e: Error) => e);
+
+      // A refusal that does not name a working alternative just moves the dead end.
+      expect(error.message).toMatch(/a\*/);
+      expect(error.message).toMatch(/recordTypes/);
+      expect(error.message).toMatch(/aha:\/\//);
+    });
+
+    it('still allows a wildcard inside a real term', async () => {
+      const { client, calls } = stub(page());
+      await client.searchDocuments({ query: 'APPO11Y*', projectId: 'ws-1' });
+
+      expect(calls[0].body.variables.filters).toEqual({
+        query: 'APPO11Y*',
+        projectId: 'ws-1'
+      });
     });
   });
 

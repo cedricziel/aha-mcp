@@ -59,6 +59,22 @@ Behaviours measured against a live account, not documented upstream - keep the c
   permission or licensing problem is an HTTP **403** - do not conflate them.
 - Most other list queries (`goals`, `initiatives`, `keyResults`, ...) require a `filters`
   argument *and* a scoping id inside it; `filters: {}` is rejected.
+- **There is no match-all query, and `*` is not one.** Alone it returns an arbitrary subset
+  (4116 hits on an account where `APPO11Y*` by itself returned 7963); combined with
+  `projectId` it returns **zero**, for every workspace tried. `searchDocuments` rejects a
+  wildcard-only query rather than passing it on, because the empty result reads as an empty
+  workspace and gets diagnosed as a broken `projectId` filter - which is exactly what
+  happened while `aha_search`'s own description recommended that combination. The filter
+  works: `projectId` plus a real term returns correctly scoped hits. Do not restore the
+  match-all claim to the tool description, the README, or the blank-query error.
+- `projectId` must be a **string**. A numeric id is not an error, it silently matches
+  nothing - and real workspace ids exceed 2^53, so a JS number cannot hold one exactly
+  anyway. `searchDocuments` coerces with `String()`.
+- A search hit cannot carry per-type fields. `searchDocuments` returns a concrete
+  `SearchDocument`, not a union, so `... on Feature { workflowStatus }` is rejected outright
+  with *"Fragment on Feature can't be spread inside SearchDocument"*. Status, release
+  membership and custom field values are only reachable per record - hence the `aha_get_*`
+  tools. Do not try to enrich search hits through this query.
 
 A previous local-cache implementation (SQLite plus a placeholder embedding that hashed
 character codes through `Math.sin()`) was removed in favour of this. Do not reintroduce
@@ -170,9 +186,17 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
   does not cover. Reads credentials via `AhaService.getCredentials()` so `configure_server`
   applies at runtime
 - **ConfigService**: Manages runtime configuration with file persistence and validation
-- **Tools**: 31 MCP tools (CRUD, search, health checks, configuration), none of which keep
-  local state
+- **Tools**: 36 MCP tools (CRUD, single-record reads, search, health checks, configuration),
+  none of which keep local state
 - **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes
+- **Read tools vs read resources**: `src/core/tools/record-tools.ts` registers `aha_get_*`
+  for feature, epic, idea, initiative and release, wrapping the same service getters the
+  `aha://{type}/{id}` resources call. The duplication is deliberate and should stay.
+  Surfacing resources to a model is optional for a client, and tool-only clients are common;
+  on one of those this server was ~25 writers plus a search returning six fields, so an
+  agent could set a feature's status but never read the status it was replacing. Reads must
+  stay reachable as tools for every type that has a write tool - if you add writers for a
+  new type, add its reader too
 - **Prompts**: 17 workflow prompts. Twelve template a question; five (`idea_triage`,
   `release_readiness`, `feature_description_draft`, `quarterly_roadmap_review`,
   `customer_demand_rollup`) instead tell the agent which tools and resources to reach for,
@@ -245,8 +269,9 @@ Every tool is registered with an annotations argument, and the e2e suite fails i
 missing. Conventions used here:
 
 - `title` is a short human-readable label for client UIs.
-- `readOnlyHint` is true only for tools that never write: `aha_search`, `server_status`,
-  `get_server_config`, `server_health_check`, `test_configuration`.
+- `readOnlyHint` is true only for tools that never write: `aha_search`, the five `aha_get_*`
+  readers, `server_status`, `get_server_config`, `server_health_check`,
+  `test_configuration`.
 - `destructiveHint` and `idempotentHint` are **omitted** when `readOnlyHint` is true - the
   spec only gives them meaning for writers.
 - `destructiveHint: true` covers the deletes plus the two PUT endpoints that replace a whole

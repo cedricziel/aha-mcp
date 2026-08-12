@@ -61,16 +61,21 @@ export function registerSearchTools(server: McpServer, client: AhaGraphQLClient 
       description: "Search across Aha.io records - ideas, features, epics, initiatives, goals, key results, " +
           "requirements, releases, tasks, pages, comments and more. Queries Aha.io directly, so " +
           "results are always current. Supports 'term*' for prefix matching, AND/OR/NOT, and " +
-          "\"quoted phrases\". Use '*' to match everything, which is useful with workspaceId to " +
-          "list a workspace's records. Returns each hit's name, type and absolute Aha.io URL, " +
-          "already rendered as markdown links, plus paging counts.",
+          "\"quoted phrases\". There is no match-all query: '*' is rejected, because Aha.io " +
+          "returns nothing for it once workspaceId is set. Returns each hit's name, type and " +
+          "absolute Aha.io URL, already rendered as markdown links, plus paging counts - not " +
+          "workflow status, release or custom fields. Read a specific record with " +
+          "aha_get_feature, aha_get_epic, aha_get_idea, aha_get_initiative or aha_get_release " +
+          "when you need its current field values, and always do so before writing to it.",
       inputSchema: {
         query: z
           .string()
           .min(1)
           .describe(
             "Search term. Matches record names and descriptions, and comment bodies. " +
-              "Supports 'term*' prefix matching, AND/OR/NOT, and \"quoted phrases\". Use '*' to match all."
+              "Supports 'term*' prefix matching, AND/OR/NOT, and \"quoted phrases\". A bare '*' " +
+              "is not a match-all and is rejected; to sweep broadly, use alternatives such as " +
+              "'a* OR b* OR c*'."
           ),
         workspaceId: z
           .string()
