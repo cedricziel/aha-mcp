@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.0.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.9.0...aha-mcp-v1.0.0) (2026-08-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* the `sse` transport is removed. `--mode sse` and MCP_TRANSPORT_MODE=sse now fall back to `streamable-http` with a warning. If you talk HTTP directly, replace the `/sse` and `/messages` endpoints with the single `/mcp` endpoint. The `build:http` and
+* the aha_sync_* and embedding/semantic-search tools are removed, along with the AHA_ENABLE_LOCAL_CACHE flag. Use aha_search instead, which needs no sync. The tool count goes from 49 (30 default) to 31.
+
+### Features
+
+* replace local semantic search with Aha's searchDocuments API ([#300](https://github.com/cedricziel/aha-mcp/issues/300)) ([67a7c7e](https://github.com/cedricziel/aha-mcp/commit/67a7c7e42aef7530b984e3643e9b370dfad3bb86))
+
+
+### Bug Fixes
+
+* resolve the cache path independently of cwd and make it opt-in ([#297](https://github.com/cedricziel/aha-mcp/issues/297)) ([7c6cce5](https://github.com/cedricziel/aha-mcp/commit/7c6cce5c4a7dcd21f1e25577ac8f9be0b05640e5))
+* stop the e2e flake at its source, and remove the deprecated SSE transport ([#301](https://github.com/cedricziel/aha-mcp/issues/301)) ([27c6bac](https://github.com/cedricziel/aha-mcp/commit/27c6bac11fdbb48d8d43ab5c45745d17bc69b150))
+
 ## [0.9.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.8.0...aha-mcp-v0.9.0) (2026-08-12)
 
 
