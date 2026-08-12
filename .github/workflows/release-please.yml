@@ -34,6 +34,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # Set up Node before the build so the smoke tests below run against the same
+      # version the artifacts are published for, rather than the runner default.
+      # registry-url is deliberately left to the publish step: it writes an .npmrc
+      # referencing NODE_AUTH_TOKEN, which is not in scope until then.
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -43,36 +52,41 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run tests
-        run: bun test --preload ./test/setup.ts
+        run: bun run test
 
       - name: Build
         run: bun run build
 
-      - name: Install DXT CLI
-        run: npm install -g @anthropic-ai/dxt
-
-      - name: Build DXT package
-        run: bun run dxt:pack
+      - name: Smoke test the built server
+        # Guards against shipping a bundle that cannot start - every release up to
+        # v0.8.0 shipped artifacts that crashed immediately on require.
+        run: node build/index.js --help
 
       - name: Get package version
         id: package_version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
-      - name: Rename DXT file
-        run: mv aha-mcp.dxt aha-mcp-v${{ steps.package_version.outputs.version }}.dxt
+      - name: Build desktop extension
+        run: |
+          bunx mcpb pack . "dist/aha-mcp-v${{ steps.package_version.outputs.version }}.mcpb"
 
-      - name: Upload DXT to Release
+      - name: Verify the desktop extension starts
+        run: |
+          bunx mcpb unpack "dist/aha-mcp-v${{ steps.package_version.outputs.version }}.mcpb" /tmp/mcpb-check
+          node /tmp/mcpb-check/build/index.js --help
+
+      - name: Upload desktop extension to Release
         run: |
           gh release upload ${{ needs.release-please.outputs.tag_name }} \
-            aha-mcp-v${{ steps.package_version.outputs.version }}.dxt \
+            "dist/aha-mcp-v${{ steps.package_version.outputs.version }}.mcpb" \
             --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node.js
+      - name: Configure npm registry auth
         uses: actions/setup-node@v7
         with:
-          node-version: '18'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Publish to npm

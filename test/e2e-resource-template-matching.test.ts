@@ -16,9 +16,10 @@ import { withTestClient } from './utils/mcp-client-helper';
  * - URIs with query parameters in ANY order (not just template order)
  * - URIs with partial query parameters (omitted params return as empty strings)
  *
- * Mocking: The @cedricziel/aha-js library is mocked in test/setup.ts to return predictable test data
- * without requiring real Aha.io credentials. This allows tests to verify ResourceTemplate matching logic
- * without depending on external API availability.
+ * Mocking: the server subprocess is spawned with AHA_TOKEN=test-token and NODE_ENV=test, which makes
+ * src/core/services/index.ts select MockAhaService and return predictable test data without requiring
+ * real Aha.io credentials. This allows tests to verify ResourceTemplate matching logic without
+ * depending on external API availability.
  */
 
 describe('ResourceTemplate URI Matching E2E', () => {

@@ -1,10 +1,50 @@
-import sqlite3 from 'sqlite3';
-import { open, Database } from 'sqlite';
-import * as sqliteVec from 'sqlite-vec';
+import type sqlite3 from 'sqlite3';
+import type { Database } from 'sqlite';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { log } from '../logger.js';
+
+/**
+ * sqlite3 and sqlite-vec are native modules, so they are imported lazily and kept
+ * out of the bundle (see the --external flags in the build scripts).
+ *
+ * Two reasons this matters:
+ *  - a bundled `build/index.js` cannot resolve a native .node binding relative to
+ *    itself, so a static import crashed the server on startup for every consumer;
+ *  - only the sync and embedding tools need a database, so the other ~35 Aha tools
+ *    should not be held hostage to a native build being available.
+ */
+type AhaDatabase = Database<sqlite3.Database, sqlite3.Statement>;
+
+async function openDatabase(filename: string): Promise<AhaDatabase> {
+  let sqlite3Module: typeof import('sqlite3');
+  try {
+    sqlite3Module = await import('sqlite3');
+  } catch (error) {
+    throw new Error(
+      'The sqlite3 native module could not be loaded, so database-backed features ' +
+        '(aha_sync_* and the embedding tools) are unavailable. Install the server via ' +
+        'npm or run the Docker image to use them. ' +
+        `Underlying error: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  const { open } = await import('sqlite');
+  // sqlite3 is CommonJS; interop can surface it as either the namespace or `.default`.
+  const driver = (sqlite3Module.default ?? sqlite3Module) as typeof import('sqlite3');
+
+  return open({ filename, driver: driver.Database });
+}
+
+async function loadVectorExtension(db: AhaDatabase): Promise<void> {
+  const sqliteVec = await import('sqlite-vec');
+  const load = (sqliteVec.load ?? (sqliteVec as { default?: { load?: typeof sqliteVec.load } }).default?.load);
+  if (typeof load !== 'function') {
+    throw new Error('sqlite-vec did not expose a load() function');
+  }
+  load(db);
+}
 
 export interface SyncJob {
   id: string;
@@ -57,7 +97,7 @@ export interface SearchResult {
  * Database service for Aha MCP Server with SQLite and vector embeddings
  */
 export class DatabaseService {
-  private db: Database<sqlite3.Database, sqlite3.Statement> | null = null;
+  private db: AhaDatabase | null = null;
   private dbPath: string;
   private isInitialized = false;
   private vectorEnabled = false;
@@ -81,10 +121,7 @@ export class DatabaseService {
       await fs.mkdir(dbDir, { recursive: true });
 
       // Open database connection
-      this.db = await open({
-        filename: this.dbPath,
-        driver: sqlite3.Database
-      });
+      this.db = await openDatabase(this.dbPath);
 
       // Enable foreign keys
       await this.db.exec('PRAGMA foreign_keys = ON;');
@@ -97,7 +134,7 @@ export class DatabaseService {
 
       // Load sqlite-vec extension
       try {
-        sqliteVec.load(this.db);
+        await loadVectorExtension(this.db);
         this.vectorEnabled = true;
         if (!process.env.NODE_ENV?.includes('test')) {
           log.info('sqlite-vec extension loaded successfully');
@@ -152,7 +189,7 @@ export class DatabaseService {
   /**
    * Get database instance (ensure initialization)
    */
-  private async getDb(): Promise<Database<sqlite3.Database, sqlite3.Statement>> {
+  private async getDb(): Promise<AhaDatabase> {
     if (!this.isInitialized || !this.db) {
       await this.initialize();
     }

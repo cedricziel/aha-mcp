@@ -8,6 +8,16 @@ A Model Context Protocol (MCP) server that provides seamless integration with Ah
 
 ## 🔧 Client Configuration
 
+### Claude Desktop Extension (easiest)
+
+Download `aha-mcp-v<version>.mcpb` from the [latest release](https://github.com/cedricziel/aha-mcp/releases/latest)
+and open it with Claude Desktop, which will prompt you for your Aha.io subdomain and API
+token. No Node.js or Docker setup and no manual JSON editing required.
+
+The extension bundles the server itself but not the native `sqlite3` module, so the
+local-cache tools (`aha_sync_*`) and the embedding/semantic-search tools are unavailable
+inside it. Everything else works; use the npx or Docker setup below if you need those.
+
 ### Claude Desktop Configuration
 
 To use this MCP server with Claude Desktop, add the following to your `claude_desktop_config.json`:

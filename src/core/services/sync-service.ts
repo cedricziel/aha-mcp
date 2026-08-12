@@ -54,9 +54,16 @@ export class BackgroundSyncService extends EventEmitter {
     options: SyncOptions = {}
   ): Promise<string> {
     const jobId = await this.db.createSyncJob(entities, options);
-    
+
+    // Register the abort controller before the job starts. Previously it was created
+    // inside runSyncJob, so a stopSync/pauseSync arriving right after startSync found
+    // nothing to abort and the job kept running with its status overwritten back to
+    // 'running' by the job's first progress write.
+    const controller = new AbortController();
+    this.activeSyncs.set(jobId, controller);
+
     // Don't await - run in background
-    this.runSyncJob(jobId, entities, options).catch(error => {
+    this.runSyncJob(jobId, entities, options, controller).catch(error => {
       log.error(`Sync job ${jobId} failed`, error);
       this.emit('sync-error', { jobId, error: error.message });
     });
@@ -159,10 +166,15 @@ export class BackgroundSyncService extends EventEmitter {
   private async runSyncJob(
     jobId: string,
     entities: string[],
-    options: SyncOptions
+    options: SyncOptions,
+    controller: AbortController = new AbortController()
   ): Promise<void> {
-    const controller = new AbortController();
     this.activeSyncs.set(jobId, controller);
+
+    // Stopped before the job got going - leave the terminal status alone.
+    if (controller.signal.aborted) {
+      return;
+    }
 
     try {
       await this.db.updateSyncJobProgress(jobId, {
@@ -170,6 +182,14 @@ export class BackgroundSyncService extends EventEmitter {
         started_at: new Date(),
         total: entities.length * 100 // Rough estimate
       });
+
+      // A stop that landed while the write above was in flight would have been
+      // clobbered by it, so re-assert the stopped status instead of leaving the job
+      // looking like it is still running.
+      if (controller.signal.aborted) {
+        await this.db.updateSyncJobProgress(jobId, { status: 'paused' });
+        return;
+      }
 
       await this.db.addSyncHistory(jobId, 'system', 'sync_start', undefined, {
         entities,

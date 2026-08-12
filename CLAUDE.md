@@ -11,6 +11,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `bun run dev:http` - Start HTTP server in development mode with auto-reload
 - `bun build` - Build the stdio server for production
 - `bun run build:http` - Build the HTTP server for production
+- `bun test` - Run the test suite (no `--preload`; see the note below)
+- `bun run mcpb:validate` - Validate `manifest.json` against the MCP bundle schema
+- `bun run mcpb:pack` - Build and pack the Claude Desktop extension to `dist/aha-mcp.mcpb`
+
+### Notes for changing the build
+
+- `sqlite3` and `sqlite-vec` are native modules and are deliberately `--external` and
+  imported lazily. Keep it that way: bundling them makes `bindings` look for the
+  compiled `.node` next to `build/index.js`, which crashes the server on startup for
+  every packaged artifact. Verify with `node build/index.js --help` after build changes.
+- Do not run the tests with `--preload ./test/setup.ts`. Forcing `MockAhaService`
+  in-process breaks the unit tests that patch the real `AhaService`; the e2e tests get
+  the mock via `AHA_TOKEN=test-token` in the spawned server's environment instead.
+- `src/core/uri-template.ts` vendors the still-unmerged upstream fix from
+  modelcontextprotocol/typescript-sdk#1083. Delete it once that lands, not before -
+  without it, resource URIs carrying query parameters do not match.
 
 ## Runtime Configuration
 
@@ -98,10 +114,13 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
 
 - **AhaService**: Singleton service class that wraps the `aha-js` library for API interactions
 - **ConfigService**: Manages runtime configuration with file persistence and validation
-- **Tools**: 40 MCP tools for Aha.io operations (CRUD, health checks, configuration)
+- **Tools**: 49 MCP tools for Aha.io operations (CRUD, sync, embeddings, health checks, configuration)
 - **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes
-- **Prompts**: 12 domain-specific workflow prompts with context-aware responses
+- **Prompts**: 14 domain-specific workflow prompts with context-aware responses
 - **Authentication**: Runtime configuration with environment variables and config file support
+
+Tool, resource and prompt counts are also mirrored in `manifest.json` for the desktop
+extension - regenerate that list from a running server rather than editing it by hand.
 
 ### Transport Layer
 
