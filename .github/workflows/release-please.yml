@@ -36,11 +36,12 @@ jobs:
 
       # Set up Node before the build so the smoke tests below run against the same
       # version the artifacts are published for, rather than the runner default.
+      # registry-url is deliberately left to the publish step: it writes an .npmrc
+      # referencing NODE_AUTH_TOKEN, which is not in scope until then.
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -81,6 +82,12 @@ jobs:
             --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure npm registry auth
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Publish to npm
         run: npm publish --provenance --access public
