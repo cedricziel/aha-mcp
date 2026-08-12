@@ -27,12 +27,6 @@ const mockAhaService = {
       { id: 'FEAT-1', name: 'Feature 1', reference_num: 'TEST-1' },
       { id: 'FEAT-2', name: 'Feature 2', reference_num: 'TEST-2' }
     ]
-  })),
-  listReleases: mock(() => Promise.resolve({
-    releases: [
-      { id: 'REL-1', name: 'Release 1', reference_num: 'R1' },
-      { id: 'REL-2', name: 'Release 2', reference_num: 'R2' }
-    ]
   }))
 };
 
@@ -48,7 +42,6 @@ describe('E2E: Resource Discovery Workflows', () => {
       getProduct: AhaService.getProduct,
       listProducts: AhaService.listProducts,
       listFeatures: AhaService.listFeatures,
-      listReleases: AhaService.listReleases,
     };
 
     Object.values(mockAhaService).forEach(mock => mock.mockClear());
@@ -56,7 +49,6 @@ describe('E2E: Resource Discovery Workflows', () => {
     (AhaService as any).getProduct = mockAhaService.getProduct;
     (AhaService as any).listProducts = mockAhaService.listProducts;
     (AhaService as any).listFeatures = mockAhaService.listFeatures;
-    (AhaService as any).listReleases = mockAhaService.listReleases;
 
     // Create mock server
     resourceHandlers = new Map();
@@ -80,7 +72,6 @@ describe('E2E: Resource Discovery Workflows', () => {
     (AhaService as any).getProduct = originalMethods.getProduct;
     (AhaService as any).listProducts = originalMethods.listProducts;
     (AhaService as any).listFeatures = originalMethods.listFeatures;
-    (AhaService as any).listReleases = originalMethods.listReleases;
   });
 
   describe('Workflow: New User Searching for Workspaces', () => {
@@ -180,18 +171,6 @@ describe('E2E: Resource Discovery Workflows', () => {
       expect(promptText).toContain('workstream');
       expect(promptText).toContain('release');
       expect(promptText).toContain('aha://releases');
-
-      // Step 2: User accesses aha://releases
-      const releasesHandler = resourceHandlers.get('aha_releases');
-      expect(releasesHandler).toBeDefined();
-
-      const releasesResult = await releasesHandler!(new URL('aha://releases'));
-      const releasesData = JSON.parse(releasesResult.contents[0].text);
-
-      // Verify releases are returned
-      expect(releasesData.releases).toBeDefined();
-      expect(releasesData.releases.length).toBe(2);
-      expect(releasesData.releases[0].name).toBe('Release 1');
     });
   });
 
@@ -349,7 +328,6 @@ describe('E2E: Resource Discovery Workflows', () => {
       const existingResources = [
         'aha_features',
         'aha_epics',
-        'aha_releases',
         'aha_ideas'
       ];
 

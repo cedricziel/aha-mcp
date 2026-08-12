@@ -90,20 +90,21 @@ export function generateWorkstreamPrimer(query: string): ResourcePrimer {
   return {
     message: `I notice you're looking for workstreams. In Aha.io, **releases can function as workstreams** for organizing features and epics.`,
     suggestedResources: [
-      'aha://releases - List all releases/workstreams',
+      'aha://releases/{product_id} - List releases for a specific product',
       'aha://release/{id} - Get a specific release/workstream',
-      'aha://releases/{product_id} - List releases for a specific product'
+      'aha://products - List products, to find the product_id a release list needs'
     ],
     exampleUris: [
-      'aha://releases?status=active&page=1',
+      'aha://releases/PROD-1?status=active&page=1',
       'aha://release/PROJ-R-1',
       'aha://releases/PROD-1'
     ],
     workflow: [
-      '1. List releases: aha://releases (optionally filtered by product)',
-      '2. Get release details: aha://release/{id}',
-      '3. Access release features: aha://release/{id}/features',
-      '4. Access release epics: aha://release/{id}/epics'
+      '1. Get a product id: aha://products',
+      '2. List that product\'s releases: aha://releases/{product_id}',
+      '3. Get release details: aha://release/{id}',
+      '4. Access release features: aha://release/{id}/features',
+      '5. Access release epics: aha://release/{id}/epics'
     ]
   };
 }
@@ -119,7 +120,7 @@ export function generateDiscoveryPrimer(): ResourcePrimer {
       'aha://products - List all products/workspaces',
       'aha://features - Search features globally',
       'aha://ideas - Search ideas globally',
-      'aha://releases - List all releases'
+      'aha://releases/{product_id} - List releases for a product'
     ],
     exampleUris: [
       'aha://resources',
@@ -129,7 +130,7 @@ export function generateDiscoveryPrimer(): ResourcePrimer {
     ],
     workflow: [
       '1. Check aha://resources to understand available resources and terminology',
-      '2. Start with top-level resources like products, features, ideas, or releases',
+      '2. Start with top-level resources like products, features, or ideas',
       '3. Navigate to nested resources once you have IDs (e.g., product → releases → features)',
       '4. Use query parameters for filtering and pagination'
     ]

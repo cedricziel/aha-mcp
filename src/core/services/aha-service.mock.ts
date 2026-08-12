@@ -7,43 +7,39 @@ import type {
   Feature,
   FeaturesListResponse,
   Epic,
+  EpicsListResponse,
   User,
   IdeaResponse,
+  IdeasListResponse,
   InitiativeResponse,
   InitiativesListResponse,
+  Product,
   ProductsListResponse,
-  CommentsGetEpic200Response,
-  EpicsList200Response,
-  IdeasListResponse,
   Comment,
+  CommentsListResponse,
   GoalGetResponse,
-  GoalsListResponse as SdkGoalsListResponse,
+  GoalsListResponse,
+  GoalEpicsResponse,
   ReleaseGetResponse,
-  ReleasesListResponse as SdkReleasesListResponse,
-  ReleasePhasesList200Response,
-  ReleasePhase as SdkReleasePhase,
+  ReleasesListResponse,
+  ReleaseFeaturesResponse,
+  ReleasePhase,
+  ReleasePhasesListResponse,
   Competitor,
-  StrategicModelsListResponse,
+  CompetitorsListResponse,
   StrategicModel,
-  IdeaOrganizationsListResponse,
+  StrategicModelsListResponse,
   IdeaOrganization,
-  TodosList200Response,
+  IdeaOrganizationsListResponse,
+  Todo,
+  TodosListResponse,
+  Requirement,
   MeAssignedRecordsResponse,
   MePendingTasksResponse,
-  IdeasGetEndorsements200Response,
-  IdeasGetVotes200Response,
-  IdeasGetWatchers200Response,
-  CustomFieldsListAll200Response,
-  CustomFieldsListOptions200Response
-} from '@cedricziel/aha-js';
-
-import type {
-  Product,
-  Requirement,
-  Todo,
-  ReleaseFeaturesResponse,
-  GoalEpicsResponse,
-  CompetitorsListResponse
+  IdeaEndorsementsResponse,
+  IdeaVotesResponse,
+  CustomFieldDefinitionsResponse,
+  CustomFieldOptionsResponse
 } from '../types/aha-types.js';
 
 // Mock data generators
@@ -241,7 +237,7 @@ export class MockAhaService implements IAhaService {
     _status?: string,
     page?: number,
     perPage?: number
-  ): Promise<SdkGoalsListResponse> {
+  ): Promise<GoalsListResponse> {
     const count = Math.min(perPage || 20, 3);
     return {
       goals: Array.from({ length: count }, (_, i) => generateMockGoal(i + 1)),
@@ -250,31 +246,11 @@ export class MockAhaService implements IAhaService {
         total_pages: 1,
         current_page: page || 1
       }
-    } as SdkGoalsListResponse;
+    } as GoalsListResponse;
   }
 
   async getGoal(_goalId: string): Promise<GoalGetResponse> {
     return generateMockGoal(1) as GoalGetResponse;
-  }
-
-  async listReleases(
-    _query?: string,
-    _updatedSince?: string,
-    _assignedToUser?: string,
-    _status?: string,
-    _parkingLot?: boolean,
-    page?: number,
-    perPage?: number
-  ): Promise<SdkReleasesListResponse> {
-    const count = Math.min(perPage || 20, 3);
-    return {
-      releases: Array.from({ length: count }, (_, i) => generateMockRelease(i + 1)),
-      pagination: {
-        total_records: count,
-        total_pages: 1,
-        current_page: page || 1
-      }
-    } as SdkReleasesListResponse;
   }
 
   async getRelease(_releaseId: string): Promise<ReleaseGetResponse> {
@@ -375,28 +351,28 @@ export class MockAhaService implements IAhaService {
     } as User;
   }
 
-  async listEpics(_productId: string): Promise<EpicsList200Response> {
-    return { epics: [] } as EpicsList200Response;
+  async listEpics(_productId: string): Promise<EpicsListResponse> {
+    return { epics: [] } as EpicsListResponse;
   }
 
   async getEpic(_epicId: string): Promise<Epic> {
     return { id: 'EPIC-1', name: 'Test Epic' } as Epic;
   }
 
-  async listTodos(): Promise<TodosList200Response> {
-    return { tasks: [] } as TodosList200Response;
+  async listTodos(): Promise<TodosListResponse> {
+    return { todos: [] } as TodosListResponse;
   }
 
   async getTodo(_todoId: string): Promise<Todo> {
     return { id: 'TODO-1', description: 'Test Todo' } as Todo;
   }
 
-  async listReleasePhases(): Promise<ReleasePhasesList200Response> {
-    return { release_phases: [] } as ReleasePhasesList200Response;
+  async listReleasePhases(): Promise<ReleasePhasesListResponse> {
+    return { release_phases: [] } as ReleasePhasesListResponse;
   }
 
-  async getReleasePhase(_releasePhaseId: string): Promise<SdkReleasePhase> {
-    return { id: 'PHASE-1', name: 'Test Phase' } as SdkReleasePhase;
+  async getReleasePhase(_releasePhaseId: string): Promise<ReleasePhase> {
+    return { id: 'PHASE-1', name: 'Test Phase' } as ReleasePhase;
   }
 
   async createFeatureComment(_featureId: string, body: string): Promise<Comment> {
@@ -407,40 +383,40 @@ export class MockAhaService implements IAhaService {
     } as Comment;
   }
 
-  async getEpicComments(_epicId: string): Promise<CommentsGetEpic200Response> {
-    return { comments: [] } as CommentsGetEpic200Response;
+  async getEpicComments(_epicId: string): Promise<CommentsListResponse> {
+    return { comments: [] } as CommentsListResponse;
   }
 
-  async getIdeaComments(_ideaId: string): Promise<CommentsGetEpic200Response> {
-    return { comments: [] } as CommentsGetEpic200Response;
+  async getIdeaComments(_ideaId: string): Promise<CommentsListResponse> {
+    return { comments: [] } as CommentsListResponse;
   }
 
-  async getInitiativeComments(_initiativeId: string): Promise<CommentsGetEpic200Response> {
-    return { comments: [] } as CommentsGetEpic200Response;
+  async getInitiativeComments(_initiativeId: string): Promise<CommentsListResponse> {
+    return { comments: [] } as CommentsListResponse;
   }
 
-  async getProductComments(_productId: string): Promise<CommentsGetEpic200Response> {
-    return { comments: [] } as CommentsGetEpic200Response;
+  async getProductComments(_productId: string): Promise<CommentsListResponse> {
+    return { comments: [] } as CommentsListResponse;
   }
 
-  async getGoalComments(_goalId: string): Promise<CommentsGetEpic200Response> {
-    return { comments: [] } as CommentsGetEpic200Response;
+  async getGoalComments(_goalId: string): Promise<CommentsListResponse> {
+    return { comments: [] } as CommentsListResponse;
   }
 
-  async getReleaseComments(_releaseId: string): Promise<CommentsGetEpic200Response> {
-    return { comments: [] } as CommentsGetEpic200Response;
+  async getReleaseComments(_releaseId: string): Promise<CommentsListResponse> {
+    return { comments: [] } as CommentsListResponse;
   }
 
-  async getReleasePhaseComments(_releasePhaseId: string): Promise<CommentsGetEpic200Response> {
-    return { comments: [] } as CommentsGetEpic200Response;
+  async getReleasePhaseComments(_releasePhaseId: string): Promise<CommentsListResponse> {
+    return { comments: [] } as CommentsListResponse;
   }
 
-  async getRequirementComments(_requirementId: string): Promise<CommentsGetEpic200Response> {
-    return { comments: [] } as CommentsGetEpic200Response;
+  async getRequirementComments(_requirementId: string): Promise<CommentsListResponse> {
+    return { comments: [] } as CommentsListResponse;
   }
 
-  async getTodoComments(_todoId: string): Promise<CommentsGetEpic200Response> {
-    return { comments: [] } as CommentsGetEpic200Response;
+  async getTodoComments(_todoId: string): Promise<CommentsListResponse> {
+    return { comments: [] } as CommentsListResponse;
   }
 
   async listIdeasByProduct(_productId: string): Promise<IdeasListResponse> {
@@ -450,11 +426,11 @@ export class MockAhaService implements IAhaService {
     } as IdeasListResponse;
   }
 
-  async listReleasesByProduct(_productId: string): Promise<SdkReleasesListResponse> {
+  async listReleasesByProduct(_productId: string): Promise<ReleasesListResponse> {
     return {
       releases: Array.from({ length: 3 }, (_, i) => generateMockRelease(i + 1)),
       pagination: { total_records: 3, total_pages: 1, current_page: 1 }
-    } as SdkReleasesListResponse;
+    } as ReleasesListResponse;
   }
 
   async listCompetitors(_productId: string): Promise<CompetitorsListResponse> {
@@ -469,12 +445,12 @@ export class MockAhaService implements IAhaService {
     return { features: [] } as ReleaseFeaturesResponse;
   }
 
-  async getReleaseEpics(_releaseId: string): Promise<EpicsList200Response> {
-    return { epics: [] } as EpicsList200Response;
+  async getReleaseEpics(_releaseId: string): Promise<EpicsListResponse> {
+    return { epics: [] } as EpicsListResponse;
   }
 
-  async getInitiativeEpics(_initiativeId: string): Promise<EpicsList200Response> {
-    return { epics: [] } as EpicsList200Response;
+  async getInitiativeEpics(_initiativeId: string): Promise<EpicsListResponse> {
+    return { epics: [] } as EpicsListResponse;
   }
 
   async getAssignedRecords(): Promise<MeAssignedRecordsResponse> {
@@ -485,16 +461,12 @@ export class MockAhaService implements IAhaService {
     return { tasks: [] } as MePendingTasksResponse;
   }
 
-  async getIdeaEndorsements(_ideaId: string): Promise<IdeasGetEndorsements200Response> {
-    return { endorsements: [] } as IdeasGetEndorsements200Response;
+  async getIdeaEndorsements(_ideaId: string): Promise<IdeaEndorsementsResponse> {
+    return { idea_endorsements: [] } as IdeaEndorsementsResponse;
   }
 
-  async getIdeaVotes(_ideaId: string): Promise<IdeasGetVotes200Response> {
-    return { votes: [] } as IdeasGetVotes200Response;
-  }
-
-  async getIdeaWatchers(_ideaId: string): Promise<IdeasGetWatchers200Response> {
-    return { watchers: [] } as IdeasGetWatchers200Response;
+  async getIdeaVotes(_ideaId: string): Promise<IdeaVotesResponse> {
+    return { idea_endorsements: [] } as IdeaVotesResponse;
   }
 
   async getRequirement(_requirementId: string): Promise<Requirement> {
@@ -505,11 +477,11 @@ export class MockAhaService implements IAhaService {
     return { id: 'COMP-1', name: 'Test Competitor' } as Competitor;
   }
 
-  async listCustomFields(): Promise<CustomFieldsListAll200Response> {
-    return { custom_fields: [] } as CustomFieldsListAll200Response;
+  async listCustomFields(): Promise<CustomFieldDefinitionsResponse> {
+    return { custom_field_definitions: [] } as CustomFieldDefinitionsResponse;
   }
 
-  async listCustomFieldOptions(_customFieldDefinitionId: string): Promise<CustomFieldsListOptions200Response> {
-    return { options: [] } as CustomFieldsListOptions200Response;
+  async listCustomFieldOptions(_customFieldDefinitionId: string): Promise<CustomFieldOptionsResponse> {
+    return { options: [] } as CustomFieldOptionsResponse;
   }
 }

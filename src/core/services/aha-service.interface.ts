@@ -1,50 +1,51 @@
 /**
  * Interface for AhaService - allows for mock implementations in tests
+ *
+ * Every method speaks in the local domain types from `../types/aha-types.js`, never in
+ * `@cedricziel/aha-js` types. The SDK is generated per-operation and renames every export
+ * on each regeneration (`Feature` -> `FeaturesGetResponseFeaturesInner`, etc.); leaking
+ * those through here would re-break every call site the next time aha-js regenerates.
+ * `aha-service.ts` is the only file allowed to import from `@cedricziel/aha-js` - it is
+ * responsible for mapping the SDK's response shapes onto the types below.
  */
 
 import type {
   Feature,
   FeaturesListResponse,
   Epic,
+  EpicsListResponse,
   User,
   IdeaResponse,
+  IdeasListResponse,
   InitiativeResponse,
   InitiativesListResponse,
+  Product,
   ProductsListResponse,
-  CommentsGetEpic200Response,
-  EpicsList200Response,
-  IdeasListResponse,
   Comment,
+  CommentsListResponse,
   GoalGetResponse,
-  GoalsListResponse as SdkGoalsListResponse,
+  GoalsListResponse,
+  GoalEpicsResponse,
   ReleaseGetResponse,
-  ReleasesListResponse as SdkReleasesListResponse,
-  ReleasePhasesList200Response,
-  ReleasePhase as SdkReleasePhase,
+  ReleasesListResponse,
+  ReleaseFeaturesResponse,
+  ReleasePhase,
+  ReleasePhasesListResponse,
   Competitor,
-  StrategicModelGetResponse,
-  StrategicModelsListResponse,
+  CompetitorsListResponse,
   StrategicModel,
-  IdeaOrganizationGetResponse,
-  IdeaOrganizationsListResponse,
+  StrategicModelsListResponse,
   IdeaOrganization,
-  TodosList200Response,
+  IdeaOrganizationsListResponse,
+  Todo,
+  TodosListResponse,
+  Requirement,
   MeAssignedRecordsResponse,
   MePendingTasksResponse,
-  IdeasGetEndorsements200Response,
-  IdeasGetVotes200Response,
-  IdeasGetWatchers200Response,
-  CustomFieldsListAll200Response,
-  CustomFieldsListOptions200Response
-} from '@cedricziel/aha-js';
-
-import type {
-  Product,
-  Requirement,
-  Todo,
-  ReleaseFeaturesResponse,
-  GoalEpicsResponse,
-  CompetitorsListResponse
+  IdeaEndorsementsResponse,
+  IdeaVotesResponse,
+  CustomFieldDefinitionsResponse,
+  CustomFieldOptionsResponse
 } from '../types/aha-types.js';
 
 export interface IAhaService {
@@ -100,19 +101,10 @@ export interface IAhaService {
     status?: string,
     page?: number,
     perPage?: number
-  ): Promise<SdkGoalsListResponse>;
+  ): Promise<GoalsListResponse>;
   getGoal(goalId: string): Promise<GoalGetResponse>;
 
   // Releases
-  listReleases(
-    query?: string,
-    updatedSince?: string,
-    assignedToUser?: string,
-    status?: string,
-    parkingLot?: boolean,
-    page?: number,
-    perPage?: number
-  ): Promise<SdkReleasesListResponse>;
   getRelease(releaseId: string): Promise<ReleaseGetResponse>;
 
   // Strategic Models
@@ -163,28 +155,28 @@ export interface IAhaService {
   getMe(): Promise<User>;
 
   // Epics
-  listEpics(productId: string): Promise<EpicsList200Response>;
+  listEpics(productId: string): Promise<EpicsListResponse>;
   getEpic(epicId: string): Promise<Epic>;
 
   // Todos
-  listTodos(): Promise<TodosList200Response>;
+  listTodos(): Promise<TodosListResponse>;
   getTodo(todoId: string): Promise<Todo>;
 
   // Release Phases
-  listReleasePhases(): Promise<ReleasePhasesList200Response>;
-  getReleasePhase(releasePhaseId: string): Promise<SdkReleasePhase>;
+  listReleasePhases(): Promise<ReleasePhasesListResponse>;
+  getReleasePhase(releasePhaseId: string): Promise<ReleasePhase>;
 
   // Comments
   createFeatureComment(featureId: string, body: string): Promise<Comment>;
-  getEpicComments(epicId: string): Promise<CommentsGetEpic200Response>;
-  getIdeaComments(ideaId: string): Promise<CommentsGetEpic200Response>;
-  getInitiativeComments(initiativeId: string): Promise<CommentsGetEpic200Response>;
-  getProductComments(productId: string): Promise<CommentsGetEpic200Response>;
-  getGoalComments(goalId: string): Promise<CommentsGetEpic200Response>;
-  getReleaseComments(releaseId: string): Promise<CommentsGetEpic200Response>;
-  getReleasePhaseComments(releasePhaseId: string): Promise<CommentsGetEpic200Response>;
-  getRequirementComments(requirementId: string): Promise<CommentsGetEpic200Response>;
-  getTodoComments(todoId: string): Promise<CommentsGetEpic200Response>;
+  getEpicComments(epicId: string): Promise<CommentsListResponse>;
+  getIdeaComments(ideaId: string): Promise<CommentsListResponse>;
+  getInitiativeComments(initiativeId: string): Promise<CommentsListResponse>;
+  getProductComments(productId: string): Promise<CommentsListResponse>;
+  getGoalComments(goalId: string): Promise<CommentsListResponse>;
+  getReleaseComments(releaseId: string): Promise<CommentsListResponse>;
+  getReleasePhaseComments(releasePhaseId: string): Promise<CommentsListResponse>;
+  getRequirementComments(requirementId: string): Promise<CommentsListResponse>;
+  getTodoComments(todoId: string): Promise<CommentsListResponse>;
 
   // Additional list methods
   listIdeasByProduct(
@@ -208,14 +200,14 @@ export interface IAhaService {
     parkingLot?: boolean,
     page?: number,
     perPage?: number
-  ): Promise<SdkReleasesListResponse>;
+  ): Promise<ReleasesListResponse>;
   listCompetitors(productId: string): Promise<CompetitorsListResponse>;
 
   // Relationships
   getGoalEpics(goalId: string): Promise<GoalEpicsResponse>;
   getReleaseFeatures(releaseId: string): Promise<ReleaseFeaturesResponse>;
-  getReleaseEpics(releaseId: string): Promise<EpicsList200Response>;
-  getInitiativeEpics(initiativeId: string): Promise<EpicsList200Response>;
+  getReleaseEpics(releaseId: string): Promise<EpicsListResponse>;
+  getInitiativeEpics(initiativeId: string): Promise<EpicsListResponse>;
 
   // Me/Current User
   getAssignedRecords(): Promise<MeAssignedRecordsResponse>;
@@ -227,13 +219,12 @@ export interface IAhaService {
     proxy?: boolean,
     page?: number,
     perPage?: number
-  ): Promise<IdeasGetEndorsements200Response>;
+  ): Promise<IdeaEndorsementsResponse>;
   getIdeaVotes(
     ideaId: string,
     page?: number,
     perPage?: number
-  ): Promise<IdeasGetVotes200Response>;
-  getIdeaWatchers(ideaId: string): Promise<IdeasGetWatchers200Response>;
+  ): Promise<IdeaVotesResponse>;
 
   // Requirements
   getRequirement(requirementId: string): Promise<Requirement>;
@@ -242,6 +233,6 @@ export interface IAhaService {
   getCompetitor(competitorId: string): Promise<Competitor>;
 
   // Custom Fields
-  listCustomFields(): Promise<CustomFieldsListAll200Response>;
-  listCustomFieldOptions(customFieldDefinitionId: string): Promise<CustomFieldsListOptions200Response>;
+  listCustomFields(): Promise<CustomFieldDefinitionsResponse>;
+  listCustomFieldOptions(customFieldDefinitionId: string): Promise<CustomFieldOptionsResponse>;
 }

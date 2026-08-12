@@ -38,7 +38,7 @@ const RESOURCE_SYNONYMS = {
   },
   workstream: {
     canonical: "release",
-    resources: ["aha_release", "aha_releases"],
+    resources: ["aha_release", "aha_product_releases"],
     note: "Releases can function as workstreams for organizing features and epics"
   }
 };
@@ -66,12 +66,12 @@ export function registerResources(server: McpServer) {
             terminology_guide: {
               product_workspace: "Products and workspaces are the same in Aha.io. Use aha://products or aha://product/{id}",
               product_areas: "Product Areas are subdivisions within products. Not currently available as resources.",
-              releases_workstreams: "Releases can be used as workstreams. Use aha://releases or aha://release/{id}"
+              releases_workstreams: "Releases can be used as workstreams. Use aha://releases/{product_id} or aha://release/{id}"
             },
             common_questions: {
               "How do I find workspaces?": "Use aha://products - products and workspaces are synonymous",
               "How do I find Product Areas?": "Product Areas are not currently exposed as resources. Use products instead.",
-              "Where are workstreams?": "Releases can function as workstreams - use aha://releases"
+              "Where are workstreams?": "Releases can function as workstreams - use aha://releases/{product_id}"
             }
           }, null, 2),
           mimeType: "application/json"
@@ -1199,75 +1199,9 @@ export function registerResources(server: McpServer) {
     }
   );
 
-  // Aha releases list resource with filters and pagination
-  // Shared handler for both base URI and template URI
-  const handleReleases = async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-    try {
-      const parkingLot = variables?.parkingLot === 'true' ? true :
-                        variables?.parkingLot === 'false' ? false :
-                        uri.searchParams.get('parkingLot') === 'true' ? true :
-                        uri.searchParams.get('parkingLot') === 'false' ? false : undefined;
-      const page = variables?.page ? parseInt(normalizeVar(variables.page)!) : uri.searchParams.get('page') ? parseInt(uri.searchParams.get('page')!) : undefined;
-      const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
-
-      const releases = await getAhaService().listReleases(
-        normalizeVar(variables?.query) || uri.searchParams.get('query') || undefined,
-        normalizeVar(variables?.updatedSince) || uri.searchParams.get('updatedSince') || undefined,
-        normalizeVar(variables?.assignedToUser) || uri.searchParams.get('assignedToUser') || undefined,
-        normalizeVar(variables?.status) || uri.searchParams.get('status') || undefined,
-        parkingLot,
-        page,
-        perPage
-      );
-
-      return {
-        contents: [{
-          uri: uri.toString(),
-          text: JSON.stringify(releases, null, 2),
-          mimeType: "application/json"
-        }]
-      };
-    } catch (error) {
-      console.error(`Error retrieving releases list:`, error);
-      throw toMcpError(error, uri.toString());
-    }
-  };
-
-  // Base URI registration - matches aha://releases
-  server.registerResource(
-    "aha_releases",
-    "aha://releases",
-    {
-      title: "Aha Releases",
-      description: "List all releases",
-      mimeType: "application/json"
-    },
-    async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      return handleReleases(uri, {}, _extra);
-    }
-  );
-
-  // Template URI registration - matches aha://releases?query=...
-  server.registerResource(
-    "aha_releases_filtered",
-    new ResourceTemplate(
-      "aha://releases{?query,updatedSince,assignedToUser,status,parkingLot,page,perPage}",
-      {
-        list: undefined,
-        complete: {
-          parkingLot: async () => ['true', 'false'],
-          page: async () => ['1', '2', '3', '4', '5'],
-          perPage: async () => ['20', '50', '100', '200']
-        }
-      }
-    ),
-    {
-      title: "Aha Releases (Filtered)",
-      description: "List releases with filters and pagination",
-      mimeType: "application/json"
-    },
-    handleReleases
-  );
+  // Note: a global "list all releases" resource (GET /releases) was removed - that endpoint
+  // does not exist in Aha's OpenAPI document or published docs and always 404s. Releases are
+  // only reachable scoped to a product; see aha_product_releases (aha://releases/{product_id}).
 
   // Aha release features resource
   server.registerResource(
@@ -1967,46 +1901,8 @@ export function registerResources(server: McpServer) {
     }
   );
 
-  // Aha idea watchers resource
-  server.registerResource(
-    "aha_idea_watchers",
-    new ResourceTemplate(
-      "aha://idea/{id}/watchers",
-      {
-        list: undefined,
-        complete: {
-          id: async () => []
-        }
-      }
-    ),
-    {
-      title: "Aha Idea Watchers",
-      description: "Get watchers for a specific idea",
-      mimeType: "application/json"
-    },
-    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
-      const pathParts = uri.pathname.split('/');
-      const ideaId = normalizeVar(variables.id) || pathParts[pathParts.length - 2]; // idea_id is before /watchers
-
-      if (!ideaId) {
-        throw new Error('Invalid idea ID: Idea ID is missing from URI');
-      }
-
-      try {
-        const watchers = await getAhaService().getIdeaWatchers(ideaId);
-        return {
-          contents: [{
-            uri: uri.toString(),
-            text: JSON.stringify(watchers, null, 2),
-            mimeType: "application/json"
-          }]
-        };
-      } catch (error) {
-        console.error(`Error retrieving watchers for idea ${ideaId}:`, error);
-        throw toMcpError(error, uri.toString());
-      }
-    }
-  );
+  // Note: aha_idea_watchers (GET /ideas/{id}/watchers) was removed - that endpoint does not
+  // exist in Aha's OpenAPI document or published docs and always 404s.
 
   // Aha global ideas list resource with advanced filters and pagination
   // Shared handler for both base URI and template URI

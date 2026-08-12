@@ -110,7 +110,7 @@ export function registerSearchTools(server: McpServer, client: AhaGraphQLClient 
         };
       } catch (error) {
         const message = describeAhaError(error);
-        log.error("Search failed", error);
+        log.error("Search failed", error as Error);
         return {
           content: [{ type: "text" as const, text: `Search failed: ${message}` }],
           isError: true

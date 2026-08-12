@@ -14,6 +14,23 @@ updates:
       interval: "daily"
     assignees:
       - "cedricziel"
+    groups:
+      # Linting and commit-hook tooling moves together and never affects the
+      # published bundle, so it arrives as one PR rather than one per package.
+      # The eslint/prettier patterns are here so adding a linter later does not
+      # silently start opening ungrouped PRs again.
+      lint:
+        patterns:
+          - "commitlint"
+          - "@commitlint/*"
+          - "husky"
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "typescript-eslint"
+          - "@typescript-eslint/*"
+          - "prettier"
+          - "prettier-*"
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"

@@ -20,7 +20,7 @@ import * as z from "zod/v4";
 // Imported rather than read from disk at runtime: the bundled build/index.js sits at a
 // different depth than this source file, so resolving "../../package.json" relative to
 // import.meta.url crashed the server on startup for every packaged artifact.
-import packageJson from "../../package.json";
+import packageJson from "../../package.json" with { type: "json" };
 
 /**
  * Count what actually got registered, for the startup log and server_status.
@@ -129,10 +129,7 @@ async function startServer() {
         name: "Aha.io MCP Server",
         version: packageJson.version,
         description: packageJson.description,
-        author: packageJson.author,
-        homepage: packageJson.homepage,
-        repository: packageJson.repository,
-        license: packageJson.license
+        websiteUrl: packageJson.homepage
       },
       // Returned in the initialize response, so clients have this before the first call.
       { instructions: buildServerInstructions(config.company) }
