@@ -34,7 +34,17 @@ const feature = (n: number) => ({
   created_at: '2026-08-01T10:00:00.000Z'
 });
 
-describe('Release feature listing', () => {
+/** An epic as this endpoint returns one - measured: six fields, one fewer than a feature. */
+const epic = (n: number) => ({
+  id: `746970887307929302${n}`,
+  reference_num: `APPO11Y-E-${n}`,
+  name: `Epic ${n}`,
+  resource: `https://test.aha.io/api/v1/epics/APPO11Y-E-${n}`,
+  url: `https://test.aha.io/epics/APPO11Y-E-${n}`,
+  created_at: '2025-02-10T08:45:24.825Z'
+});
+
+describe('Release membership listing', () => {
   const patched: string[] = [];
 
   const patch = (method: keyof typeof AhaService, impl: (...args: any[]) => Promise<any>) => {
@@ -183,17 +193,86 @@ describe('Release feature listing', () => {
     }
   });
 
-  it('is declared read-only, reaches Aha, and describes its output', async () => {
+  it('enumerates a release\'s epics too, under their own key', async () => {
+    // A release is not organised the same way in every workspace: one planned in epics was as
+    // invisible through the features tool as it was through search.
+    patch('getReleaseEpics', async () => ({
+      epics: [epic(3), epic(4)],
+      pagination: { total_records: 4, total_pages: 2, current_page: 1 }
+    }));
     const client = await connected();
-    const tool = (await client.listTools()).tools.find(t => t.name === 'aha_list_release_features')!;
 
-    expect(tool.annotations?.readOnlyHint).toBe(true);
-    expect(tool.annotations?.openWorldHint).toBe(true);
-    // Meaningless for a reader, per the spec, so they must stay absent.
-    expect(tool.annotations?.destructiveHint).toBeUndefined();
-    expect(tool.annotations?.idempotentHint).toBeUndefined();
-    // Titles live in both spec locations and must agree.
-    expect(tool.title).toBe(tool.annotations?.title);
-    expect(tool.outputSchema).toBeDefined();
+    const result: any = await client.callTool({
+      name: 'aha_list_release_epics',
+      arguments: { releaseId: 'APPO11Y-R-3', perPage: 2 }
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(result.content[0].text).toContain('2 of 4 epics in release APPO11Y-R-3');
+    expect(result.content[0].text).toContain('Call again with page: 2');
+    // `epics`, not `features`: a caller reading one key should never have to work out whether
+    // the other is absent because the release has none or because it called the other tool.
+    expect(result.structuredContent.epics).toHaveLength(2);
+    expect(result.structuredContent).not.toHaveProperty('features');
+    expect(
+      result.content.filter((c: any) => c.type === 'resource_link').map((l: any) => l.uri)
+    ).toEqual(['aha://epic/APPO11Y-E-3', 'aha://epic/APPO11Y-E-4']);
+  });
+
+  it('names epics, not features, when an epic listing fails or comes back empty', async () => {
+    patch('getReleaseEpics', async () => ({ epics: [] }));
+    const client = await connected();
+
+    const empty: any = await client.callTool({
+      name: 'aha_list_release_epics',
+      arguments: { releaseId: 'PRJ1-R-9' }
+    });
+    expect(empty.content[0].text).toBe('Release PRJ1-R-9 has no epics on this page');
+
+    (AhaService as any).getReleaseEpics = async () => {
+      throw new Error('Request failed with status code 403');
+    };
+    const failed: any = await client.callTool({
+      name: 'aha_list_release_epics',
+      arguments: { releaseId: 'PRJ1-R-9' }
+    });
+    expect(failed.isError).toBe(true);
+    expect(failed.content[0].text).toContain('Error listing release epics');
+  });
+
+  it('passes the page size through to the epics endpoint as well', async () => {
+    const calls: any[] = [];
+    patch('getReleaseEpics', async (releaseId: string, page?: number, perPage?: number) => {
+      calls.push({ releaseId, page, perPage });
+      return { epics: [] };
+    });
+    const client = await connected();
+
+    await client.callTool({ name: 'aha_list_release_epics', arguments: { releaseId: 'PRJ1-R-1' } });
+
+    // Aha's default page size on this route is unmeasured - the largest release probed holds 4
+    // epics - so the tool asks explicitly rather than inheriting whatever it turns out to be.
+    expect(calls[0]).toEqual({ releaseId: 'PRJ1-R-1', page: undefined, perPage: 200 });
+  });
+
+  it('declares both listings read-only, reaching Aha, with an output schema', async () => {
+    const client = await connected();
+    const tools = (await client.listTools()).tools;
+
+    expect(tools.map(t => t.name).sort()).toEqual([
+      'aha_list_release_epics',
+      'aha_list_release_features'
+    ]);
+
+    for (const tool of tools) {
+      expect(tool.annotations?.readOnlyHint).toBe(true);
+      expect(tool.annotations?.openWorldHint).toBe(true);
+      // Meaningless for a reader, per the spec, so they must stay absent.
+      expect(tool.annotations?.destructiveHint).toBeUndefined();
+      expect(tool.annotations?.idempotentHint).toBeUndefined();
+      // Titles live in both spec locations and must agree.
+      expect(tool.title).toBe(tool.annotations?.title);
+      expect(tool.outputSchema).toBeDefined();
+    }
   });
 });

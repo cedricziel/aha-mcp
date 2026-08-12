@@ -1530,14 +1530,34 @@ export class AhaService {
 
   /**
    * Get epics associated with a specific release
+   *
+   * Paged, like the features sibling above - `per_page=2` on a four-epic release returned 2
+   * across 2 pages, with `pagination` naming the real total. Aha's *default* page size here is
+   * unmeasured: the largest release reachable on the account probed holds 4 epics, so the
+   * endpoint never had to page. Do not assume the features endpoint's 30 applies; ask for a
+   * page size rather than relying on the default.
+   *
+   * Unlike `getReleaseFeatures`, this route is reachable through aha-js, so `page` and
+   * `perPage` go through `numParam()` - the generated operation types them as strings.
+   *
    * @param releaseId The ID of the release
-   * @returns A list of epics associated with the release
+   * @param page 1-based page number (optional)
+   * @param perPage Number of items per page (optional)
+   * @returns The epics on the release, with Aha's pagination block
    */
-  public static async getReleaseEpics(releaseId: string): Promise<EpicsListResponse> {
+  public static async getReleaseEpics(
+    releaseId: string,
+    page?: number,
+    perPage?: number
+  ): Promise<EpicsListResponse> {
     const epicsApi = this.getEpicsApi();
 
     try {
-      const response = await epicsApi.releasesByReleaseEpicsGet({ releaseId });
+      const response = await epicsApi.releasesByReleaseEpicsGet({
+        releaseId,
+        page: this.numParam(page),
+        perPage: this.numParam(perPage)
+      });
       return response.data as unknown as EpicsListResponse;
     } catch (error) {
       log.error('Error getting epics for release', error as Error, { operation: 'getReleaseEpics', release_id: releaseId });

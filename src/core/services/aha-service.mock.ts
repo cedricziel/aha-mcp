@@ -604,7 +604,11 @@ export class MockAhaService implements IAhaService {
     return { features: [] } as ReleaseFeaturesResponse;
   }
 
-  async getReleaseEpics(_releaseId: string): Promise<EpicsListResponse> {
+  async getReleaseEpics(
+    _releaseId: string,
+    _page?: number,
+    _perPage?: number
+  ): Promise<EpicsListResponse> {
     return { epics: [] } as EpicsListResponse;
   }
 

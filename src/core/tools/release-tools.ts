@@ -1,7 +1,12 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
 import * as services from "../services/index.js";
-import { recordLinks, releaseFeaturesListOutputSchema } from "../tool-output.js";
+import {
+  recordLinks,
+  releaseEpicsListOutputSchema,
+  releaseFeaturesListOutputSchema,
+  type LinkableRecordType
+} from "../tool-output.js";
 import { describeAhaError } from "../services/aha-errors.js";
 
 /**
@@ -15,118 +20,186 @@ import { describeAhaError } from "../services/aha-errors.js";
  * the list was short only by noticing gaps in the position values. A partial list that looks
  * whole is worse than an error, because nothing in the result says it is partial.
  *
- * Aha has the endpoint - `GET /releases/{id}/features` - and this server has always wrapped it
- * as the `aha://release/{release_id}/features` resource. That is unreachable on a tool-only
- * client, which is the same asymmetry `record-tools.ts` exists to fix: every read a client
- * needs has to be reachable as a tool.
+ * Aha has the endpoints - `GET /releases/{id}/features` and `GET /releases/{id}/epics` - and
+ * this server has always wrapped both as `aha://release/{release_id}/features` and
+ * `.../epics`. Those are unreachable on a tool-only client, which is the same asymmetry
+ * `record-tools.ts` exists to fix.
+ *
+ * Both types are listed because a release is not organised the same way in every workspace:
+ * one that plans in epics is as invisible through the features tool as it was through search.
  */
 
-/** Aha's own page size for this endpoint, measured; used in the description, not as a default. */
-const AHA_DEFAULT_PER_PAGE = 30;
-
-/** What this tool asks for unless told otherwise, so one call enumerates most releases whole. */
+/** What these tools ask for unless told otherwise, so one call enumerates most releases whole. */
 const DEFAULT_PER_PAGE = 200;
 
+interface MembershipConfig {
+  /** Tool name, e.g. `aha_list_release_features`. */
+  tool: string;
+  /** Display title, used for both `title` and `annotations.title`. */
+  title: string;
+  /** Plural noun as it reads in prose, e.g. "features". */
+  plural: string;
+  /** Singular noun, for the count line and the follow-up tool it names. */
+  singular: string;
+  /** Resource type for the `aha://` link per record. */
+  recordType: LinkableRecordType;
+  /** Key the records arrive under in Aha's response. */
+  collectionKey: "features" | "epics";
+  /** The single-record read tool to point at for state this endpoint does not carry. */
+  readerTool: string;
+  /**
+   * Aha's own page size on this route, when it has been measured. Omitted rather than guessed:
+   * a description that names a number nobody measured is worse than one that stays quiet.
+   */
+  ahaDefault?: string;
+  outputSchema: z.ZodObject<z.ZodRawShape>;
+  fetch: (releaseId: string, page: number | undefined, perPage: number) => Promise<unknown>;
+}
+
+const MEMBERSHIP: MembershipConfig[] = [
+  {
+    tool: "aha_list_release_features",
+    title: "List features in a release",
+    plural: "features",
+    singular: "feature",
+    recordType: "feature",
+    collectionKey: "features",
+    readerTool: "aha_get_feature",
+    // Measured: a 59-feature release answers with 30 when asked for no page size.
+    ahaDefault: "30",
+    outputSchema: releaseFeaturesListOutputSchema,
+    fetch: (releaseId, page, perPage) =>
+      services.AhaService.getReleaseFeatures(releaseId, page, perPage)
+  },
+  {
+    tool: "aha_list_release_epics",
+    title: "List epics in a release",
+    plural: "epics",
+    singular: "epic",
+    recordType: "epic",
+    collectionKey: "epics",
+    readerTool: "aha_get_epic",
+    // Left unset, because it has not been measured: the largest release reachable on the
+    // account probed holds 4 epics, so the endpoint never had to page unasked. Do not copy the
+    // features endpoint's 30 across - it is a different route. The tool always sends an
+    // explicit per_page, so Aha's default does not decide what a caller gets either way.
+    ahaDefault: undefined,
+    outputSchema: releaseEpicsListOutputSchema,
+    fetch: (releaseId, page, perPage) =>
+      services.AhaService.getReleaseEpics(releaseId, page, perPage)
+  }
+];
+
 export function registerReleaseTools(server: McpServer) {
-  server.registerTool(
-    "aha_list_release_features",
-    {
-      title: "List features in a release",
-      description:
-        "List the features assigned to a release in Aha.io. This is the only way to enumerate " +
-        "a release: aha_search is relevance-ranked, returns no release membership on a hit, and " +
-        "cannot be asked for every record in a scope, so a search-built list of a release is " +
-        `partial without saying so. Requests ${DEFAULT_PER_PAGE} features per page by default ` +
-        `(Aha's own default is ${AHA_DEFAULT_PER_PAGE}); returns each feature with a link to it, ` +
-        "plus Aha's pagination block naming the total on the release so a caller can tell a " +
-        "complete list from the front of a longer one. Aha returns identity fields only here - " +
-        "no workflow status - so follow up with aha_get_feature for the state of one.",
-      inputSchema: {
-        releaseId: z
-          .string()
-          .describe("Reference number (e.g. PRJ1-R-18) or internal id of the release"),
-        page: z.number().min(1).optional().describe("1-based page number"),
-        perPage: z
-          .number()
-          .min(1)
-          .max(200)
-          .optional()
-          .describe(`Features per page, up to 200. Defaults to ${DEFAULT_PER_PAGE}`)
+  for (const config of MEMBERSHIP) {
+    server.registerTool(
+      config.tool,
+      {
+        title: config.title,
+        description:
+          `List the ${config.plural} assigned to a release in Aha.io. This is the only way to ` +
+          `enumerate a release's ${config.plural}: aha_search is relevance-ranked, returns no ` +
+          "release membership on a hit, and cannot be asked for every record in a scope, so a " +
+          `search-built list is partial without saying so. Requests ${DEFAULT_PER_PAGE} ` +
+          `${config.plural} per page by default` +
+          (config.ahaDefault ? ` (Aha's own default is ${config.ahaDefault})` : "") +
+          `; returns each ${config.singular} with a link to it, plus Aha's pagination block naming ` +
+          "the total on the release so a caller can tell a complete list from the front of a " +
+          "longer one. Aha returns identity fields only here - no workflow status - so follow " +
+          `up with ${config.readerTool} for the state of one.`,
+        inputSchema: {
+          releaseId: z
+            .string()
+            .describe("Reference number (e.g. PRJ1-R-18) or internal id of the release"),
+          page: z.number().min(1).optional().describe("1-based page number"),
+          perPage: z
+            .number()
+            .min(1)
+            .max(200)
+            .optional()
+            .describe(
+              `${config.plural[0].toUpperCase()}${config.plural.slice(1)} per page, up to 200. ` +
+                `Defaults to ${DEFAULT_PER_PAGE}`
+            )
+        },
+        outputSchema: config.outputSchema,
+        annotations: {
+          title: config.title,
+          readOnlyHint: true,
+          // destructiveHint and idempotentHint are omitted deliberately: the spec only gives
+          // them meaning for tools that write.
+          openWorldHint: true
+        }
       },
-      outputSchema: releaseFeaturesListOutputSchema,
-      annotations: {
-        title: "List features in a release",
-        readOnlyHint: true,
-        // destructiveHint and idempotentHint are omitted deliberately: the spec only gives
-        // them meaning for tools that write.
-        openWorldHint: true
-      }
-    },
-    async (params: { releaseId: string; page?: number; perPage?: number }) => {
-      try {
-        const perPage = params.perPage ?? DEFAULT_PER_PAGE;
-        const response = await services.AhaService.getReleaseFeatures(
-          params.releaseId,
-          params.page,
-          perPage
-        );
-        const features = Array.isArray(response?.features) ? response.features : [];
-        const pagination = response?.pagination as Record<string, unknown> | undefined;
+      async (params: { releaseId: string; page?: number; perPage?: number }) => {
+        try {
+          const perPage = params.perPage ?? DEFAULT_PER_PAGE;
+          const response = (await config.fetch(params.releaseId, params.page, perPage)) as
+            | Record<string, unknown>
+            | undefined;
 
-        const lines = features.map(feature => {
-          const record = feature as Record<string, unknown>;
-          return `- ${record.reference_num ?? record.id} "${record.name ?? "(unnamed)"}"`;
-        });
+          const raw = response?.[config.collectionKey];
+          const records = (Array.isArray(raw) ? raw : []) as Record<string, unknown>[];
+          const pagination = response?.pagination as Record<string, unknown> | undefined;
 
-        return {
-          content: [
-            {
-              type: "text" as const,
-              // The count line states coverage rather than leaving it to be inferred, and names
-              // the next page when there is one: the failure this tool exists to prevent is a
-              // caller treating a page as the release.
-              text:
-                features.length === 0
-                  ? `Release ${params.releaseId} has no features on this page`
-                  : `${coverage(features.length, pagination)} in release ${params.releaseId}:\n${lines.join("\n")}${nextPageHint(pagination)}`
-            },
-            // One link per feature. Coverage is complete - every record here is a feature, and
-            // features have a single-record resource template - which is the same test
-            // aha_list_key_results passes and aha_search fails. The block count is bounded by
-            // perPage, so it is the caller's to control rather than a silent cap here.
-            ...features.flatMap(feature => recordLinks("feature", feature as Record<string, unknown>))
-          ],
-          structuredContent: {
-            release_id: params.releaseId,
-            features: features as Record<string, unknown>[],
-            ...(pagination ? { pagination } : {})
-          }
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Error listing release features: ${describeAhaError(error, params.releaseId)}`
+          const lines = records.map(
+            record => `- ${record.reference_num ?? record.id} "${record.name ?? "(unnamed)"}"`
+          );
+
+          return {
+            content: [
+              {
+                type: "text" as const,
+                // The count line states coverage rather than leaving it to be inferred, and
+                // names the next page when there is one: the failure these tools exist to
+                // prevent is a caller treating a page as the release.
+                text:
+                  records.length === 0
+                    ? `Release ${params.releaseId} has no ${config.plural} on this page`
+                    : `${coverage(records.length, pagination, config.singular)} in release ${params.releaseId}:\n${lines.join("\n")}${nextPageHint(pagination)}`
+              },
+              // One link per record. Coverage is complete - every record here is the same type
+              // and that type has a single-record resource template - which is the test
+              // aha_list_key_results passes and aha_search fails. The block count is bounded by
+              // perPage, so it is the caller's to control rather than a silent cap here.
+              ...records.flatMap(record => recordLinks(config.recordType, record))
+            ],
+            structuredContent: {
+              release_id: params.releaseId,
+              [config.collectionKey]: records,
+              ...(pagination ? { pagination } : {})
             }
-          ],
-          isError: true
-        };
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Error listing release ${config.plural}: ${describeAhaError(error, params.releaseId)}`
+              }
+            ],
+            isError: true
+          };
+        }
       }
-    }
-  );
+    );
+  }
 }
 
 /**
  * "16 features" when the page is the release, "30 of 59 features" when it is not.
  *
  * Only claims a total when Aha sent one and it disagrees with what arrived; a total that
- * matches the page is not worth the words, and inventing one would be the very thing this
- * tool is here to stop.
+ * matches the page is not worth the words, and inventing one would be the very thing these
+ * tools are here to stop.
  */
-function coverage(returned: number, pagination: Record<string, unknown> | undefined): string {
+function coverage(
+  returned: number,
+  pagination: Record<string, unknown> | undefined,
+  singular: string
+): string {
   const total = pagination?.total_records;
-  const plural = (n: number) => `${n} feature${n === 1 ? "" : "s"}`;
+  const plural = (n: number) => `${n} ${singular}${n === 1 ? "" : "s"}`;
 
   if (typeof total === "number" && total !== returned) {
     return `${returned} of ${plural(total)}`;

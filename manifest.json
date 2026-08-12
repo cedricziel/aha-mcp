@@ -179,8 +179,12 @@
       "description": "List the key results belonging to a goal in Aha.io. This is how you get the id of a key result before updating it: aha_search cannot return a key result's metrics or status, and the abbreviated copies inside a goal are not the full records. Returns each key result with its status, progress and metrics, plus a link per key result."
     },
     {
+      "name": "aha_list_release_epics",
+      "description": "List the epics assigned to a release in Aha.io. This is the only way to enumerate a release's epics: aha_search is relevance-ranked, returns no release membership on a hit, and cannot be asked for every record in a scope, so a search-built list is partial without saying so. Requests 200 epics per page by default; returns each epic with a link to it, plus Aha's pagination block naming the total on the release so a caller can tell a complete list from the front of a longer one. Aha returns identity fields only here - no workflow status - so follow up with aha_get_epic for the state of one."
+    },
+    {
       "name": "aha_list_release_features",
-      "description": "List the features assigned to a release in Aha.io. This is the only way to enumerate a release: aha_search is relevance-ranked, returns no release membership on a hit, and cannot be asked for every record in a scope, so a search-built list of a release is partial without saying so. Requests 200 features per page by default (Aha's own default is 30); returns each feature with a link to it, plus Aha's pagination block naming the total on the release so a caller can tell a complete list from the front of a longer one. Aha returns identity fields only here - no workflow status - so follow up with aha_get_feature for the state of one."
+      "description": "List the features assigned to a release in Aha.io. This is the only way to enumerate a release's features: aha_search is relevance-ranked, returns no release membership on a hit, and cannot be asked for every record in a scope, so a search-built list is partial without saying so. Requests 200 features per page by default (Aha's own default is 30); returns each feature with a link to it, plus Aha's pagination block naming the total on the release so a caller can tell a complete list from the front of a longer one. Aha returns identity fields only here - no workflow status - so follow up with aha_get_feature for the state of one."
     },
     {
       "name": "aha_move_feature_to_release",

@@ -14,7 +14,7 @@ Download `aha-mcp-v<version>.mcpb` from the [latest release](https://github.com/
 and open it with Claude Desktop, which will prompt you for your Aha.io subdomain and API
 token. No Node.js or Docker setup and no manual JSON editing required.
 
-The extension exposes 49 tools that query Aha.io directly, so results are always current and
+The extension exposes 50 tools that query Aha.io directly, so results are always current and
 nothing is stored locally. Cross-record search is served by Aha.io's own index — see
 [Search](#-search).
 
@@ -468,16 +468,20 @@ unreachable, leaving write tools with no way to see what they were about to repl
 
 #### Collection Read Tools
 - `aha_list_release_features`: List the features assigned to a release, with a link per feature and Aha's total for the release
+- `aha_list_release_epics`: List the epics assigned to a release, with a link per epic and Aha's total for the release
 - `aha_list_key_results`: List a goal's key results, with status, progress and metrics
 - `aha_list_comments`: List the comments on a record, both streams for an idea
 
-`aha_list_release_features` is the only way to enumerate a release. `aha_search` is
+The two release tools are the only way to enumerate a release. `aha_search` is
 relevance-ranked, returns no release membership on a hit and cannot be asked for every record
 in a scope, so a release list assembled from search results is partial — and nothing in it says
-so. The tool asks for 200 features per page (Aha's own default is 30) and always returns Aha's
-pagination block, so a caller can tell a complete list from the front of a longer one. Aha
-returns identity fields only on this endpoint, so use `aha_get_feature` for the state of any
-one feature.
+so. Both types are listed because a release is not organised the same way in every workspace: a
+release planned in epics is invisible to the features tool. Each asks for 200 records per page
+(Aha's own default is 30 for features; on the epics route it is unmeasured, which is why the
+tool never relies on it) and always returns Aha's pagination block, so a caller can tell a
+complete list from the front of a longer one. Aha
+returns identity fields only on these endpoints, so use `aha_get_feature` or `aha_get_epic` for
+the state of any one record.
 
 #### Write Operation Tools
 - `aha_create_feature_comment`: Create a comment on a feature
@@ -589,7 +593,7 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 - **Comprehensive Entity Coverage**: Full CRUD operations for features, epics, ideas, and competitors
 
 #### Technical Achievements
-- **49 MCP tools**, all querying Aha.io directly — no local state
+- **50 MCP tools**, all querying Aha.io directly — no local state
 - **17 listed MCP resources** covering the entity set, plus templated resource URIs
 - **17 domain-specific prompts** (workflow automation)
 - **32 core CRUD and write operation tools** for complete lifecycle management, including OKRs (goals and key results)

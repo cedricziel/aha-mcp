@@ -326,17 +326,33 @@ export const keyResultsListOutputSchema = z.object({
  * front of it: `/releases/{id}/features` answers with 30 features when asked for no page
  * size, so a caller reading only the array cannot tell 30-of-30 from 30-of-59.
  */
+const releasePaginationField = z
+  .looseObject({
+    total_records: z.number().optional().describe("Records on the release in total, across all pages"),
+    total_pages: z.number().optional().describe("Pages at the page size used"),
+    current_page: z.number().optional().describe("Page this result came from")
+  })
+  .optional()
+  .describe(
+    "Aha's pagination block, when the response carried one. Compare total_records with the " +
+      "number of records returned before treating this as the whole release."
+  );
+
 export const releaseFeaturesListOutputSchema = z.object({
   release_id: z.string().describe("Release whose features these are, as it was requested"),
   features: z.array(featureOutputSchema).describe("Features on the release, for the page requested"),
-  pagination: z
-    .looseObject({
-      total_records: z.number().optional().describe("Features on the release in total, across all pages"),
-      total_pages: z.number().optional().describe("Pages at the page size used"),
-      current_page: z.number().optional().describe("Page this result came from")
-    })
-    .optional()
-    .describe("Aha's pagination block, when the response carried one. Compare total_records with the length of `features` before treating this as the whole release.")
+  pagination: releasePaginationField
+});
+
+/**
+ * The epic half of the same contract. Separate from the features schema rather than one
+ * schema with two optional arrays: a caller reading `epics` should not have to check whether
+ * `features` is absent because the release has none or because it asked the other tool.
+ */
+export const releaseEpicsListOutputSchema = z.object({
+  release_id: z.string().describe("Release whose epics these are, as it was requested"),
+  epics: z.array(epicOutputSchema).describe("Epics on the release, for the page requested"),
+  pagination: releasePaginationField
 });
 
 export const commentOutputSchema = z.looseObject({
