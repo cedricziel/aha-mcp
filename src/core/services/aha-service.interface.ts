@@ -246,7 +246,7 @@ export interface IAhaService {
 
   // Relationships
   getGoalEpics(goalId: string): Promise<GoalEpicsResponse>;
-  getReleaseFeatures(releaseId: string): Promise<ReleaseFeaturesResponse>;
+  getReleaseFeatures(releaseId: string, page?: number, perPage?: number): Promise<ReleaseFeaturesResponse>;
   getReleaseEpics(releaseId: string): Promise<EpicsListResponse>;
   getInitiativeEpics(initiativeId: string): Promise<EpicsListResponse>;
 

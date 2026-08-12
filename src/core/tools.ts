@@ -5,6 +5,7 @@ import { registerSearchTools } from "./tools/search-tools.js";
 import { registerRecordTools } from "./tools/record-tools.js";
 import { registerCommentTools } from "./tools/comment-tools.js";
 import { registerGoalTools } from "./tools/goal-tools.js";
+import { registerReleaseTools } from "./tools/release-tools.js";
 import {
   commentOutputSchema,
   competitorOutputSchema,
@@ -1350,6 +1351,10 @@ export function registerTools(server: McpServer) {
 
   // Comments, including the ideas-portal stream that aha://comments/idea/{id} does not carry.
   registerCommentTools(server);
+
+  // Release membership. Enumeration, which search cannot do: it is relevance-ranked and a hit
+  // carries no release, so a release's contents were only reachable as a resource.
+  registerReleaseTools(server);
 
   // Goals and key results - Aha's model of an OKR. Kept in their own file because the routes
   // are shaped differently from the rest: goal creation and deletion are workspace-scoped,
