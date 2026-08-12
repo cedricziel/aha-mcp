@@ -7,6 +7,7 @@ import { buildServerInstructions } from "../core/instructions.js";
 import * as services from "../core/services/index.js";
 import { ConfigService } from "../core/config.js";
 import { installToolRateLimit } from "../core/rate-limit.js";
+import { installOutputSchemaDialect } from "../core/schema-dialect.js";
 import {
   configureServerOutputSchema,
   healthCheckOutputSchema,
@@ -135,9 +136,12 @@ async function startServer() {
       { instructions: buildServerInstructions(config.company) }
     );
 
-    // Before any registerTool call: the limiter works by wrapping the registrar, so tools
-    // registered ahead of this line would not be covered.
+    // Both of these work by wrapping the registrar, so they have to come before any
+    // registerTool call - a tool registered ahead of these lines is neither rate limited nor
+    // relabelled. Order between them does not matter: one wraps the handler, the other the
+    // config.
     installToolRateLimit(server);
+    installOutputSchemaDialect(server);
 
     // Add health check tool
     server.registerTool(
