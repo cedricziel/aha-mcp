@@ -456,7 +456,6 @@ export class AhaService {
   ): Promise<FeaturesListResponse> {
     const featuresApi = this.getFeaturesApi();
 
-    const startTime = Date.now();
     try {
       const response = await featuresApi.featuresList({
         page,
@@ -466,13 +465,11 @@ export class AhaService {
         tag,
         assignedToUser
       });
-      const duration = Date.now() - startTime;
-      // API call automatically traced by auto-instrumentation
       return response.data;
     } catch (error) {
-      const duration = Date.now() - startTime;
-      const statusCode = (error as any)?.response?.status || 500;
-      // API call automatically traced by auto-instrumentation
+      // This method alone used to time itself and read a status code off the error, then use
+      // neither - leftovers from tracing that was removed. The status travels with the error
+      // instead, for describeAhaError to read at the boundary.
       log.error('Error listing features', error as Error, { operation: 'listFeatures' });
       throw error;
     }

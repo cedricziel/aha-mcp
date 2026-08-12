@@ -7,6 +7,7 @@ import { buildServerInstructions } from "../core/instructions.js";
 import * as services from "../core/services/index.js";
 import { ConfigService } from "../core/config.js";
 import { log } from "../core/logger.js";
+import { describeAhaError } from "../core/services/aha-errors.js";
 import * as z from "zod/v4";
 // Imported rather than read from disk at runtime: the bundled build/index.js sits at a
 // different depth than this source file, so resolving "../../package.json" relative to
@@ -83,7 +84,7 @@ async function performHealthCheck() {
       serverStatus.ahaConnection.status = "not-initialized";
     }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorMessage = describeAhaError(error);
     healthCheck.checks.aha = { status: "error", message: `Aha.io connection failed: ${errorMessage}` } as any;
     serverStatus.ahaConnection.status = "error";
     healthCheck.status = "degraded";
@@ -248,7 +249,7 @@ async function startServer() {
               type: "text",
               text: JSON.stringify({
                 success: false,
-                error: error instanceof Error ? error.message : String(error)
+                error: describeAhaError(error)
               }, null, 2)
             }]
           };
@@ -340,7 +341,7 @@ async function startServer() {
             }]
           };
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
+          const errorMessage = describeAhaError(error);
           return {
             content: [{
               type: "text",
@@ -402,7 +403,7 @@ async function startServer() {
       });
     } catch (error) {
       log.warn('Initial health check encountered issues', {
-        error: error instanceof Error ? error.message : String(error)
+        error: describeAhaError(error)
       });
     }
     

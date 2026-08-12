@@ -8,6 +8,7 @@ import {
   SEARCHABLE_TYPES
 } from "../services/aha-graphql.js";
 import { log } from "../logger.js";
+import { describeAhaError } from "../services/aha-errors.js";
 
 /**
  * Register search tools.
@@ -104,7 +105,7 @@ export function registerSearchTools(server: McpServer, client: AhaGraphQLClient 
           ]
         };
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = describeAhaError(error);
         log.error("Search failed", error);
         return {
           content: [{ type: "text" as const, text: `Search failed: ${message}` }],
