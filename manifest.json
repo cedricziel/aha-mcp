@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "aha-mcp",
   "display_name": "Aha.io MCP Server",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Model Context Protocol server for Aha.io product management platform",
   "long_description": "A comprehensive MCP server that provides seamless integration with Aha.io's API. This extension enables AI assistants to interact with Aha.io workspaces, manage features, ideas, epics, initiatives, competitors and more, with 49 tools, 15 resources and 14 guided prompts.\n\nNote: the local-cache features (the `aha_sync_*` tools and the embedding/semantic-search tools) need the native `sqlite3` module, which is not bundled in this extension. Everything else works out of the box; install the server from npm (`npx @cedricziel/aha-mcp`) or run the Docker image if you need the cache and semantic search.",
   "author": {
