@@ -563,6 +563,45 @@ export interface CommentsListResponse {
 }
 
 /**
+ * An idea's *portal* comment, from `GET /ideas/{id}/idea_comments`.
+ *
+ * Not the same records as `Comment` on an idea, and not a superset either - the two
+ * endpoints return disjoint sets. `/ideas/{id}/comments` holds internal comments, which Aha
+ * documents as such; `/ideas/{id}/idea_comments` holds the conversation that can reach the
+ * ideas portal, including anything a customer wrote. Measured on one live idea: one internal
+ * comment, two portal comments, no overlapping ids. Reading only the first silently drops
+ * the customer-facing half, which for idea triage is usually the half that matters.
+ *
+ * `visibility` is the field that distinguishes them, and it reads differently depending on
+ * direction: a response carries a human-readable phrase ("Visible to all ideas portal
+ * users"), while a create request takes `public` or `employee_or_creator`. Do not assume one
+ * vocabulary can be fed back into the other.
+ */
+export interface IdeaComment {
+  id?: string;
+  idea_id?: string;
+  body?: string;
+  /** Human-readable phrase on read, e.g. "Visible to all ideas portal users". */
+  visibility?: string;
+  created_at?: string;
+  updated_at?: string;
+  parent_idea_comment_id?: string | null;
+  /** Set when the author commented through the ideas portal rather than in Aha. */
+  idea_commenter_portal_user?: Record<string, unknown> | null;
+  idea_commenter_idea_user?: Record<string, unknown> | null;
+  attachments?: unknown[];
+  [key: string]: unknown;
+}
+
+export interface IdeaCommentsListResponse {
+  idea_comments?: IdeaComment[];
+  pagination?: Pagination;
+}
+
+/** Visibility a new idea portal comment can be created with, per Aha's documented values. */
+export type IdeaCommentVisibility = 'public' | 'employee_or_creator';
+
+/**
  * Competitor entity.
  */
 export interface Competitor {

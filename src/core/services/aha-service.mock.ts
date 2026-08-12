@@ -17,6 +17,9 @@ import type {
   ProductsListResponse,
   Comment,
   CommentsListResponse,
+  IdeaComment,
+  IdeaCommentsListResponse,
+  IdeaCommentVisibility,
   GoalGetResponse,
   GoalsListResponse,
   GoalEpicsResponse,
@@ -381,6 +384,77 @@ export class MockAhaService implements IAhaService {
       body,
       created_at: new Date().toISOString()
     } as Comment;
+  }
+
+  async getFeatureComments(_featureId: string): Promise<CommentsListResponse> {
+    return { comments: [] } as CommentsListResponse;
+  }
+
+  async createEpicComment(_epicId: string, body: string): Promise<Comment> {
+    return { id: '1', body, created_at: new Date().toISOString() } as Comment;
+  }
+
+  async createIdeaComment(_ideaId: string, body: string): Promise<Comment> {
+    return { id: '1', body, created_at: new Date().toISOString() } as Comment;
+  }
+
+  async createInitiativeComment(_initiativeId: string, body: string): Promise<Comment> {
+    return { id: '1', body, created_at: new Date().toISOString() } as Comment;
+  }
+
+  async createGoalComment(_goalId: string, body: string): Promise<Comment> {
+    return { id: '1', body, created_at: new Date().toISOString() } as Comment;
+  }
+
+  async createReleaseComment(_releaseId: string, body: string): Promise<Comment> {
+    return { id: '1', body, created_at: new Date().toISOString() } as Comment;
+  }
+
+  async createReleasePhaseComment(_releasePhaseId: string, body: string): Promise<Comment> {
+    return { id: '1', body, created_at: new Date().toISOString() } as Comment;
+  }
+
+  async createRequirementComment(_requirementId: string, body: string): Promise<Comment> {
+    return { id: '1', body, created_at: new Date().toISOString() } as Comment;
+  }
+
+  async createTodoComment(_todoId: string, body: string): Promise<Comment> {
+    return { id: '1', body, created_at: new Date().toISOString() } as Comment;
+  }
+
+  /**
+   * Portal comments are a separate endpoint from `getIdeaComments`, so the mock keeps them
+   * separate too - a mock that returned the same list for both would hide the very split
+   * these methods exist to expose.
+   */
+  async getIdeaPortalComments(ideaId: string): Promise<IdeaCommentsListResponse> {
+    return {
+      idea_comments: [
+        {
+          id: 'IC-1',
+          idea_id: ideaId,
+          body: '<p>Why was this rejected?</p>',
+          visibility: 'Visible to all ideas portal users',
+          idea_commenter_portal_user: { email: 'customer@example.com' }
+        }
+      ]
+    } as IdeaCommentsListResponse;
+  }
+
+  async createIdeaPortalComment(
+    ideaId: string,
+    body: string,
+    visibility: IdeaCommentVisibility
+  ): Promise<IdeaComment> {
+    return {
+      id: 'IC-2',
+      idea_id: ideaId,
+      body,
+      // Echoed back as given rather than as Aha's human-readable phrase; the mock is not the
+      // place to invent a mapping between the two vocabularies.
+      visibility,
+      created_at: new Date().toISOString()
+    } as IdeaComment;
   }
 
   async getEpicComments(_epicId: string): Promise<CommentsListResponse> {

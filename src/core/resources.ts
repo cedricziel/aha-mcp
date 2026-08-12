@@ -681,6 +681,98 @@ export function registerResources(server: McpServer) {
     }
   );
 
+  // Aha feature comments resource
+  server.registerResource(
+    "aha_feature_comments",
+    new ResourceTemplate(
+      "aha://comments/feature/{feature_id}",
+      {
+        list: undefined,
+        complete: {
+          feature_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Feature Comments",
+      description: "Get comments for a specific feature",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const pathParts = uri.pathname.split('/');
+      const featureId = normalizeVar(variables.feature_id) || pathParts[pathParts.length - 1];
+
+      if (!featureId) {
+        throw new Error('Invalid feature ID: Feature ID is missing from URI');
+      }
+
+      try {
+        const comments = await getAhaService().getFeatureComments(featureId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(comments, null, 2),
+            mimeType: "application/json"
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving comments for feature ${featureId}:`, error);
+        throw toMcpError(error, uri.toString());
+      }
+    }
+  );
+
+  /**
+   * An idea's *portal* comments, which `aha://comments/idea/{id}` does not return - the two
+   * endpoints hold disjoint records, and the portal side is where a customer's own words are.
+   * Kept as a separate URI rather than merged into the other resource so that neither one
+   * silently changes meaning; the `aha_list_comments` tool is what merges them for a caller
+   * who wants the whole conversation.
+   */
+  server.registerResource(
+    "aha_idea_portal_comments",
+    new ResourceTemplate(
+      "aha://idea-comments/{idea_id}",
+      {
+        list: undefined,
+        complete: {
+          idea_id: async () => []
+        }
+      }
+    ),
+    {
+      title: "Aha Idea Portal Comments",
+      description:
+        "Get an idea's ideas-portal comments, including anything a customer wrote. These are " +
+        "different records from aha://comments/idea/{idea_id}, which holds internal comments only.",
+      mimeType: "application/json"
+    },
+    async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const pathParts = uri.pathname.split('/');
+      const ideaId = normalizeVar(variables.idea_id) || pathParts[pathParts.length - 1];
+
+      if (!ideaId) {
+        throw new Error('Invalid idea ID: Idea ID is missing from URI');
+      }
+
+      try {
+        const comments = await getAhaService().getIdeaPortalComments(ideaId);
+
+        return {
+          contents: [{
+            uri: uri.toString(),
+            text: JSON.stringify(comments, null, 2),
+            mimeType: "application/json"
+          }]
+        };
+      } catch (error) {
+        console.error(`Error retrieving portal comments for idea ${ideaId}:`, error);
+        throw toMcpError(error, uri.toString());
+      }
+    }
+  );
+
   // Aha idea comments resource
   server.registerResource(
     "aha_idea_comments",
@@ -695,7 +787,9 @@ export function registerResources(server: McpServer) {
     ),
     {
       title: "Aha Idea Comments",
-      description: "Get comments for a specific idea",
+      description:
+        "Get internal comments for a specific idea. This does not include the ideas-portal " +
+        "conversation - read aha://idea-comments/{idea_id} for that.",
       mimeType: "application/json"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {

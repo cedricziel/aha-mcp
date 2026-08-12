@@ -23,6 +23,9 @@ import type {
   ProductsListResponse,
   Comment,
   CommentsListResponse,
+  IdeaComment,
+  IdeaCommentsListResponse,
+  IdeaCommentVisibility,
   GoalGetResponse,
   GoalsListResponse,
   GoalEpicsResponse,
@@ -168,6 +171,7 @@ export interface IAhaService {
 
   // Comments
   createFeatureComment(featureId: string, body: string): Promise<Comment>;
+  getFeatureComments(featureId: string): Promise<CommentsListResponse>;
   getEpicComments(epicId: string): Promise<CommentsListResponse>;
   getIdeaComments(ideaId: string): Promise<CommentsListResponse>;
   getInitiativeComments(initiativeId: string): Promise<CommentsListResponse>;
@@ -177,6 +181,31 @@ export interface IAhaService {
   getReleasePhaseComments(releasePhaseId: string): Promise<CommentsListResponse>;
   getRequirementComments(requirementId: string): Promise<CommentsListResponse>;
   getTodoComments(todoId: string): Promise<CommentsListResponse>;
+
+  createEpicComment(epicId: string, body: string): Promise<Comment>;
+  createIdeaComment(ideaId: string, body: string): Promise<Comment>;
+  createInitiativeComment(initiativeId: string, body: string): Promise<Comment>;
+  createGoalComment(goalId: string, body: string): Promise<Comment>;
+  createReleaseComment(releaseId: string, body: string): Promise<Comment>;
+  createReleasePhaseComment(releasePhaseId: string, body: string): Promise<Comment>;
+  createRequirementComment(requirementId: string, body: string): Promise<Comment>;
+  createTodoComment(todoId: string, body: string): Promise<Comment>;
+
+  /**
+   * An idea's portal comments, which `getIdeaComments` does not return - the two endpoints
+   * hold disjoint sets. See `IdeaComment`.
+   */
+  getIdeaPortalComments(ideaId: string): Promise<IdeaCommentsListResponse>;
+  /**
+   * Comment on an idea in a way that can reach the ideas portal. `visibility` is required
+   * rather than defaulted: Aha's default is `public`, and publishing to customers is not a
+   * thing to do by omission.
+   */
+  createIdeaPortalComment(
+    ideaId: string,
+    body: string,
+    visibility: IdeaCommentVisibility
+  ): Promise<IdeaComment>;
 
   // Additional list methods
   listIdeasByProduct(
