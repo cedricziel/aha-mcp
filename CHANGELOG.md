@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.0.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v3.0.0...aha-mcp-v4.0.0) (2026-08-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* the aha_idea_watchers, aha_releases and aha_releases_filtered resources are removed, as no Aha endpoint backs them.
+
+### Features
+
+* render tool results as summaries and links instead of duplicated JSON ([#318](https://github.com/cedricziel/aha-mcp/issues/318)) ([46bac11](https://github.com/cedricziel/aha-mcp/commit/46bac111d89b226135708163c91a2a86f2c01f01))
+
 ## [3.0.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v2.0.0...aha-mcp-v3.0.0) (2026-08-12)
 
 
