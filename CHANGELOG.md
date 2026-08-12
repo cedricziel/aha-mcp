@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.8.0...aha-mcp-v0.9.0) (2026-08-12)
+
+
+### Features
+
+* ship a working .mcpb desktop extension and repair the release pipeline ([#294](https://github.com/cedricziel/aha-mcp/issues/294)) ([1c12f85](https://github.com/cedricziel/aha-mcp/commit/1c12f85d97d0f7a71298553fc793b083ae225396))
+
 ## [0.8.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v0.7.0...aha-mcp-v0.8.0) (2026-01-13)
 
 
