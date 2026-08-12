@@ -22,13 +22,36 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run tests
-        run: bun test
+        run: bun run test
 
       - name: Build
         run: bun run build
 
       - name: Check build output
         run: ls -la build/
+
+      - name: Smoke test the built server
+        # The bundle must be able to start on its own - native modules are external
+        # and must stay lazily loaded, or packaged artifacts crash on launch.
+        run: node build/index.js --help
+
+      - name: Validate desktop extension manifest
+        run: bun run mcpb:validate
+
+      - name: Build desktop extension
+        run: bunx mcpb pack . dist/aha-mcp.mcpb
+
+      - name: Verify the desktop extension starts
+        run: |
+          bunx mcpb unpack dist/aha-mcp.mcpb /tmp/mcpb-check
+          node /tmp/mcpb-check/build/index.js --help
+
+      - name: Upload desktop extension artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: aha-mcp-mcpb
+          path: dist/aha-mcp.mcpb
+          if-no-files-found: error
 
       - name: Validate commit messages
         if: github.event_name == 'pull_request'

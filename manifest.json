@@ -1,10 +1,10 @@
 {
-  "dxt_version": "0.1",
+  "manifest_version": "0.2",
   "name": "aha-mcp",
   "display_name": "Aha.io MCP Server",
   "version": "0.8.0",
   "description": "Model Context Protocol server for Aha.io product management platform",
-  "long_description": "A comprehensive MCP server that provides seamless integration with Aha.io's API. This extension enables AI assistants to interact with Aha.io workspaces, manage features, ideas, requirements, and more. It includes 40+ tools for CRUD operations, resource access, and workflow automation.",
+  "long_description": "A comprehensive MCP server that provides seamless integration with Aha.io's API. This extension enables AI assistants to interact with Aha.io workspaces, manage features, ideas, epics, initiatives, competitors and more, with 49 tools, 15 resources and 14 guided prompts.\n\nNote: the local-cache features (the `aha_sync_*` tools and the embedding/semantic-search tools) need the native `sqlite3` module, which is not bundled in this extension. Everything else works out of the box; install the server from npm (`npx @cedricziel/aha-mcp`) or run the Docker image if you need the cache and semantic search.",
   "author": {
     "name": "Cedric Ziel",
     "email": "mail@cedric-ziel.com",
@@ -51,160 +51,200 @@
   },
   "tools": [
     {
-      "name": "aha_list_features",
-      "description": "List features from Aha.io with optional filtering"
+      "name": "aha_associate_feature_with_epic",
+      "description": "Associate a feature with an epic in Aha.io"
     },
     {
-      "name": "aha_get_feature",
-      "description": "Get a specific feature by ID from Aha.io"
+      "name": "aha_associate_feature_with_goals",
+      "description": "Associate a feature with multiple goals in Aha.io"
+    },
+    {
+      "name": "aha_create_competitor",
+      "description": "Create a competitor in a product in Aha.io"
+    },
+    {
+      "name": "aha_create_epic_in_product",
+      "description": "Create an epic within a specific product in Aha.io"
+    },
+    {
+      "name": "aha_create_epic_in_release",
+      "description": "Create an epic within a specific release in Aha.io"
     },
     {
       "name": "aha_create_feature",
-      "description": "Create a new feature in Aha.io"
+      "description": "Create a feature within a specific release in Aha.io"
     },
     {
-      "name": "aha_update_feature",
-      "description": "Update an existing feature in Aha.io"
-    },
-    {
-      "name": "aha_delete_feature",
-      "description": "Delete a feature from Aha.io"
-    },
-    {
-      "name": "aha_list_ideas",
-      "description": "List ideas from Aha.io with optional filtering"
-    },
-    {
-      "name": "aha_get_idea",
-      "description": "Get a specific idea by ID from Aha.io"
+      "name": "aha_create_feature_comment",
+      "description": "Create a comment on a feature in Aha.io"
     },
     {
       "name": "aha_create_idea",
-      "description": "Create a new idea in Aha.io"
+      "description": "Create an idea in a product in Aha.io"
     },
     {
-      "name": "aha_update_idea",
-      "description": "Update an existing idea in Aha.io"
+      "name": "aha_create_idea_by_portal_user",
+      "description": "Create an idea by a portal user in Aha.io"
+    },
+    {
+      "name": "aha_create_idea_with_category",
+      "description": "Create an idea with a category in a product in Aha.io"
+    },
+    {
+      "name": "aha_create_idea_with_portal_settings",
+      "description": "Create an idea with enhanced portal settings in Aha.io"
+    },
+    {
+      "name": "aha_create_idea_with_score",
+      "description": "Create an idea with a score in a product in Aha.io"
+    },
+    {
+      "name": "aha_create_initiative_in_product",
+      "description": "Create an initiative within a specific product in Aha.io"
+    },
+    {
+      "name": "aha_delete_competitor",
+      "description": "Delete a competitor in Aha.io"
+    },
+    {
+      "name": "aha_delete_entity_embedding",
+      "description": "Delete the stored vector embedding for a specific entity"
+    },
+    {
+      "name": "aha_delete_epic",
+      "description": "Delete an epic in Aha.io"
+    },
+    {
+      "name": "aha_delete_feature",
+      "description": "Delete a feature in Aha.io"
     },
     {
       "name": "aha_delete_idea",
-      "description": "Delete an idea from Aha.io"
+      "description": "Delete an idea in Aha.io"
     },
     {
-      "name": "aha_list_requirements",
-      "description": "List requirements from Aha.io with optional filtering"
+      "name": "aha_embedding_status",
+      "description": "Get the status and progress of embedding generation jobs"
     },
     {
-      "name": "aha_get_requirement",
-      "description": "Get a specific requirement by ID from Aha.io"
+      "name": "aha_find_similar",
+      "description": "Find entities similar to a specific entity using embeddings"
     },
     {
-      "name": "aha_create_requirement",
-      "description": "Create a new requirement in Aha.io"
+      "name": "aha_generate_embeddings",
+      "description": "Generate vector embeddings for specified Aha entities to enable semantic search"
     },
     {
-      "name": "aha_update_requirement",
-      "description": "Update an existing requirement in Aha.io"
+      "name": "aha_generate_entity_embedding",
+      "description": "Generate an embedding for a specific entity by ID"
     },
     {
-      "name": "aha_delete_requirement",
-      "description": "Delete a requirement from Aha.io"
+      "name": "aha_get_entity_embedding",
+      "description": "Retrieve the stored vector embedding for a specific entity"
     },
     {
-      "name": "aha_list_products",
-      "description": "List products from Aha.io"
+      "name": "aha_move_feature_to_release",
+      "description": "Move a feature to a different release in Aha.io"
     },
     {
-      "name": "aha_get_product",
-      "description": "Get a specific product by ID from Aha.io"
+      "name": "aha_pause_embeddings",
+      "description": "Pause a running embedding generation job"
     },
     {
-      "name": "aha_list_users",
-      "description": "List users from Aha.io workspace"
+      "name": "aha_semantic_search",
+      "description": "Search for Aha entities using semantic similarity (vector embeddings)"
     },
     {
-      "name": "aha_get_user",
-      "description": "Get a specific user by ID from Aha.io"
+      "name": "aha_stop_embeddings",
+      "description": "Stop an embedding generation job completely"
     },
     {
-      "name": "aha_list_releases",
-      "description": "List releases from Aha.io with optional filtering"
+      "name": "aha_sync_cleanup",
+      "description": "Clean up old completed/failed sync jobs and optimize database"
     },
     {
-      "name": "aha_get_release",
-      "description": "Get a specific release by ID from Aha.io"
+      "name": "aha_sync_config",
+      "description": "View or update sync configuration settings"
     },
     {
-      "name": "aha_create_release",
-      "description": "Create a new release in Aha.io"
+      "name": "aha_sync_entity",
+      "description": "Quickly sync a specific entity by ID (bypasses background queue)"
     },
     {
-      "name": "aha_update_release",
-      "description": "Update an existing release in Aha.io"
+      "name": "aha_sync_health",
+      "description": "Get comprehensive health status of the sync system, database, and cached data"
     },
     {
-      "name": "aha_delete_release",
-      "description": "Delete a release from Aha.io"
+      "name": "aha_sync_history",
+      "description": "Get detailed history and logs for a specific sync job or recent sync activities"
     },
     {
-      "name": "aha_list_goals",
-      "description": "List goals from Aha.io"
+      "name": "aha_sync_pause",
+      "description": "Pause a running background sync operation"
     },
     {
-      "name": "aha_get_goal",
-      "description": "Get a specific goal by ID from Aha.io"
+      "name": "aha_sync_start",
+      "description": "Start a background synchronization for specified Aha entity types"
     },
     {
-      "name": "aha_create_goal",
-      "description": "Create a new goal in Aha.io"
+      "name": "aha_sync_status",
+      "description": "Get current status of all sync operations including progress, active jobs, and recent history"
     },
     {
-      "name": "aha_update_goal",
-      "description": "Update an existing goal in Aha.io"
+      "name": "aha_sync_stop",
+      "description": "Stop a background sync operation completely"
     },
     {
-      "name": "aha_delete_goal",
-      "description": "Delete a goal from Aha.io"
+      "name": "aha_update_competitor",
+      "description": "Update a competitor in Aha.io"
     },
     {
-      "name": "aha_list_initiatives",
-      "description": "List initiatives from Aha.io"
+      "name": "aha_update_epic",
+      "description": "Update an epic in Aha.io"
     },
     {
-      "name": "aha_get_initiative",
-      "description": "Get a specific initiative by ID from Aha.io"
+      "name": "aha_update_feature",
+      "description": "Update a feature in Aha.io"
     },
     {
-      "name": "aha_create_initiative",
-      "description": "Create a new initiative in Aha.io"
+      "name": "aha_update_feature_custom_fields",
+      "description": "Update a feature's custom fields in Aha.io"
     },
     {
-      "name": "aha_update_initiative",
-      "description": "Update an existing initiative in Aha.io"
+      "name": "aha_update_feature_progress",
+      "description": "Update a feature's progress in Aha.io"
     },
     {
-      "name": "aha_delete_initiative",
-      "description": "Delete an initiative from Aha.io"
+      "name": "aha_update_feature_score",
+      "description": "Update a feature's score in Aha.io"
     },
     {
-      "name": "aha_health_check",
-      "description": "Check the health status of the Aha.io MCP server"
+      "name": "aha_update_feature_tags",
+      "description": "Update tags for a feature in Aha.io"
     },
     {
-      "name": "aha_connection_test",
-      "description": "Test connection to Aha.io API with current credentials"
+      "name": "aha_vector_status",
+      "description": "Check if vector operations are available and view vector storage statistics"
     },
     {
       "name": "configure_server",
-      "description": "Configure the MCP server with Aha.io credentials"
+      "description": "Configure server settings (company, token, mode)"
     },
     {
       "name": "get_server_config",
       "description": "Get current server configuration"
     },
     {
+      "name": "server_health_check",
+      "description": "Get server health status and diagnostics"
+    },
+    {
+      "name": "server_status",
+      "description": "Get detailed server status and configuration"
+    },
+    {
       "name": "test_configuration",
-      "description": "Test the current Aha.io configuration"
+      "description": "Test current Aha.io configuration"
     }
   ],
   "license": "MIT",
@@ -215,5 +255,7 @@
     "product-management",
     "ai",
     "claude"
-  ]
+  ],
+  "tools_generated": false,
+  "prompts_generated": true
 }

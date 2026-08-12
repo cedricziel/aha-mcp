@@ -1,0 +1,16 @@
+# The extension ships the bundled server produced by `bun run build`, nothing else.
+# `bun build` inlines every JavaScript dependency into build/index.js, so node_modules
+# is not needed at runtime and would otherwise add ~19MB of mostly dead weight.
+#
+# Ignore everything at the top level, then re-include the few paths the extension needs.
+/*
+
+!/manifest.json
+!/icon.png
+!/LICENSE
+!/README.md
+
+# Negate the directory without a trailing slash as well, otherwise the packer -
+# which tests paths like "build" while walking - never descends into it.
+!/build
+!/build/**
