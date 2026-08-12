@@ -1,4 +1,11 @@
 node_modules/
+
+# Local credentials. .env.example directs you to put AHA_TOKEN here, so it must never
+# be committed; .env.example itself is tracked and holds placeholders only.
+.env
+.env.*
+!.env.example
+
 .clinefile
 .claude/
 build/
