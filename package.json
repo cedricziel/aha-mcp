@@ -7,7 +7,7 @@
   "private": false,
   "main": "./build/index.js",
   "bin": {
-    "aha-mcp": "./build/index.js"
+    "aha-mcp": "build/index.js"
   },
   "files": [
     "build/",
@@ -27,7 +27,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cedricziel/aha-mcp.git"
+    "url": "git+https://github.com/cedricziel/aha-mcp.git"
   },
   "homepage": "https://github.com/cedricziel/aha-mcp#readme",
   "bugs": {
