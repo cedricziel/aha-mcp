@@ -6,6 +6,21 @@ import { registerSyncTools } from "./tools/sync-tools.js";
 import { registerEmbeddingTools } from "./tools/embedding-tools.js";
 import { log } from "./logger.js";
 
+/**
+ * Whether the local-cache features (background sync and the embedding/semantic-search
+ * tools) are enabled.
+ *
+ * Off unless explicitly requested. They need a writable data directory and the native
+ * sqlite3 module, neither of which is guaranteed - the Claude Desktop extension ships
+ * without sqlite3 - and the embedding similarity is a placeholder hash rather than a real
+ * model, so advertising the tools by default offers capability the server cannot deliver.
+ *
+ * Set AHA_ENABLE_LOCAL_CACHE=true to register them.
+ */
+export function isLocalCacheEnabled(): boolean {
+  const flag = process.env.AHA_ENABLE_LOCAL_CACHE?.trim().toLowerCase();
+  return flag === 'true' || flag === '1' || flag === 'yes';
+}
 
 /**
  * Register all tools with the MCP server
@@ -970,9 +985,16 @@ export function registerTools(server: McpServer) {
     }
   );
 
-  // Register sync tools for background synchronization and observability
-  registerSyncTools(server);
-  
-  // Register embedding tools for semantic search capabilities
-  registerEmbeddingTools(server);
+  // The local cache and its semantic-search tools are opt-in; see isLocalCacheEnabled().
+  if (isLocalCacheEnabled()) {
+    // Register sync tools for background synchronization and observability
+    registerSyncTools(server);
+
+    // Register embedding tools for semantic search capabilities
+    registerEmbeddingTools(server);
+  } else {
+    log.info('Local cache disabled; sync and embedding tools not registered', {
+      hint: 'Set AHA_ENABLE_LOCAL_CACHE=true to enable them'
+    });
+  }
 }
