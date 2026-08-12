@@ -31,7 +31,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   modelcontextprotocol/typescript-sdk#1083. Delete it once that lands, not before -
   without it, resource URIs carrying query parameters do not match.
 - `manifest.json`'s tool list must match what the server actually registers. Regenerate it
-  from a running server rather than editing by hand, and keep prompts as
+  with `bun run manifest:sync`, which spawns the real server and copies `tools/list`
+  verbatim, rather than editing by hand - `bun run manifest:check` fails without writing,
+  for CI. Changing a tool's description in `src/core/tools.ts` and forgetting this leaves
+  the desktop extension advertising the old behaviour. Keep prompts as
   `prompts_generated: true` - the schema requires a `text` field on any statically declared
   prompt, which the server generates at runtime instead.
 
@@ -190,7 +193,7 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
 - **Authentication**: Runtime configuration with environment variables and config file support
 
 Tool, resource and prompt counts are also mirrored in `manifest.json` for the desktop
-extension - regenerate that list from a running server rather than editing it by hand.
+extension - regenerate that list with `bun run manifest:sync` rather than editing it by hand.
 
 ### Transport Layer
 
@@ -260,8 +263,7 @@ precedence over `name`). They must stay identical; the e2e suite asserts it.
 
 #### Tool output: `outputSchema` and `structuredContent`
 
-Every tool declares an `outputSchema` and returns `structuredContent`, with the serialised
-JSON repeated in a text block for clients that ignore structured results. Schemas live in
+Every tool declares an `outputSchema` and returns `structuredContent`. Schemas live in
 `src/core/tool-output.ts`. Two rules there are load-bearing:
 
 - **Anything wrapping an Aha record uses `z.looseObject`.** A raw Zod shape converts to
@@ -281,7 +283,32 @@ a missing `structuredContent` fails output validation and sinks the call.
 
 Tools that touch a single record also return a `resource_link` to its `aha://` URI via
 `recordLinks()`, so a client can re-read current state instead of trusting the point-in-time
-copy. No identifier, no link: a link to an unreadable URI is worse than none.
+copy. No identifier, no link: a link to an unreadable URI is worse than none. Each link sets
+`title` as well as `name` - hosts display `title` in preference - plus
+`annotations.audience`, `priority: 1` and, when Aha's `updated_at` is plainly Zulu ISO 8601,
+`lastModified`. The timestamp guard is deliberate: the SDK types that annotation as
+`z.iso.datetime()`, which rejects a numeric offset, and a rejected annotation fails the whole
+call where an omitted one costs only a hint.
+
+`aha_search` deliberately emits **no** `resource_link`s. `recordLinks()` can only build URIs
+for the five types with a single-record template in `resources.ts`, while search returns a
+dozen or more - so linking would cover some hits and silently skip others in the same result
+set, for no reason a client could see. Its hits already carry an absolute `url`, and `perPage`
+goes to 200, so the alternative was up to 200 content blocks of partial coverage. Reconsider
+only if the missing record types gain resource templates.
+
+**The text block is a one-line summary, not a copy of the record.** `recordSummary()` builds
+`Updated feature PRJ1-123 "Name" - https://...`; `aha_search` renders its hits as a markdown
+link list. This block used to be the payload re-serialised with `JSON.stringify(x, null, 2)`,
+which duplicated `structuredContent` verbatim - double the tokens, and nothing a client could
+present as anything but a blob. The record still travels in `structuredContent` and the
+`resource_link` is the durable pointer, so the text block's job is to say what happened in a
+form a person and a model can both read. Building the search links server-side also keeps the
+model from re-emitting - and mangling - URLs it only ever needed to pass through.
+
+Tool descriptions state what comes back ("Returns the updated feature and a link to it").
+Host-side rendering is decided by a model reading tool contracts, so a description that names
+its output is the cheapest lever this server has over how a result is presented.
 
 #### Tool errors
 

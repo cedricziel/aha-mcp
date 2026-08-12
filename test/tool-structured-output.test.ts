@@ -75,7 +75,7 @@ describe('Tool structured output', () => {
     expect(Object.keys(schema.properties)).toContain('reference_num');
   });
 
-  it('returns the record as structuredContent, and the same JSON in the text block', async () => {
+  it('returns the record as structuredContent, and a one-line summary in the text block', async () => {
     patch('updateFeature', async () => FEATURE);
     const client = await connected(registerTools);
 
@@ -86,9 +86,33 @@ describe('Tool structured output', () => {
 
     expect(result.isError).toBeFalsy();
     expect(result.structuredContent).toEqual(FEATURE);
-    // The text block stays the backwards-compatible copy for clients that ignore
-    // structuredContent, so it must carry the same record.
-    expect(result.content[0].text).toContain(JSON.stringify(FEATURE, null, 2));
+
+    // The record travels in structuredContent, so the text block says what happened rather
+    // than repeating it - a JSON copy here doubled the payload for no added information.
+    expect(result.content[0].text).toBe(
+      'Updated feature PRJ1-123 "Structured output" - https://test.aha.io/features/PRJ1-123'
+    );
+    expect(result.content[0].text).not.toContain('"progress"');
+  });
+
+  it('links the touched record with a display title and a freshness annotation', async () => {
+    patch('updateFeature', async () => FEATURE);
+    const client = await connected(registerTools);
+
+    const result: any = await client.callTool({
+      name: 'aha_update_feature',
+      arguments: { featureId: 'PRJ1-123', featureData: { feature: { name: 'Structured output' } } }
+    });
+
+    const link = result.content.find((c: any) => c.type === 'resource_link');
+    expect(link).toBeDefined();
+    expect(link.uri).toBe('aha://feature/PRJ1-123');
+    // Hosts display `title` in preference to `name`, so both are set.
+    expect(link.name).toBe('Structured output');
+    expect(link.title).toBe('PRJ1-123 - Structured output');
+    expect(link.annotations.audience).toEqual(['user', 'assistant']);
+    expect(link.annotations.priority).toBe(1);
+    expect(link.annotations.lastModified).toBe('2026-08-02T10:00:00.000Z');
   });
 
   it('describes deletions rather than returning an empty body', async () => {
@@ -243,5 +267,66 @@ describe('Tool structured output', () => {
     expect(result.structuredContent.workspace_id).toBeNull();
     expect(result.structuredContent.results).toHaveLength(2);
     expect(result.structuredContent.results[0].url).toBe('https://test.aha.io/features/PRJ1-1');
+  });
+
+  it('renders search hits as markdown links rather than repeating the payload', async () => {
+    const fakeClient = {
+      searchDocuments: async () => ({
+        totalCount: 2,
+        totalCountIsCapped: false,
+        currentPage: 1,
+        totalPages: 1,
+        isLastPage: true,
+        results: [
+          {
+            name: 'Login flow',
+            searchableType: 'Feature',
+            searchableId: 'PRJ1-1',
+            projectId: '123',
+            url: 'https://test.aha.io/features/PRJ1-1',
+            updatedAt: '2026-08-01T10:00:00.000Z'
+          },
+          {
+            name: null,
+            searchableType: 'Idea',
+            searchableId: null,
+            projectId: null,
+            url: 'https://test.aha.io/ideas/PRJ1-I-1',
+            updatedAt: '2026-08-02T10:00:00.000Z'
+          }
+        ]
+      })
+    } as unknown as AhaGraphQLClient;
+
+    const client = await connected(server => registerSearchTools(server, fakeClient));
+    const result: any = await client.callTool({ name: 'aha_search', arguments: { query: 'login' } });
+
+    // Building the links here is what keeps the model from re-emitting - and mangling - a
+    // URL it only ever needed to pass through.
+    expect(result.content[0].text).toBe(
+      '2 matches for "login":\n' +
+        '- [Login flow](https://test.aha.io/features/PRJ1-1) - Feature\n' +
+        '- [Untitled](https://test.aha.io/ideas/PRJ1-I-1) - Idea'
+    );
+  });
+
+  it('says so plainly when a search matches nothing', async () => {
+    const fakeClient = {
+      searchDocuments: async () => ({
+        totalCount: 0,
+        totalCountIsCapped: false,
+        currentPage: 1,
+        totalPages: 0,
+        isLastPage: true,
+        results: []
+      })
+    } as unknown as AhaGraphQLClient;
+
+    const client = await connected(server => registerSearchTools(server, fakeClient));
+    const result: any = await client.callTool({ name: 'aha_search', arguments: { query: 'nope' } });
+
+    expect(result.isError).toBeFalsy();
+    expect(result.content[0].text).toBe('No matches for "nope".');
+    expect(result.structuredContent.results).toEqual([]);
   });
 });

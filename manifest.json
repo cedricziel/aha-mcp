@@ -52,107 +52,107 @@
   "tools": [
     {
       "name": "aha_associate_feature_with_epic",
-      "description": "Associate a feature with an epic in Aha.io"
+      "description": "Associate a feature with an epic in Aha.io. Returns the updated feature and a link to it."
     },
     {
       "name": "aha_associate_feature_with_goals",
-      "description": "Associate a feature with multiple goals in Aha.io"
+      "description": "Associate a feature with multiple goals in Aha.io. Replaces the feature's whole goal set, so goals left out are unlinked. Returns the updated feature and a link to it."
     },
     {
       "name": "aha_create_competitor",
-      "description": "Create a competitor in a product in Aha.io"
+      "description": "Create a competitor in a product in Aha.io. Returns the created competitor and a link to it."
     },
     {
       "name": "aha_create_epic_in_product",
-      "description": "Create an epic within a specific product in Aha.io"
+      "description": "Create an epic within a specific product in Aha.io. Returns the created epic and a link to it."
     },
     {
       "name": "aha_create_epic_in_release",
-      "description": "Create an epic within a specific release in Aha.io"
+      "description": "Create an epic within a specific release in Aha.io. Returns the created epic and a link to it."
     },
     {
       "name": "aha_create_feature",
-      "description": "Create a feature within a specific release in Aha.io"
+      "description": "Create a feature within a specific release in Aha.io. Returns the created feature and a link to it."
     },
     {
       "name": "aha_create_feature_comment",
-      "description": "Create a comment on a feature in Aha.io"
+      "description": "Create a comment on a feature in Aha.io. Returns the created comment."
     },
     {
       "name": "aha_create_idea",
-      "description": "Create an idea in a product in Aha.io"
+      "description": "Create an idea in a product in Aha.io. Returns the created idea and a link to it."
     },
     {
       "name": "aha_create_idea_by_portal_user",
-      "description": "Create an idea by a portal user in Aha.io"
+      "description": "Create an idea in a product in Aha.io, attributed to an ideas-portal user rather than to the API token's owner. Returns the created idea and a link to it."
     },
     {
       "name": "aha_create_idea_with_category",
-      "description": "Create an idea with a category in a product in Aha.io"
+      "description": "Create an idea with a category in a product in Aha.io. Returns the created idea and a link to it."
     },
     {
       "name": "aha_create_idea_with_portal_settings",
-      "description": "Create an idea with enhanced portal settings in Aha.io"
+      "description": "Create an idea in a product in Aha.io with ideas-portal settings, category and score in one call. Returns the created idea and a link to it."
     },
     {
       "name": "aha_create_idea_with_score",
-      "description": "Create an idea with a score in a product in Aha.io"
+      "description": "Create an idea with a score in a product in Aha.io. Returns the created idea and a link to it."
     },
     {
       "name": "aha_create_initiative_in_product",
-      "description": "Create an initiative within a specific product in Aha.io"
+      "description": "Create an initiative within a specific product in Aha.io. Returns the created initiative and a link to it."
     },
     {
       "name": "aha_delete_competitor",
-      "description": "Delete a competitor in Aha.io"
+      "description": "Delete a competitor in Aha.io. Returns a confirmation naming the deleted competitor; there is no record to return."
     },
     {
       "name": "aha_delete_epic",
-      "description": "Delete an epic in Aha.io"
+      "description": "Delete an epic in Aha.io. Returns a confirmation naming the deleted epic; there is no record to return."
     },
     {
       "name": "aha_delete_feature",
-      "description": "Delete a feature in Aha.io"
+      "description": "Delete a feature in Aha.io. Returns a confirmation naming the deleted feature; there is no record to return."
     },
     {
       "name": "aha_delete_idea",
-      "description": "Delete an idea in Aha.io"
+      "description": "Delete an idea in Aha.io. Returns a confirmation naming the deleted idea; there is no record to return."
     },
     {
       "name": "aha_move_feature_to_release",
-      "description": "Move a feature to a different release in Aha.io"
+      "description": "Move a feature to a different release in Aha.io. Returns the updated feature and a link to it."
     },
     {
       "name": "aha_search",
-      "description": "Search across Aha.io records - ideas, features, epics, initiatives, goals, key results, requirements, releases, tasks, pages, comments and more. Queries Aha.io directly, so results are always current. Supports 'term*' for prefix matching, AND/OR/NOT, and \"quoted phrases\". Use '*' to match everything, which is useful with workspaceId to list a workspace's records."
+      "description": "Search across Aha.io records - ideas, features, epics, initiatives, goals, key results, requirements, releases, tasks, pages, comments and more. Queries Aha.io directly, so results are always current. Supports 'term*' for prefix matching, AND/OR/NOT, and \"quoted phrases\". Use '*' to match everything, which is useful with workspaceId to list a workspace's records. Returns each hit's name, type and absolute Aha.io URL, already rendered as markdown links, plus paging counts."
     },
     {
       "name": "aha_update_competitor",
-      "description": "Update a competitor in Aha.io"
+      "description": "Update a competitor in Aha.io. Returns the updated competitor and a link to it."
     },
     {
       "name": "aha_update_epic",
-      "description": "Update an epic in Aha.io"
+      "description": "Update an epic's name or description in Aha.io. Returns the updated epic and a link to it."
     },
     {
       "name": "aha_update_feature",
-      "description": "Update a feature in Aha.io"
+      "description": "Update a feature's name or description in Aha.io. Returns the updated feature and a link to it."
     },
     {
       "name": "aha_update_feature_custom_fields",
-      "description": "Update a feature's custom fields in Aha.io"
+      "description": "Update a feature's custom fields in Aha.io. Returns the updated feature and a link to it."
     },
     {
       "name": "aha_update_feature_progress",
-      "description": "Update a feature's progress in Aha.io"
+      "description": "Update a feature's progress percentage in Aha.io. Returns the updated feature and a link to it."
     },
     {
       "name": "aha_update_feature_score",
-      "description": "Update a feature's score in Aha.io"
+      "description": "Update a feature's score in Aha.io. Returns the updated feature and a link to it."
     },
     {
       "name": "aha_update_feature_tags",
-      "description": "Update tags for a feature in Aha.io"
+      "description": "Update tags for a feature in Aha.io. Replaces the feature's whole tag set, so tags left out are removed. Returns the updated feature and a link to it."
     },
     {
       "name": "configure_server",
