@@ -93,6 +93,18 @@ describe('QueryAwareUriTemplate', () => {
     it('returns null on a path mismatch', () => {
       expect(new QueryAwareUriTemplate('aha://feature/{id}').match('aha://idea/IDEA-1')).toBeNull();
     });
+
+    it('expands an exploded variable into a list', () => {
+      expect(new QueryAwareUriTemplate('aha://features/{id*}').match('aha://features/A,B')).toEqual({
+        id: ['A', 'B']
+      });
+    });
+
+    it('keeps commas verbatim for a non-exploded greedy variable', () => {
+      // A `+` variable matches greedily, so unlike the path patterns it can contain a
+      // comma - splitting it here would diverge from the SDK's expand()/match() pairing.
+      expect(new QueryAwareUriTemplate('aha://{+path}').match('aha://a,b')).toEqual({ path: 'a,b' });
+    });
   });
 
   describe('inherited behaviour', () => {

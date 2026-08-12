@@ -25,7 +25,7 @@ export class QueryAwareUriTemplate extends UriTemplate {
     const pathPart = queryIndex === -1 ? uri : uri.slice(0, queryIndex);
     const queryPart = queryIndex === -1 ? "" : uri.slice(queryIndex + 1);
 
-    const pathNames: string[] = [];
+    const pathNames: Array<{ name: string; exploded: boolean }> = [];
     const queryNames: Array<{ name: string; exploded: boolean }> = [];
     let pattern = "^";
 
@@ -44,7 +44,7 @@ export class QueryAwareUriTemplate extends UriTemplate {
       }
 
       pattern += pathPartToRegExp(part);
-      pathNames.push(part.name);
+      pathNames.push({ name: part.name, exploded: part.exploded });
     }
 
     // A concrete URI may carry query parameters the template does not name.
@@ -55,10 +55,12 @@ export class QueryAwareUriTemplate extends UriTemplate {
 
     const result: Variables = {};
 
-    pathNames.forEach((name, index) => {
+    pathNames.forEach(({ name, exploded }, index) => {
       const value = match[index + 1];
       const cleanName = name.replace("*", "");
-      result[cleanName] = value?.includes(",") ? value.split(",") : value;
+      // Only exploded variables expand a comma-separated match into a list; a `+` or `#`
+      // variable matches greedily and must keep any commas verbatim.
+      result[cleanName] = exploded && value?.includes(",") ? value.split(",") : value;
     });
 
     if (queryNames.length > 0) {
