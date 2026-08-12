@@ -7,7 +7,7 @@ import { log } from "../logger.js";
  * The REST paths used to surface axios' own wording - `Request failed with status code 403` -
  * which says nothing about what was refused or why, and is indistinguishable from a bug in
  * this server. The GraphQL client in `aha-graphql.ts` has always mapped its statuses; this is
- * the same courtesy for the 31 tools and 40+ resources that go through `aha-js`.
+ * the same courtesy for the 36 tools and 40+ resources that go through `aha-js`.
  *
  * Deliberately no retrying here. Aha's limits are 300 requests/minute and 20/second and a 429
  * carries `retry_after`, but whether to wait or fail belongs to the caller, so a 429 is

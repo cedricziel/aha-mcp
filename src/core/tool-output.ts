@@ -52,7 +52,13 @@ export function unwrapRecord(payload: unknown, key: string): Record<string, unkn
 }
 
 /** Record types with a single-record resource template in resources.ts. */
-type LinkableRecordType = "feature" | "epic" | "idea" | "initiative" | "competitor";
+export type LinkableRecordType =
+  | "feature"
+  | "epic"
+  | "idea"
+  | "initiative"
+  | "competitor"
+  | "release";
 
 function identifier(value: unknown): string | undefined {
   if (typeof value === "string" && value.length > 0) return value;
@@ -170,25 +176,59 @@ const recordIdentity = {
 const progressField = z.number().nullish().describe("Completion percentage, 0-100");
 const scoreField = z.number().nullish().describe("Aha.io score");
 
+/**
+ * Described rather than left to pass through undescribed, because it is the field a caller
+ * most often needs before writing to a record - and a schema that does not mention it reads
+ * as a server that cannot report it. `aha_search` cannot return it (Aha's `searchDocuments`
+ * has no per-type fields), so the `aha_get_*` tools are the only way to see it, and naming
+ * it here is what tells a model that.
+ *
+ * The union is deliberate. Every endpoint measured returns an object, but this file's rule
+ * is that a wrong guess about a type fails the call outright rather than degrading, so a
+ * plain string is admitted too.
+ */
+const workflowStatusField = z
+  .union([
+    z.looseObject({
+      id: z.union([z.string(), z.number()]).optional(),
+      name: z.string().optional(),
+      complete: z.boolean().optional(),
+      color: z.string().optional()
+    }),
+    z.string()
+  ])
+  .nullish()
+  .describe("Current workflow status, e.g. { name: \"In development\", complete: false }");
+
 export const featureOutputSchema = z.looseObject({
   ...recordIdentity,
   progress: progressField,
-  score: scoreField
+  score: scoreField,
+  workflow_status: workflowStatusField
 });
 
 export const epicOutputSchema = z.looseObject({
   ...recordIdentity,
-  progress: progressField
+  progress: progressField,
+  workflow_status: workflowStatusField
 });
 
 export const initiativeOutputSchema = z.looseObject({
   ...recordIdentity,
-  progress: progressField
+  progress: progressField,
+  workflow_status: workflowStatusField
 });
 
 export const ideaOutputSchema = z.looseObject({
   ...recordIdentity,
-  score: scoreField
+  score: scoreField,
+  workflow_status: workflowStatusField
+});
+
+export const releaseOutputSchema = z.looseObject({
+  ...recordIdentity,
+  progress: progressField,
+  workflow_status: workflowStatusField
 });
 
 export const competitorOutputSchema = z.looseObject({
