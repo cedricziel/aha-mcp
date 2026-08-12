@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.1](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v5.0.0...aha-mcp-v5.0.1) (2026-08-12)
+
+
+### Bug Fixes
+
+* advertise tool output schemas in JSON Schema 2020-12 ([#327](https://github.com/cedricziel/aha-mcp/issues/327)) ([e8a915a](https://github.com/cedricziel/aha-mcp/commit/e8a915a2ede2e39388e71474da2b563ae624d5a4))
+
 ## [5.0.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v4.0.0...aha-mcp-v5.0.0) (2026-08-12)
 
 
