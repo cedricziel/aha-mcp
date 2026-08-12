@@ -150,7 +150,11 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
 - **Tools**: 31 MCP tools (CRUD, search, health checks, configuration), none of which keep
   local state
 - **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes
-- **Prompts**: 14 domain-specific workflow prompts with context-aware responses
+- **Prompts**: 17 workflow prompts. Twelve template a question; five (`idea_triage`,
+  `release_readiness`, `feature_description_draft`, `quarterly_roadmap_review`,
+  `customer_demand_rollup`) instead tell the agent which tools and resources to reach for,
+  and in what order. Those five deliberately fetch nothing themselves, so a prompt cannot
+  fail or stall on the network
 - **Instructions**: `src/core/instructions.ts`, passed to `McpServer` and returned in the
   `initialize` response. The only always-on context the server gets - prompts need
   invoking and tool descriptions are per-tool - so it is where session-wide guidance

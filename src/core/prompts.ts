@@ -94,13 +94,15 @@ export function registerPrompts(server: McpServer) {
         product_context: z.string().optional().describe("Product context and goals"),
         existing_features: z.string().optional().describe("Comma-separated list of related existing features"),
         target_users: z.string().optional().describe("Target user segments"),
+        known_risks: z.string().optional().describe("Comma-separated list of risks already identified"),
+        current_baseline: z.string().optional().describe("Current baseline metrics, if any exist to improve on"),
         feature_id: completable(
           z.string().optional().describe("Existing feature ID from Aha.io for context (e.g., PROJ-123)"),
           completeRecordReference("Feature")
         )
       }
     },
-    async (params: { feature_name: string; feature_description?: string; product_context?: string; existing_features?: string; target_users?: string; feature_id?: string }) => {
+    async (params: { feature_name: string; feature_description?: string; product_context?: string; existing_features?: string; target_users?: string; known_risks?: string; current_baseline?: string; feature_id?: string }) => {
       // Fetch existing feature context if feature_id is provided
       let existingFeatureContext = "";
       if (params.feature_id) {
@@ -119,6 +121,8 @@ ${params.feature_description ? `**Description**: ${params.feature_description}` 
 ${params.product_context ? `**Product Context**: ${params.product_context}` : ''}
 ${params.existing_features ? `**Related Features**: ${params.existing_features}` : ''}
 ${params.target_users ? `**Target Users**: ${params.target_users}` : ''}
+${params.known_risks ? `**Risks Already Identified**: ${params.known_risks}` : ''}
+${params.current_baseline ? `**Current Baseline**: ${params.current_baseline}` : ''}
 
 ${existingFeatureContext}
 
@@ -126,8 +130,12 @@ Please provide:
 1. **Requirements Analysis**: Break down the feature into core requirements
 2. **Dependencies**: Identify technical and feature dependencies
 3. **Implementation Strategy**: Recommend approach and phases
-4. **Risks & Challenges**: Highlight potential risks and mitigation strategies
-5. **Success Metrics**: Define measurable success criteria
+4. **Risk Assessment**: Identify risks, categorise them by type (technical, resource,
+   market, dependency), rate each by impact and likelihood, and give a mitigation for the
+   ones that rank highest. Say which indicators would show a risk materialising.
+5. **Success Metrics**: Define primary metrics that indicate success, secondary and leading
+   indicators that move earlier, and how each would be measured. Note where no baseline
+   exists to compare against.
 6. **Timeline Estimation**: Provide rough timeline estimates
 
 Format your response with clear sections and actionable recommendations.`
@@ -577,94 +585,8 @@ Format as a comprehensive specification document with clear sections.`
   );
 
   // 11. Risk Assessment Prompt
-  server.registerPrompt(
-    "risk_assessment",
-    {
-      title: "Assess risks",
-      description: "Assess project and feature risks with mitigation strategies",
-      argsSchema: {
-        project_name: z.string().describe("Name of the project or feature"),
-        project_scope: z.string().describe("Project scope and objectives"),
-        timeline: z.string().describe("Project timeline and key milestones"),
-        team_composition: z.string().optional().describe("Team composition and skills"),
-        dependencies: z.string().optional().describe("Comma-separated list of external dependencies"),
-        known_risks: z.string().optional().describe("Comma-separated list of already identified risks")
-      }
-    },
-    (params: { project_name: string; project_scope: string; timeline: string; team_composition?: string; dependencies?: string; known_risks?: string }) => ({
-      messages: [{
-        role: "user",
-        content: {
-          type: "text",
-          text: `Assess risks for:
-
-**Project**: ${params.project_name}
-**Scope**: ${params.project_scope}
-**Timeline**: ${params.timeline}
-${params.team_composition ? `**Team**: ${params.team_composition}` : ''}
-${params.dependencies ? `**Dependencies**: ${params.dependencies}` : ''}
-${params.known_risks ? `**Known Risks**: ${params.known_risks}` : ''}
-
-Please provide:
-1. **Risk Identification**: Comprehensive list of potential risks
-2. **Risk Categorization**: Categorize risks by type (technical, resource, market, etc.)
-3. **Impact Assessment**: Assess potential impact of each risk
-4. **Probability Analysis**: Estimate likelihood of each risk occurring
-5. **Risk Prioritization**: Prioritize risks by impact and probability
-6. **Mitigation Strategies**: Specific mitigation and contingency plans
-7. **Monitoring Plan**: How to monitor and track risk indicators
-8. **Escalation Procedures**: When and how to escalate risks
-
-Use a structured risk assessment framework with clear action items.`
-        }
-      }]
-    })
-  );
 
   // 12. Success Metrics Prompt
-  server.registerPrompt(
-    "success_metrics",
-    {
-      title: "Define success metrics",
-      description: "Define success metrics and KPIs for features and initiatives",
-      argsSchema: {
-        initiative_name: z.string().describe("Name of the initiative or feature"),
-        business_objectives: z.string().describe("Business objectives and goals"),
-        user_impact: z.string().describe("Expected user impact and benefits"),
-        success_timeframe: z.string().describe("Timeframe for measuring success"),
-        current_baseline: z.string().optional().describe("Current baseline metrics"),
-        measurement_capabilities: z.string().optional().describe("Available measurement and analytics capabilities")
-      }
-    },
-    (params: { initiative_name: string; business_objectives: string; user_impact: string; success_timeframe: string; current_baseline?: string; measurement_capabilities?: string }) => ({
-      messages: [{
-        role: "user",
-        content: {
-          type: "text",
-          text: `Define success metrics for:
-
-**Initiative**: ${params.initiative_name}
-**Business Objectives**: ${params.business_objectives}
-**User Impact**: ${params.user_impact}
-**Success Timeframe**: ${params.success_timeframe}
-${params.current_baseline ? `**Current Baseline**: ${params.current_baseline}` : ''}
-${params.measurement_capabilities ? `**Measurement Capabilities**: ${params.measurement_capabilities}` : ''}
-
-Please provide:
-1. **Primary Success Metrics**: Key metrics that indicate success
-2. **Secondary Metrics**: Supporting metrics and leading indicators
-3. **User Behavior Metrics**: User engagement and adoption metrics
-4. **Business Impact Metrics**: Revenue, efficiency, and business value metrics
-5. **Technical Performance Metrics**: System performance and reliability metrics
-6. **Measurement Framework**: How and when to measure each metric
-7. **Target Values**: Specific target values and success thresholds
-8. **Reporting Strategy**: How to report and communicate progress
-
-Focus on actionable, measurable metrics that align with business objectives.`
-        }
-      }]
-    })
-  );
 
   // 13. Product Idea Discovery Prompt
   server.registerPrompt(
@@ -829,5 +751,254 @@ What specific resources would you like to explore?`
         }]
       };
     }
+  );
+  // ============================
+  // ACCOUNT WORKFLOW PROMPTS
+  //
+  // These differ from the ones above: rather than templating a question, they tell the agent
+  // which tools and resources to reach for and in what order. Nothing here fetches from Aha
+  // itself, so a prompt cannot fail or stall on the network, and the agent is free to skip a
+  // step that turns out not to apply.
+  // ============================
+
+  // 13. Idea Triage
+  server.registerPrompt(
+    "idea_triage",
+    {
+      title: "Triage an incoming idea",
+      description: "Work out whether an incoming idea is a duplicate, how much demand sits behind it, and whether to promote, merge or decline it",
+      argsSchema: {
+        idea_id: completable(
+          z.string().describe("Reference number of the idea to triage (e.g., PROJ-I-123)"),
+          completeRecordReference("Idea")
+        ),
+        workspace: completable(
+          z.string().optional().describe("Restrict the duplicate search to one workspace (reference prefix, e.g., PROJ)"),
+          completeProduct("reference_prefix")
+        ),
+        decision_criteria: z.string().optional().describe("What matters for this call (e.g., 'strategic fit', 'support load', 'revenue at risk')")
+      }
+    },
+    (params: { idea_id: string; workspace?: string; decision_criteria?: string }) => ({
+      messages: [{
+        role: "user",
+        content: {
+          type: "text",
+          text: `Triage idea ${params.idea_id}.
+${params.decision_criteria ? `\n**What matters here**: ${params.decision_criteria}\n` : ''}
+Gather before deciding:
+
+1. **The idea itself** - read \`aha://idea/${params.idea_id}\`. Note its status, category and score.
+2. **Demand behind it** - \`aha://idea/${params.idea_id}/votes\` and
+   \`aha://idea/${params.idea_id}/endorsements\`. Endorsements name organisations, so they say
+   *who* wants it, which vote counts alone do not.
+3. **Existing discussion** - \`aha://comments/idea/${params.idea_id}\`.
+4. **Possible duplicates** - \`aha_search\` for the idea's distinctive terms with
+   \`recordTypes: ["Idea"]\`${params.workspace ? ` and \`workspaceId\` for ${params.workspace}` : ''}. Search the
+   *concept*, not the title: a duplicate is rarely worded the same way. Try two or three
+   phrasings before concluding there is none.
+
+Then give me:
+
+- **Duplicates**: any idea that is the same request in different words, each as a link. Say
+  which should be the surviving record and why.
+- **Demand**: how many votes and which organisations, not just a total.
+- **Recommendation**: promote to a feature, merge into an existing record, or decline - one of
+  the three, with the reasoning that decides it. Say plainly if the evidence does not support
+  a confident call.
+- **If promoting**: a suggested category and score, and which workspace it belongs in.
+
+Do not change anything in Aha. This is a recommendation for a person to act on.`
+        }
+      }]
+    })
+  );
+
+  // 14. Release Readiness
+  server.registerPrompt(
+    "release_readiness",
+    {
+      title: "Check release readiness",
+      description: "Assess what is actually in a release, what is not finished, and what is at risk, from the release's own records",
+      argsSchema: {
+        release_id: z.string().describe("Reference number of the release (e.g., PROJ-R-1)"),
+        cutoff_date: z.string().optional().describe("Date to judge readiness against, if not the release's own date"),
+        concerns: z.string().optional().describe("Anything specific to look at (e.g., 'unassigned work', 'scope added late')")
+      }
+    },
+    (params: { release_id: string; cutoff_date?: string; concerns?: string }) => ({
+      messages: [{
+        role: "user",
+        content: {
+          type: "text",
+          text: `Assess readiness of release ${params.release_id}.
+${params.cutoff_date ? `\n**Judge against**: ${params.cutoff_date}\n` : ''}${params.concerns ? `**Look specifically at**: ${params.concerns}\n` : ''}
+Read, in this order:
+
+1. \`aha://release/${params.release_id}\` - the release's own dates and status.
+2. \`aha://release/${params.release_id}/features\` - what is actually in it. This is the scope,
+   whatever anyone believes the scope to be.
+3. \`aha://release/${params.release_id}/epics\` - larger bodies of work that may span features.
+4. \`aha://comments/release/${params.release_id}\` - decisions and slippage are often recorded
+   here rather than in the fields.
+
+Then report:
+
+- **Scope**: how many features and epics, and their spread across workflow statuses.
+- **Not done**: everything not in a terminal status, each as a link, with its status and due
+  date. Order by risk to the release date, not alphabetically.
+- **Unclear**: work with no due date, no assignee, or a status that has not moved - these are
+  the items nobody is tracking.
+- **Verdict**: ready, ready-with-caveats, or not ready, and the specific items that decide it.
+  If the records are too incomplete to judge, say that rather than guessing.
+
+Base every statement on a record you read. Do not infer progress from a feature's name.`
+        }
+      }]
+    })
+  );
+
+  // 15. Feature Description Draft
+  server.registerPrompt(
+    "feature_description_draft",
+    {
+      title: "Draft a feature description",
+      description: "Draft or sharpen a feature's description from its existing record, then offer to write it back to Aha",
+      argsSchema: {
+        feature_id: completable(
+          z.string().describe("Reference number of the feature to describe (e.g., PROJ-123)"),
+          completeRecordReference("Feature")
+        ),
+        audience: z.string().optional().describe("Who reads this description (e.g., 'engineering', 'field team', 'customers')"),
+        key_points: z.string().optional().describe("Comma-separated points the description must make"),
+        length: z.string().optional().describe("Rough target length (e.g., 'two paragraphs', 'a few sentences')")
+      }
+    },
+    (params: { feature_id: string; audience?: string; key_points?: string; length?: string }) => ({
+      messages: [{
+        role: "user",
+        content: {
+          type: "text",
+          text: `Draft a description for feature ${params.feature_id}.
+${params.audience ? `\n**Audience**: ${params.audience}` : ''}${params.key_points ? `\n**Must cover**: ${params.key_points}` : ''}${params.length ? `\n**Length**: ${params.length}` : ''}
+
+First read \`aha://feature/${params.feature_id}\` - its current description, workflow status,
+release and goals. Read \`aha://comments/requirement\` entries or the feature's own comments if
+the description is thin; the intent is often in the discussion rather than the field.
+
+Then:
+
+1. **Show the current description** verbatim, so the change is reviewable. Say if there is none.
+2. **Draft the replacement**. Lead with what the feature does for the user, not with how it is
+   built. Do not invent capability the record does not support - if something needs deciding,
+   list it as an open question instead of writing around it.
+3. **Say what changed** and why, briefly.
+
+Then stop and ask whether to write it back. Only on a clear yes, call \`aha_update_feature\`
+with the new description. It overwrites the existing field, and the previous text is not
+recoverable through this server, so the confirmation matters.`
+        }
+      }]
+    })
+  );
+
+  // 16. Quarterly Roadmap Review
+  server.registerPrompt(
+    "quarterly_roadmap_review",
+    {
+      title: "Review a quarterly roadmap",
+      description: "Compare what a workspace committed to for a quarter against what its records now show, and identify what needs a decision",
+      argsSchema: {
+        quarter: z.string().describe("Quarter under review (e.g., 'Q3 2026')"),
+        workspace: completable(
+          z.string().optional().describe("Workspace to review (reference prefix, e.g., PROJ). Omit to review across workspaces"),
+          completeProduct("reference_prefix")
+        ),
+        goals_context: z.string().optional().describe("The goals or bets this quarter was meant to serve, if not recorded in Aha")
+      }
+    },
+    (params: { quarter: string; workspace?: string; goals_context?: string }) => ({
+      messages: [{
+        role: "user",
+        content: {
+          type: "text",
+          text: `Review the ${params.quarter} roadmap${params.workspace ? ` for ${params.workspace}` : ' across workspaces'}.
+${params.goals_context ? `\n**Intended goals**: ${params.goals_context}\n` : ''}
+Gather:
+
+1. ${params.workspace ? `\`aha://product/${params.workspace}\`` : '`aha://products` - decide which workspaces are in scope, and say which you picked'}.
+2. **Releases in the quarter** - \`aha://releases/{product_id}\`, filtered to those whose dates
+   fall in ${params.quarter}. Include parking-lot releases only if they carry committed work.
+3. **What is in them** - \`aha://release/{release_id}/features\` per release.
+4. **Strategy to compare against** - \`aha://goals\` and \`aha://initiatives\`, plus
+   \`aha://goal/{goal_id}/epics\` where a goal has work hanging off it.
+
+Then give me:
+
+- **Committed vs current**: what the quarter holds now, and where a feature's status or date
+  says it will not land. Link each one.
+- **Unserved goals**: goals with no work pointing at them this quarter. This is usually the
+  most useful part of the review, so do not skip it when the list is long.
+- **Unattached work**: features carrying no goal or initiative. Some of that is legitimate
+  maintenance; flag it rather than judging it.
+- **Decisions needed**: the specific calls a person has to make, each naming the record it
+  concerns.
+
+Read only. Propose changes as a list for review; do not write to Aha.`
+        }
+      }]
+    })
+  );
+
+  // 17. Customer Demand Rollup
+  server.registerPrompt(
+    "customer_demand_rollup",
+    {
+      title: "Roll up customer demand",
+      description: "Find which customers and organisations have asked for something, across ideas and their comments",
+      argsSchema: {
+        topic: z.string().describe("What to look for - a capability, feature or theme (e.g., 'silence alerts by label')"),
+        feature_id: completable(
+          z.string().optional().describe("Feature this demand relates to, if there is one (e.g., PROJ-123)"),
+          completeRecordReference("Feature")
+        ),
+        workspace: completable(
+          z.string().optional().describe("Restrict to one workspace (reference prefix, e.g., PROJ)"),
+          completeProduct("reference_prefix")
+        )
+      }
+    },
+    (params: { topic: string; feature_id?: string; workspace?: string }) => ({
+      messages: [{
+        role: "user",
+        content: {
+          type: "text",
+          text: `Roll up customer demand for: ${params.topic}
+${params.feature_id ? `\n**Related feature**: ${params.feature_id} - read \`aha://feature/${params.feature_id}\` for the wording the team uses.\n` : ''}
+Search widely before summarising. One query is not a rollup:
+
+1. \`aha_search\` for the topic with \`recordTypes: ["Idea"]\`${params.workspace ? ` and \`workspaceId\` for ${params.workspace}` : ''}.
+2. Search again with \`recordTypes: ["Comment"]\` - the clearest statements of need are often
+   buried in comments on an unrelated record.
+3. Vary the wording. Customers describe a need in their own terms, rarely the team's. Try the
+   problem, the workaround, and the feature name; note which phrasings you tried.
+4. For each idea worth counting: \`aha://idea/{id}/endorsements\` and \`aha://idea/{id}/votes\`.
+   Endorsements carry the organisation, which is what makes this a customer rollup rather than
+   a popularity count.
+
+Then give me:
+
+- **Who is asking**: organisations, each with the idea that evidences it as a link. Name the
+  organisation, not just a count.
+- **What they actually want**: where requests differ in substance, say so rather than merging
+  them into one line. Two customers asking for the same feature for opposite reasons is the
+  finding.
+- **Weight of demand**: votes and endorsements, with the caveat that these measure portal
+  activity, not revenue or account size.
+- **Coverage**: which phrasings you searched and what you may have missed. A rollup that does
+  not say where it stopped looking reads as complete when it is not.`
+        }
+      }]
+    })
   );
 }
