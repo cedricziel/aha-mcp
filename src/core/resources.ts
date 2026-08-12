@@ -5,6 +5,7 @@ import type { ServerRequest, ServerNotification } from "@modelcontextprotocol/sd
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { Variables } from "@modelcontextprotocol/sdk/shared/uriTemplate.js";
 import { getAhaService } from "./services/index.js";
+import { renderCollection, renderTable, resourceAnnotations } from "./resource-output.js";
 
 /**
  * Helper function to normalize variable values to strings
@@ -44,7 +45,84 @@ const RESOURCE_SYNONYMS = {
 };
 
 /**
+ * Table columns for the tier-2 collections (see resources.ts's own notes on the tiering policy
+ * below, and renderTable's doc comment in resource-output.ts). These field paths are not read
+ * off the permissive `Idea`/`Release` interfaces in aha-types.ts - they are the columns a real
+ * `grafana-labs.aha.io` list response was confirmed to populate. `description`,
+ * `custom_fields`, `project` and `integration_fields` are deliberately left out: the first is
+ * the bulk of the payload, the rest are constant or noise within a single workspace.
+ */
+const IDEA_TABLE_COLUMNS = [
+  { header: "Ref", path: "reference_num" },
+  { header: "Name", path: "name" },
+  { header: "Status", path: "workflow_status.name" },
+  { header: "Created", path: "created_at" }
+];
+
+const RELEASE_TABLE_COLUMNS = [
+  { header: "Ref", path: "reference_num" },
+  { header: "Name", path: "name" },
+  { header: "Start", path: "start_date" },
+  { header: "Release", path: "release_date" },
+  { header: "Owner", path: "owner.name" },
+  { header: "ParkingLot", path: "parking_lot" }
+];
+
+/**
+ * Verified against a live `/api/v1/products` list response: `created_at, id, name,
+ * product_line, reference_prefix, url, workspace_type` - no `description`, no `custom_fields`.
+ * Aha strips both from the list endpoint exactly as it does for features and epics, so this
+ * moved from "unverified, default to tier 3" to tier 2.
+ *
+ * The first column is `reference_prefix`, not `reference_num` - a product has no
+ * `reference_num` of its own, and `reference_prefix` (KG, APPO11Y, DASH, ...) is the identifier
+ * people actually address a workspace by. `renderTable` links whatever the first configured
+ * column resolves to against `record.url`, so this works without the function assuming a
+ * `reference_num` field exists anywhere.
+ */
+const PRODUCT_TABLE_COLUMNS = [
+  { header: "Prefix", path: "reference_prefix" },
+  { header: "Name", path: "name" },
+  { header: "Type", path: "workspace_type" }
+];
+
+/**
  * Register all resources with the MCP server
+ *
+ * Collection resources render in one of three ways, decided per record type against what the
+ * live Aha list endpoint actually returns (see the field notes at each call site below), not
+ * against the permissive `aha-types.ts` interfaces, which describe every field a record can
+ * carry across every endpoint that returns one:
+ *
+ * - Tier 1, `renderCollection` (a markdown link list): slim index collections whose records
+ *   carry only identity fields (id/name/reference_num/url/created_at/product_id/resource) and
+ *   nothing else - features, epics, users, idea organizations, and the `RecordRef` shape used
+ *   by relationship and "assigned to me" endpoints. Near-lossless, and cuts most of the bytes a
+ *   raw JSON dump would cost. `renderCollection` labels a record by `reference_num` or `name`;
+ *   a record with neither is dropped, so nothing without a reliable one of those two fields
+ *   belongs here.
+ * - Tier 2, `renderTable` (a markdown table): collections carrying a handful of real scalar
+ *   columns worth showing - ideas, releases and products are the verified cases (see the
+ *   column constants above). Products is the odd one out: it has no `reference_num`, so its
+ *   first column links on `reference_prefix` instead - `renderTable` derives the link from
+ *   whichever field the caller configures as the first column, not a hardcoded name. Do not
+ *   invent a table for another record type without the same kind of verification; a guessed
+ *   column set either shows nothing (wrong path) or silently omits a field nobody checked for.
+ * - Tier 3, raw `JSON.stringify`: anything else, on purpose. That covers records with real
+ *   content beyond identity (a comment's `body`, a todo's `body`, a competitor's
+ *   `strengths`/`weaknesses`) and records with nested relationship arrays (goals nest features,
+ *   initiatives, key_results and releases; custom field definitions nest their options) -
+ *   either would be flattened away by a table or dropped entirely by a link list. Comments in
+ *   particular can never be tier 1: `Comment` carries `id`, `body` and `url` but never
+ *   `reference_num` or `name`, so `renderCollection` would drop every one of them and the body
+ *   - the entire payload - would vanish. When a collection's shape has not been checked against
+ *   a real response, this is the default, not tier 1 or 2 - a conservative miss here costs
+ *   tokens; an aggressive miss destroys data.
+ *
+ * Single-record resources (`aha://feature/{id}` and siblings) are unaffected by any of this -
+ * they keep raw JSON unconditionally, because someone reading one specific record wants the
+ * data, not a summary of it.
+ *
  * @param server The MCP server instance
  */
 export function registerResources(server: McpServer) {
@@ -74,7 +152,10 @@ export function registerResources(server: McpServer) {
               "Where are workstreams?": "Releases can function as workstreams - use aha://releases/{product_id}"
             }
           }, null, 2),
-          mimeType: "application/json"
+          mimeType: "application/json",
+          // This is a static guide the server builds itself, not an Aha record - there is no
+          // `updated_at` to report, so no record is passed in.
+          annotations: resourceAnnotations()
         }]
       };
     }
@@ -109,7 +190,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(idea, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(idea as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -148,7 +230,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(feature, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(feature as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -186,7 +269,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(user, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(user as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -224,7 +308,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(epic, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(epic as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -253,8 +338,9 @@ export function registerResources(server: McpServer) {
       return {
         contents: [{
           uri: uri.toString(),
-          text: JSON.stringify(features, null, 2),
-          mimeType: "application/json"
+          text: renderCollection(features.features ?? [], { title: "Features across all products" }),
+          mimeType: "text/markdown",
+          annotations: resourceAnnotations()
         }]
       };
     } catch (error) {
@@ -270,7 +356,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Features",
       description: "List all features",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       return handleFeatures(uri, {}, _extra);
@@ -293,7 +379,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Features (Filtered)",
       description: "List features with filters and pagination",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     handleFeatures
   );
@@ -305,7 +391,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Users",
       description: "List all users in your Aha.io account",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
@@ -314,7 +400,9 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(users, null, 2)
+            text: renderCollection(users.users ?? [], { title: "Users in your Aha.io account" }),
+            mimeType: "text/markdown",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -339,7 +427,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Epics by Product",
       description: "List epics for a specific product",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
@@ -355,8 +443,9 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(epics, null, 2),
-            mimeType: "application/json"
+            text: renderCollection(epics.epics ?? [], { title: `Epics in product ${productId}` }),
+            mimeType: "text/markdown",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -394,7 +483,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(product, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(product as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -417,11 +507,15 @@ export function registerResources(server: McpServer) {
         perPage
       );
 
+      // Tier 2: verified against a live /api/v1/products response (see PRODUCT_TABLE_COLUMNS) -
+      // no description, no custom_fields, so a table loses nothing renderCollection wouldn't
+      // already drop, and keeps reference_prefix, which a bare link list would have to omit.
       return {
         contents: [{
           uri: uri.toString(),
-          text: JSON.stringify(products, null, 2),
-          mimeType: "application/json"
+          text: renderTable(products.products ?? [], { title: "Products (workspaces)", columns: PRODUCT_TABLE_COLUMNS }),
+          mimeType: "text/markdown",
+          annotations: resourceAnnotations()
         }]
       };
     } catch (error) {
@@ -437,7 +531,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Products (Workspaces)",
       description: "List all products/workspaces. In Aha.io, products and workspaces are synonymous.",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       return handleProducts(uri, {}, _extra);
@@ -460,7 +554,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Products (Workspaces, Filtered)",
       description: "List products/workspaces with filters and pagination",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     handleProducts
   );
@@ -493,7 +587,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(initiative, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(initiative as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -523,11 +618,14 @@ export function registerResources(server: McpServer) {
         perPage
       );
 
+      // Tier 3: Initiative nests goals/features/releases (RecordRef[]) plus description and
+      // workflow_status - the same "fat collection" shape as goals, not a slim index.
       return {
         contents: [{
           uri: uri.toString(),
           text: JSON.stringify(initiatives, null, 2),
-          mimeType: "application/json"
+          mimeType: "application/json",
+          annotations: resourceAnnotations()
         }]
       };
     } catch (error) {
@@ -587,7 +685,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Ideas by Product",
       description: "List ideas for a specific product with optional filters",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
@@ -628,8 +726,9 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(ideas, null, 2),
-            mimeType: "application/json"
+            text: renderTable(ideas.ideas ?? [], { title: `Ideas in product ${productId}`, columns: IDEA_TABLE_COLUMNS }),
+            mimeType: "text/markdown",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -667,11 +766,15 @@ export function registerResources(server: McpServer) {
       try {
         const comments = await getAhaService().getEpicComments(epicId);
 
+        // Tier 3: a Comment carries `body`, `url` and `id` but never `reference_num` or `name`,
+        // so renderCollection would drop every comment - the entire payload - for lack of a
+        // label. The body is the payload here; raw JSON is the only channel for it.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(comments, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -803,11 +906,13 @@ export function registerResources(server: McpServer) {
       try {
         const comments = await getAhaService().getIdeaComments(ideaId);
 
+        // Tier 3: see the epic comments resource above for why comments can never be tier 1.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(comments, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -845,11 +950,13 @@ export function registerResources(server: McpServer) {
       try {
         const comments = await getAhaService().getInitiativeComments(initiativeId);
 
+        // Tier 3: see the epic comments resource above for why comments can never be tier 1.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(comments, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -887,11 +994,13 @@ export function registerResources(server: McpServer) {
       try {
         const comments = await getAhaService().getProductComments(productId);
 
+        // Tier 3: see the epic comments resource above for why comments can never be tier 1.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(comments, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -929,11 +1038,13 @@ export function registerResources(server: McpServer) {
       try {
         const comments = await getAhaService().getGoalComments(goalId);
 
+        // Tier 3: see the epic comments resource above for why comments can never be tier 1.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(comments, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -971,11 +1082,13 @@ export function registerResources(server: McpServer) {
       try {
         const comments = await getAhaService().getReleaseComments(releaseId);
 
+        // Tier 3: see the epic comments resource above for why comments can never be tier 1.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(comments, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -1013,11 +1126,13 @@ export function registerResources(server: McpServer) {
       try {
         const comments = await getAhaService().getReleasePhaseComments(releasePhaseId);
 
+        // Tier 3: see the epic comments resource above for why comments can never be tier 1.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(comments, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -1055,11 +1170,13 @@ export function registerResources(server: McpServer) {
       try {
         const comments = await getAhaService().getRequirementComments(requirementId);
 
+        // Tier 3: see the epic comments resource above for why comments can never be tier 1.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(comments, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -1097,11 +1214,13 @@ export function registerResources(server: McpServer) {
       try {
         const comments = await getAhaService().getTodoComments(todoId);
 
+        // Tier 3: see the epic comments resource above for why comments can never be tier 1.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(comments, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -1139,7 +1258,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(goal, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(goal as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -1165,11 +1285,14 @@ export function registerResources(server: McpServer) {
         perPage
       );
 
+      // Tier 3: the known fat-collection case - a Goal nests features, initiatives,
+      // key_results and releases, none of which a link list or table can carry.
       return {
         contents: [{
           uri: uri.toString(),
           text: JSON.stringify(goals, null, 2),
-          mimeType: "application/json"
+          mimeType: "application/json",
+          annotations: resourceAnnotations()
         }]
       };
     } catch (error) {
@@ -1228,7 +1351,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Goal Epics",
       description: "Get epics for a specific goal",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
@@ -1244,8 +1367,9 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(epics, null, 2),
-            mimeType: "application/json"
+            text: renderCollection(epics.epics ?? [], { title: `Epics linked to goal ${goalId}` }),
+            mimeType: "text/markdown",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -1366,7 +1490,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(release, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(release as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -1395,7 +1520,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Release Features",
       description: "Get features for a specific release",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
@@ -1411,8 +1536,9 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(features, null, 2),
-            mimeType: "application/json"
+            text: renderCollection(features.features ?? [], { title: `Features in release ${releaseId}` }),
+            mimeType: "text/markdown",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -1437,7 +1563,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Release Epics",
       description: "Get epics for a specific release",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
@@ -1453,8 +1579,9 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(epics, null, 2),
-            mimeType: "application/json"
+            text: renderCollection(epics.epics ?? [], { title: `Epics in release ${releaseId}` }),
+            mimeType: "text/markdown",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -1492,7 +1619,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(releasePhase, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(releasePhase as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -1515,10 +1643,15 @@ export function registerResources(server: McpServer) {
       try {
         const releasePhases = await getAhaService().listReleasePhases();
 
+        // Tier 3, and not by choice: `/api/v1/products/KG/release_phases` returns HTTP 500 on
+        // a live account, so there is no payload to verify a slimmer rendering against at all.
+        // Raw JSON stays until Aha's own endpoint works.
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(releasePhases, null, 2)
+            text: JSON.stringify(releasePhases, null, 2),
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -1556,7 +1689,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(requirement, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(requirement as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -1594,7 +1728,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(competitor, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(competitor as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -1632,7 +1767,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(todo, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(todo as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -1666,11 +1802,14 @@ export function registerResources(server: McpServer) {
       }
       try {
         const competitors = await getAhaService().listCompetitors(productId);
+        // Tier 3: Competitor carries description/strengths/weaknesses - real content a link
+        // list would throw away.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(competitors, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -1708,7 +1847,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(strategicModel, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(strategicModel as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -1732,11 +1872,20 @@ export function registerResources(server: McpServer) {
         page,
         perPage
       );
+      // Tier 3, and genuinely unverifiable rather than merely unverified: both
+      // `/api/v1/strategic_models` and `/api/v1/products/KG/strategic_models` return 404 on a
+      // live account. Per this repo's own error-handling rule (see aha-errors.ts / CLAUDE.md),
+      // a 404 means "missing or invisible to this token" - it cannot tell us whether the
+      // account has no strategic models or whether the endpoint itself does not exist for this
+      // plan/version. This may be another phantom endpoint of the kind commit a076e74 removed;
+      // worth checking with a token that has strategic models before the next release, but
+      // removing the resource now is out of scope here. Raw JSON stays either way.
       return {
         contents: [{
           uri: uri.toString(),
           text: JSON.stringify(strategicModels, null, 2),
-          mimeType: "application/json"
+          mimeType: "application/json",
+          annotations: resourceAnnotations()
         }]
       };
     } catch (error) {
@@ -1792,10 +1941,14 @@ export function registerResources(server: McpServer) {
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const todos = await getAhaService().listTodos();
+        // Tier 3: Todo carries a `body` - the task's own content - the same reason comments
+        // can never be tier 1.
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(todos, null, 2)
+            text: JSON.stringify(todos, null, 2),
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -1833,7 +1986,8 @@ export function registerResources(server: McpServer) {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(ideaOrganization, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations(ideaOrganization as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -1856,11 +2010,15 @@ export function registerResources(server: McpServer) {
         page,
         perPage
       );
+      // Tier 1: verified against a live /api/v1/idea_organizations response - created_at, id,
+      // name, resource, url. A slim index with nothing but identity fields, so a link list
+      // loses nothing.
       return {
         contents: [{
           uri: uri.toString(),
-          text: JSON.stringify(ideaOrganizations, null, 2),
-          mimeType: "application/json"
+          text: renderCollection(ideaOrganizations.idea_organizations ?? [], { title: "Idea organizations" }),
+          mimeType: "text/markdown",
+          annotations: resourceAnnotations()
         }]
       };
     } catch (error) {
@@ -1876,7 +2034,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Idea Organizations",
       description: "List all idea organizations",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       return handleIdeaOrganizations(uri, {}, _extra);
@@ -1899,7 +2057,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Idea Organizations (Filtered)",
       description: "List idea organizations with filters and pagination",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     handleIdeaOrganizations
   );
@@ -1919,7 +2077,9 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(profile, null, 2)
+            text: JSON.stringify(profile, null, 2),
+            mimeType: "application/json",
+            annotations: resourceAnnotations(profile as Record<string, unknown>)
           }]
         };
       } catch (error) {
@@ -1936,7 +2096,7 @@ export function registerResources(server: McpServer) {
     {
       title: "My Assigned Records",
       description: "Get records assigned to the current user",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
@@ -1944,7 +2104,9 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(assignedRecords, null, 2)
+            text: renderCollection(assignedRecords.records ?? [], { title: "Records assigned to you" }),
+            mimeType: "text/markdown",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -1966,10 +2128,13 @@ export function registerResources(server: McpServer) {
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       try {
         const pendingTasks = await getAhaService().getPendingTasks();
+        // Tier 3: these are Todo records, which carry a `body` - see the todos resource above.
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(pendingTasks, null, 2)
+            text: JSON.stringify(pendingTasks, null, 2),
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -2017,11 +2182,15 @@ export function registerResources(server: McpServer) {
         const proxy = proxyParam === 'true' ? true : proxyParam === 'false' ? false : undefined;
 
         const endorsements = await getAhaService().getIdeaEndorsements(ideaId, proxy, page, perPage);
+        // Tier 3: IdeaEndorsement carries neither `reference_num` nor `name` - only nested
+        // RecordRef relations (endorsed_by_*) - so renderCollection has nothing to label it
+        // with, and no verified column set exists for a table either.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(endorsements, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -2064,11 +2233,13 @@ export function registerResources(server: McpServer) {
         const perPage = variables?.perPage ? parseInt(normalizeVar(variables.perPage)!) : uri.searchParams.get('perPage') ? parseInt(uri.searchParams.get('perPage')!) : undefined;
 
         const votes = await getAhaService().getIdeaVotes(ideaId, page, perPage);
+        // Tier 3: same shape as idea endorsements above - no reference_num/name to label with.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(votes, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -2119,8 +2290,9 @@ export function registerResources(server: McpServer) {
       return {
         contents: [{
           uri: uri.toString(),
-          text: JSON.stringify(ideas, null, 2),
-          mimeType: "application/json"
+          text: renderTable(ideas.ideas ?? [], { title: "Ideas across all products", columns: IDEA_TABLE_COLUMNS }),
+          mimeType: "text/markdown",
+          annotations: resourceAnnotations()
         }]
       };
     } catch (error) {
@@ -2136,7 +2308,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Ideas (Global)",
       description: "List all ideas across products",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     async (uri: URL, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       return handleIdeas(uri, {}, _extra);
@@ -2161,7 +2333,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Ideas (Global, Filtered)",
       description: "List ideas with comprehensive filters and pagination. Supports filtering by product, portal, tags, dates, workflow status, spam, sort order, and more.",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     handleIdeas
   );
@@ -2183,7 +2355,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Product Releases",
       description: "List releases for a specific product with optional filters and pagination",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const productId = normalizeVar(variables.product_id) || uri.pathname.split('/').pop();
@@ -2211,8 +2383,9 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(releases, null, 2),
-            mimeType: "application/json"
+            text: renderTable(releases.releases ?? [], { title: `Releases in product ${productId}`, columns: RELEASE_TABLE_COLUMNS }),
+            mimeType: "text/markdown",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -2237,7 +2410,7 @@ export function registerResources(server: McpServer) {
     {
       title: "Aha Initiative Epics",
       description: "Get epics for a specific initiative",
-      mimeType: "application/json"
+      mimeType: "text/markdown"
     },
     async (uri: URL, variables: Variables, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const pathParts = uri.pathname.split('/');
@@ -2253,8 +2426,9 @@ export function registerResources(server: McpServer) {
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(epics, null, 2),
-            mimeType: "application/json"
+            text: renderCollection(epics.epics ?? [], { title: `Epics in initiative ${initiativeId}` }),
+            mimeType: "text/markdown",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -2277,10 +2451,14 @@ export function registerResources(server: McpServer) {
       try {
         const customFields = await getAhaService().listCustomFields();
 
+        // Tier 3: each definition nests its own `options` array - the field's possible values -
+        // which a link list would drop entirely.
         return {
           contents: [{
             uri: uri.toString(),
-            text: JSON.stringify(customFields, null, 2)
+            text: JSON.stringify(customFields, null, 2),
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
@@ -2318,11 +2496,14 @@ export function registerResources(server: McpServer) {
       try {
         const options = await getAhaService().listCustomFieldOptions(customFieldId);
 
+        // Tier 3: CustomFieldOption carries `text`/`value`, never `reference_num` or `name`, so
+        // renderCollection has nothing to label it with - same failure mode as comments.
         return {
           contents: [{
             uri: uri.toString(),
             text: JSON.stringify(options, null, 2),
-            mimeType: "application/json"
+            mimeType: "application/json",
+            annotations: resourceAnnotations()
           }]
         };
       } catch (error) {
