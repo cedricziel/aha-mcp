@@ -1,5 +1,23 @@
 # Changelog
 
+## [3.0.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v2.0.0...aha-mcp-v3.0.0) (2026-08-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* the aha_idea_watchers, aha_releases and aha_releases_filtered resources are removed, as no Aha endpoint backs them.
+* bring the tool surface up to the 2026-07-28 tools spec ([#313](https://github.com/cedricziel/aha-mcp/issues/313))
+
+### Features
+
+* bring the tool surface up to the 2026-07-28 tools spec ([#313](https://github.com/cedricziel/aha-mcp/issues/313)) ([7117f17](https://github.com/cedricziel/aha-mcp/commit/7117f178dc9258db0e560aa8b0ab75854260dec3))
+* migrate to aha-js 2.0.0 and drop endpoints Aha never had ([#316](https://github.com/cedricziel/aha-mcp/issues/316)) ([a076e74](https://github.com/cedricziel/aha-mcp/commit/a076e743bac80fec94f00f833bbb66f116f12c9f))
+
+
+### Bug Fixes
+
+* explain Aha's REST failures instead of leaking the axios message ([#312](https://github.com/cedricziel/aha-mcp/issues/312)) ([8e12c38](https://github.com/cedricziel/aha-mcp/commit/8e12c38c0c6a282fb743d161d74a654c095b95df))
+
 ## [2.0.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v1.0.0...aha-mcp-v2.0.0) (2026-08-12)
 
 
