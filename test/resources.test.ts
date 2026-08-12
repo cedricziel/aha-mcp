@@ -30,7 +30,6 @@ const mockAhaService = {
   listGoals: mock(() => Promise.resolve({ goals: [{ id: 'GOAL-1' }, { id: 'GOAL-2' }] })),
   getGoalEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1' }, { id: 'EPIC-2' }] })),
   getRelease: mock(() => Promise.resolve({ id: 'REL-123', name: 'Test Release' })),
-  listReleases: mock(() => Promise.resolve({ releases: [{ id: 'REL-1' }, { id: 'REL-2' }] })),
   getReleaseFeatures: mock(() => Promise.resolve({ features: [{ id: 'FEAT-1' }, { id: 'FEAT-2' }] })),
   getReleaseEpics: mock(() => Promise.resolve({ epics: [{ id: 'EPIC-1' }, { id: 'EPIC-2' }] })),
   getReleasePhase: mock(() => Promise.resolve({ id: 'RP-123', name: 'Test Release Phase' })),
@@ -72,7 +71,6 @@ describe('Resources', () => {
       listGoals: AhaService.listGoals,
       getGoalEpics: AhaService.getGoalEpics,
       getRelease: AhaService.getRelease,
-      listReleases: AhaService.listReleases,
       getReleaseFeatures: AhaService.getReleaseFeatures,
       getReleaseEpics: AhaService.getReleaseEpics,
       getReleasePhase: AhaService.getReleasePhase,
@@ -110,7 +108,6 @@ describe('Resources', () => {
     (AhaService as any).listGoals = mockAhaService.listGoals;
     (AhaService as any).getGoalEpics = mockAhaService.getGoalEpics;
     (AhaService as any).getRelease = mockAhaService.getRelease;
-    (AhaService as any).listReleases = mockAhaService.listReleases;
     (AhaService as any).getReleaseFeatures = mockAhaService.getReleaseFeatures;
     (AhaService as any).getReleaseEpics = mockAhaService.getReleaseEpics;
     (AhaService as any).getReleasePhase = mockAhaService.getReleasePhase;
@@ -176,7 +173,6 @@ describe('Resources', () => {
     (AhaService as any).listGoals = originalMethods.listGoals;
     (AhaService as any).getGoalEpics = originalMethods.getGoalEpics;
     (AhaService as any).getRelease = originalMethods.getRelease;
-    (AhaService as any).listReleases = originalMethods.listReleases;
     (AhaService as any).getReleaseFeatures = originalMethods.getReleaseFeatures;
     (AhaService as any).getReleaseEpics = originalMethods.getReleaseEpics;
     (AhaService as any).getReleasePhase = originalMethods.getReleasePhase;
@@ -796,7 +792,6 @@ describe('Resources', () => {
         'aha_goals',
         'aha_goal_epics',
         'aha_release',
-        'aha_releases',
         'aha_release_features',
         'aha_release_epics',
         'aha_release_phase',
@@ -831,29 +826,6 @@ describe('Resources', () => {
         const uri = new URL('aha://release/');
 
         await expect(handler!(uri, {}, {} as any)).rejects.toThrow('Invalid release ID: ID is missing from URI');
-      });
-    });
-
-    describe('aha_releases resource', () => {
-      it('should list all releases', async () => {
-        const handler = resourceHandlers.get('aha_releases');
-        expect(handler).toBeDefined();
-
-        const uri = new URL('aha://releases');
-        const result = await handler!(uri, {}, {} as any);
-
-        expect(mockAhaService.listReleases).toHaveBeenCalledWith(
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined
-        );
-        expect(result.contents).toHaveLength(1);
-        expect(result.contents[0].uri).toBe('aha://releases');
-        expect(result.contents[0].text).toContain('REL-1');
       });
     });
 

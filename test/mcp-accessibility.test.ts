@@ -153,7 +153,6 @@ describe('MCP Server Accessibility', () => {
         'aha_products', 
         'aha_initiatives',
         'aha_goals',
-        'aha_releases',
         'aha_release_phases',
         'aha_todos',
         'aha_ideas',
@@ -207,8 +206,7 @@ describe('MCP Server Accessibility', () => {
         'aha_me_assigned_records',
         'aha_me_pending_tasks',
         'aha_idea_endorsements',
-        'aha_idea_votes',
-        'aha_idea_watchers'
+        'aha_idea_votes'
       ];
 
       expectedSpecialResources.forEach(resourceName => {

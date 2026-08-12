@@ -87,7 +87,7 @@ describe('AhaService.updateFeatureCustomFields', () => {
   beforeEach(() => {
     request = null;
     (AhaService as any).featuresApi = {
-      featuresUpdate: async (params: any) => {
+      featuresByIdPut: async (params: any) => {
         request = params;
         return { data: { feature: { id: params.id, name: 'Test feature' } } };
       }
@@ -104,7 +104,7 @@ describe('AhaService.updateFeatureCustomFields', () => {
     await AhaService.updateFeatureCustomFields('FEAT-1', customFields);
 
     expect(request.id).toBe('FEAT-1');
-    expect(request.featureUpdateRequest.feature.custom_fields).toEqual(customFields);
+    expect(request.featuresPutRequest.feature.custom_fields).toEqual(customFields);
   });
 
   it('returns the updated feature', async () => {
@@ -115,7 +115,7 @@ describe('AhaService.updateFeatureCustomFields', () => {
 
   it('propagates API errors instead of reporting success', async () => {
     (AhaService as any).featuresApi = {
-      featuresUpdate: async () => { throw new Error('422 Unprocessable Entity'); }
+      featuresByIdPut: async () => { throw new Error('422 Unprocessable Entity'); }
     };
 
     await expect(

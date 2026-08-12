@@ -115,29 +115,6 @@ describe('ResourceTemplate URI Matching E2E', () => {
       });
     }, { timeout: 30000 });
 
-    it('should access aha://releases', async () => {
-      await withTestClient(async (client) => {
-        const contents = await client.readResource('aha://releases');
-
-        expect(contents).toBeDefined();
-        expect(Array.isArray(contents)).toBe(true);
-        expect(contents.length).toBeGreaterThan(0);
-        expect(contents[0].mimeType).toBe('application/json');
-
-        const data = JSON.parse(contents[0].text!);
-        expect(data).toBeDefined();
-        expect(data.releases).toBeDefined();
-        expect(Array.isArray(data.releases)).toBe(true);
-        expect(data.releases.length).toBeGreaterThan(0);
-
-        // Verify mock data structure
-        const firstRelease = data.releases[0];
-        expect(firstRelease.release).toBeDefined();
-        expect(firstRelease.release.id).toMatch(/^REL-/);
-        expect(firstRelease.release.name).toContain('Test Release');
-      });
-    }, { timeout: 30000 });
-
     it('should access aha://strategic-models', async () => {
       await withTestClient(async (client) => {
         const contents = await client.readResource('aha://strategic-models');

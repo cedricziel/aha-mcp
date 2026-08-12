@@ -13,62 +13,64 @@ import {
   RequirementsApi,
   ReleasePhasesApi,
   ReleasesApi,
-  DefaultApi,
   MeApi,
   StrategicModelsApi,
   IdeaOrganizationsApi,
   IdeaVotesApi,
-  CustomFieldsApi,
-  // Types
-  Feature,
-  FeaturesListResponse,
-  Epic,
-  User,
-  IdeaResponse,
-  InitiativeResponse,
-  InitiativesListResponse,
-  ProductsListResponse,
-  CommentsGetEpic200Response,
-  EpicsList200Response,
-  IdeasListResponse,
-  Comment,
-  // Additional SDK response types
-  GoalGetResponse,
-  GoalsListResponse as SdkGoalsListResponse,
-  ReleaseGetResponse,
-  ReleasesListResponse as SdkReleasesListResponse,
-  ReleasePhasesList200Response,
-  ReleasePhase as SdkReleasePhase,
-  Competitor,
-  StrategicModelGetResponse,
-  StrategicModelsListResponse,
-  StrategicModel,
-  IdeaOrganizationGetResponse,
-  IdeaOrganizationsListResponse,
-  IdeaOrganization,
-  TodosList200Response,
-  MeAssignedRecordsResponse,
-  MePendingTasksResponse,
-  IdeasGetEndorsements200Response,
-  IdeasGetVotes200Response,
-  IdeasGetWatchers200Response,
-  CustomFieldsListAll200Response,
-  CustomFieldsListOptions200Response
+  CustomFieldsApi
 } from '@cedricziel/aha-js';
 
 import {
+  Feature,
+  FeaturesListResponse,
+  Epic,
+  EpicsListResponse,
+  User,
+  IdeaResponse,
+  IdeasListResponse,
+  InitiativeResponse,
+  InitiativesListResponse,
   Product,
-  Requirement,
-  Todo,
-  ReleaseFeaturesResponse,
+  ProductsListResponse,
+  Comment,
+  CommentsListResponse,
+  GoalGetResponse,
+  GoalsListResponse,
   GoalEpicsResponse,
-  CompetitorsListResponse
+  ReleaseGetResponse,
+  ReleasesListResponse,
+  ReleaseFeaturesResponse,
+  ReleasePhase,
+  ReleasePhasesListResponse,
+  Competitor,
+  CompetitorsListResponse,
+  StrategicModel,
+  StrategicModelsListResponse,
+  IdeaOrganization,
+  IdeaOrganizationsListResponse,
+  Todo,
+  TodosListResponse,
+  Requirement,
+  MeAssignedRecordsResponse,
+  MePendingTasksResponse,
+  IdeaEndorsementsResponse,
+  IdeaVotesResponse,
+  CustomFieldDefinitionsResponse,
+  CustomFieldDefinition,
+  CustomFieldOptionsResponse,
+  RecordRef,
+  Pagination
 } from '../types/aha-types.js';
 
 import { log } from '../logger.js';
 
 /**
  * Service for interacting with the Aha.io API
+ *
+ * This is the only file in the repo that may import from `@cedricziel/aha-js`. The SDK is
+ * generated per-operation from Aha's official OpenAPI document and renames every export on
+ * each regeneration, so every method here maps one `*Api` call onto the stable domain types
+ * in `../types/aha-types.js` at the boundary - see `aha-service.interface.ts` for why.
  */
 export class AhaService {
   private static configuration: Configuration | null = null;
@@ -85,7 +87,6 @@ export class AhaService {
   private static requirementsApi: RequirementsApi | null = null;
   private static releasePhasesApi: ReleasePhasesApi | null = null;
   private static releasesApi: ReleasesApi | null = null;
-  private static defaultApi: DefaultApi | null = null;
   private static meApi: MeApi | null = null;
   private static strategicModelsApi: StrategicModelsApi | null = null;
   private static ideaOrganizationsApi: IdeaOrganizationsApi | null = null;
@@ -149,13 +150,35 @@ export class AhaService {
 
   /**
    * Current credentials, for callers that need to reach Aha.io outside the generated
-   * aha-js REST client - notably the GraphQL API, which aha-js does not cover.
+   * aha-js REST client - notably the GraphQL API (which aha-js does not cover) and the
+   * hand-rolled competitor update/delete calls below, whose endpoints exist in neither.
    *
    * Read through this rather than from process.env so that credentials supplied at runtime
    * via configure_server are picked up too.
    */
   public static getCredentials(): { subdomain: string | null; accessToken: string | null } {
     return { subdomain: this.subdomain, accessToken: this.accessToken };
+  }
+
+  /** Every generated list endpoint types `page`/`perPage` (and several other filters) as strings. */
+  private static numParam(value?: number): string | undefined {
+    return value === undefined ? undefined : String(value);
+  }
+
+  private static boolParam(value?: boolean): string | undefined {
+    return value === undefined ? undefined : String(value);
+  }
+
+  /**
+   * Builds the `options.params` object for filters Aha's OpenAPI document omits from a
+   * generated request type. Every generated method still spreads its second `options`
+   * argument into the axios request config, and axios merges `params` into the query string
+   * the generated call already built - so this is how a filter Aha genuinely accepts gets
+   * back on the wire. Strips `undefined` entries so an unused filter is left off the query
+   * string instead of being sent as the literal string `"undefined"`.
+   */
+  private static extraParams(params: Record<string, unknown>): Record<string, unknown> {
+    return Object.fromEntries(Object.entries(params).filter(([, value]) => value !== undefined));
   }
 
   /**
@@ -166,8 +189,11 @@ export class AhaService {
     const meApi = this.getMeApi();
 
     try {
-      const response = await meApi.meGetProfile();
-      return response.data.user;
+      const response = await meApi.meGet();
+      // Generator defect: `meGet` shares its generated response type with `meTasksGet`
+      // (`{ tasks, pagination }`); the endpoint genuinely returns the current user under `user`.
+      const data = response.data as unknown as { user?: User };
+      return data.user as User;
     } catch (error) {
       log.error('Error getting current user', error as Error, { operation: 'getMe' });
       throw error;
@@ -214,7 +240,6 @@ export class AhaService {
       this.requirementsApi = new RequirementsApi(this.configuration);
       this.releasePhasesApi = new ReleasePhasesApi(this.configuration);
       this.releasesApi = new ReleasesApi(this.configuration);
-      this.defaultApi = new DefaultApi(this.configuration);
       this.meApi = new MeApi(this.configuration);
       this.strategicModelsApi = new StrategicModelsApi(this.configuration);
       this.ideaOrganizationsApi = new IdeaOrganizationsApi(this.configuration);
@@ -371,17 +396,6 @@ export class AhaService {
   }
 
   /**
-   * Get the default API instance
-   * @returns DefaultApi instance
-   */
-  private static getDefaultApi(): DefaultApi {
-    if (!this.defaultApi) {
-      this.initializeClient();
-    }
-    return this.defaultApi!;
-  }
-
-  /**
    * Get the me API instance
    * @returns MeApi instance
    */
@@ -457,15 +471,24 @@ export class AhaService {
     const featuresApi = this.getFeaturesApi();
 
     try {
-      const response = await featuresApi.featuresList({
-        page,
-        perPage,
-        q: query,
-        updatedSince,
-        tag,
-        assignedToUser
-      });
-      return response.data;
+      // `q`, `updatedSince`, `tag` and `assignedToUser` are sent via `options.params` because
+      // Aha's spec under-documents this endpoint's query string - only pagination and
+      // `fields`/`workflow_status` (unused here) remain in the generated request type.
+      const response = await featuresApi.featuresGet(
+        {
+          page: this.numParam(page),
+          perPage: this.numParam(perPage)
+        },
+        {
+          params: this.extraParams({
+            q: query,
+            updated_since: updatedSince,
+            tag,
+            assigned_to_user: assignedToUser
+          })
+        }
+      );
+      return response.data as unknown as FeaturesListResponse;
     } catch (error) {
       // This method alone used to time itself and read a status code off the error, then use
       // neither - leftovers from tracing that was removed. The status travels with the error
@@ -484,11 +507,15 @@ export class AhaService {
     const featuresApi = this.getFeaturesApi();
 
     try {
-      const response = await featuresApi.featuresGet({ id: featureId });
-      if (!response.data.feature) {
+      const response = await featuresApi.featuresByIdGet({ id: featureId });
+      // Generator defect: `featuresByIdGet` is typed as returning the list response
+      // (`{ features, pagination }`); the endpoint genuinely returns a single feature
+      // wrapped as `{ feature }`.
+      const data = response.data as unknown as { feature?: Feature };
+      if (!data.feature) {
         throw new Error(`Feature ${featureId} not found`);
       }
-      return response.data.feature;
+      return data.feature;
     } catch (error) {
       log.error('Error getting feature', error as Error, { operation: 'getFeature', feature_id: featureId });
       throw error;
@@ -503,9 +530,11 @@ export class AhaService {
     const usersApi = this.getUsersApi();
 
     try {
-      // Use the appropriate method from the UsersApi
-      const response = await usersApi.usersList();
-      return { users: response.data };
+      const response = await usersApi.usersGet();
+      // Generator defect: `usersGet` is typed as `{ user_roles, pagination }`, reused from an
+      // unrelated operation. The endpoint returns `{ users, pagination }`.
+      const data = response.data as unknown as { users?: User[] };
+      return { users: data.users ?? [] };
     } catch (error) {
       log.error('Error listing users', error as Error, { operation: 'listUsers' });
       throw error;
@@ -521,8 +550,10 @@ export class AhaService {
     const usersApi = this.getUsersApi();
 
     try {
-      const response = await usersApi.usersGet({ id: userId });
-      return response.data;
+      const response = await usersApi.usersByIdGet({ id: userId });
+      // Generator defect: typed as `{ user_roles, pagination }`; the endpoint returns the
+      // user object directly with no wrapper.
+      return response.data as unknown as User;
     } catch (error) {
       log.error('Error getting user', error as Error, { operation: 'getUser', user_id: userId });
       throw error;
@@ -534,15 +565,12 @@ export class AhaService {
    * @param productId The ID of the product
    * @returns A list of epics
    */
-  public static async listEpics(productId: string): Promise<EpicsList200Response> {
+  public static async listEpics(productId: string): Promise<EpicsListResponse> {
     const epicsApi = this.getEpicsApi();
 
     try {
-      // Use the appropriate method from the EpicsApi with the correct parameter format
-      const response = await epicsApi.epicsListInProduct({
-        productId: productId
-      });
-      return response.data;
+      const response = await epicsApi.productsByProductEpicsGet({ productId });
+      return response.data as unknown as EpicsListResponse;
     } catch (error) {
       log.error('Error listing epics for product', error as Error, { operation: 'listEpics', product_id: productId });
       throw error;
@@ -558,8 +586,11 @@ export class AhaService {
     const epicsApi = this.getEpicsApi();
 
     try {
-      const response = await epicsApi.epicsGet({ epicId });
-      return response.data;
+      const response = await epicsApi.epicsByIdGet({ id: epicId });
+      // Generator defect: `epicsByIdGet` is typed as returning the list response
+      // (`{ epics, pagination }`); the endpoint genuinely returns a single epic with no
+      // wrapper.
+      return response.data as unknown as Epic;
     } catch (error) {
       log.error('Error getting epic', error as Error, { operation: 'getEpic', epic_id: epicId });
       throw error;
@@ -576,14 +607,14 @@ export class AhaService {
     const commentsApi = this.getCommentsApi();
 
     try {
-      // Use the appropriate method from the CommentsApi with the correct parameter format
-      const response = await commentsApi.commentsCreateFeature({
+      const response = await commentsApi.featuresByFeatureCommentsPost({
         featureId: featureId,
-        commentCreateRequest: {
-          body: body
+        commentsPostRequest: {
+          comment: { body }
         }
       });
-      return response.data;
+      const data = response.data as unknown as { comment?: Comment };
+      return data.comment as Comment;
     } catch (error) {
       log.error('Error creating comment on feature', error as Error, { operation: 'createFeatureComment', feature_id: featureId });
       throw error;
@@ -599,8 +630,11 @@ export class AhaService {
     const ideasApi = this.getIdeasApi();
 
     try {
-      const response = await ideasApi.ideasGetById({ id: ideaId });
-      return response.data;
+      const response = await ideasApi.ideasByIdGet({ id: ideaId });
+      // Generator defect: `ideasByIdGet` is typed as returning the list response
+      // (`{ ideas, pagination }`); the endpoint genuinely returns a single idea wrapped as
+      // `{ idea }`.
+      return response.data as unknown as IdeaResponse;
     } catch (error) {
       log.error('Error getting idea', error as Error, { operation: 'getIdea', idea_id: ideaId });
       throw error;
@@ -616,19 +650,15 @@ export class AhaService {
     const productsApi = this.getProductsApi();
 
     try {
-      const response = await productsApi.productsGet({ id: productId });
-      return response.data.product;
+      const response = await productsApi.productsByIdGet({ id: productId });
+      const data = response.data as unknown as { product?: Product };
+      return data.product as Product;
     } catch (error) {
       log.error('Error getting product', error as Error, { operation: 'getProduct', product_id: productId });
       throw error;
     }
   }
 
-  /**
-   * List products from Aha.io
-   * @param updatedSince UTC timestamp (ISO8601 format) (optional)
-   * @returns A list of products
-   */
   /**
    * List products from Aha.io
    * @param updatedSince Filter by updated since date (optional)
@@ -644,12 +674,18 @@ export class AhaService {
     const productsApi = this.getProductsApi();
 
     try {
-      const response = await productsApi.productsList({
-        page,
-        perPage,
-        updatedSince
-      });
-      return response.data;
+      // Generator defect: `productsGet` (list) shares its response type with
+      // `productsByIdGet` (`{ product }`, singular); the endpoint returns `{ products, pagination }`.
+      // `updatedSince` is sent via `options.params` because Aha's spec under-documents this
+      // endpoint's query string.
+      const response = await productsApi.productsGet(
+        {
+          page: this.numParam(page),
+          perPage: this.numParam(perPage)
+        },
+        { params: this.extraParams({ updated_since: updatedSince }) }
+      );
+      return response.data as unknown as ProductsListResponse;
     } catch (error) {
       log.error('Error listing products', error as Error, { operation: 'listProducts' });
       throw error;
@@ -665,8 +701,11 @@ export class AhaService {
     const initiativesApi = this.getInitiativesApi();
 
     try {
-      const response = await initiativesApi.initiativesGet({ id: initiativeId });
-      return response.data;
+      const response = await initiativesApi.initiativesByIdGet({ id: initiativeId });
+      // Generator defect: `initiativesByIdGet` is typed as returning the list response
+      // (`{ initiatives, pagination }`); the endpoint genuinely returns a single initiative
+      // wrapped as `{ initiative }`.
+      return response.data as unknown as InitiativeResponse;
     } catch (error) {
       log.error('Error getting initiative', error as Error, { operation: 'getInitiative', initiative_id: initiativeId });
       throw error;
@@ -694,15 +733,25 @@ export class AhaService {
     const initiativesApi = this.getInitiativesApi();
 
     try {
-      const response = await initiativesApi.initiativesList({
-        page,
-        perPage,
-        q: query,
-        updatedSince,
-        assignedToUser,
-        onlyActive
-      });
-      return response.data;
+      // `q`, `updatedSince`, `assignedToUser` and `onlyActive` are sent via `options.params`
+      // because Aha's spec under-documents this endpoint's query string - only pagination
+      // (plus `custom_fields` and `workflow_status`, which this service does not expose)
+      // remain in the generated request type.
+      const response = await initiativesApi.initiativesGet(
+        {
+          page: this.numParam(page),
+          perPage: this.numParam(perPage)
+        },
+        {
+          params: this.extraParams({
+            q: query,
+            updated_since: updatedSince,
+            assigned_to_user: assignedToUser,
+            only_active: onlyActive
+          })
+        }
+      );
+      return response.data as unknown as InitiativesListResponse;
     } catch (error) {
       log.error('Error listing initiatives', error as Error, { operation: 'listInitiatives' });
       throw error;
@@ -740,20 +789,25 @@ export class AhaService {
     const ideasApi = this.getIdeasApi();
 
     try {
-      const response = await ideasApi.ideasListProduct({ 
-        productId: productId,
-        q: query,
-        spam,
-        workflowStatus,
-        sort: sort as any, // Cast to any since the enum type is not exported
-        createdBefore,
-        createdSince,
-        updatedSince,
-        tag,
-        userId,
-        ideaUserId
-      });
-      return response.data;
+      // `ideaUserId` has no equivalent in the generated request type for this endpoint, so it
+      // is sent via `options.params` because Aha's spec under-documents this endpoint's query
+      // string.
+      const response = await ideasApi.productsByProductIdeasGet(
+        {
+          productId: productId,
+          q: query,
+          spam: this.boolParam(spam),
+          workflowStatus,
+          sort,
+          createdBefore,
+          createdSince,
+          updatedSince,
+          tag,
+          userId
+        },
+        { params: this.extraParams({ idea_user_id: ideaUserId }) }
+      );
+      return response.data as unknown as IdeasListResponse;
     } catch (error) {
       log.error('Error listing ideas for product', error as Error, { operation: 'listIdeasByProduct', product_id: productId });
       throw error;
@@ -765,12 +819,12 @@ export class AhaService {
    * @param epicId The ID of the epic
    * @returns A list of comments for the epic
    */
-  public static async getEpicComments(epicId: string): Promise<CommentsGetEpic200Response> {
+  public static async getEpicComments(epicId: string): Promise<CommentsListResponse> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.commentsGetEpic({ epicId });
-      return response.data;
+      const response = await commentsApi.epicsByEpicCommentsGet({ epicId });
+      return response.data as unknown as CommentsListResponse;
     } catch (error) {
       log.error('Error getting comments for epic', error as Error, { operation: 'getEpicComments', epic_id: epicId });
       throw error;
@@ -782,12 +836,12 @@ export class AhaService {
    * @param ideaId The ID of the idea
    * @returns A list of comments for the idea
    */
-  public static async getIdeaComments(ideaId: string): Promise<CommentsGetEpic200Response> {
+  public static async getIdeaComments(ideaId: string): Promise<CommentsListResponse> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.commentsGetIdea({ ideaId });
-      return response.data;
+      const response = await commentsApi.ideasByIdeaCommentsGet({ ideaId });
+      return response.data as unknown as CommentsListResponse;
     } catch (error) {
       log.error('Error getting comments for idea', error as Error, { operation: 'getIdeaComments', idea_id: ideaId });
       throw error;
@@ -799,12 +853,12 @@ export class AhaService {
    * @param initiativeId The ID of the initiative
    * @returns A list of comments for the initiative
    */
-  public static async getInitiativeComments(initiativeId: string): Promise<CommentsGetEpic200Response> {
+  public static async getInitiativeComments(initiativeId: string): Promise<CommentsListResponse> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.commentsGetInitiative({ initiativeId });
-      return response.data;
+      const response = await commentsApi.initiativesByInitiativeCommentsGet({ initiativeId });
+      return response.data as unknown as CommentsListResponse;
     } catch (error) {
       log.error('Error getting comments for initiative', error as Error, { operation: 'getInitiativeComments', initiative_id: initiativeId });
       throw error;
@@ -816,12 +870,12 @@ export class AhaService {
    * @param productId The ID of the product
    * @returns A list of comments for the product
    */
-  public static async getProductComments(productId: string): Promise<CommentsGetEpic200Response> {
+  public static async getProductComments(productId: string): Promise<CommentsListResponse> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.commentsGetProduct({ productId });
-      return response.data;
+      const response = await commentsApi.productsByProjectCommentsGet({ projectId: productId });
+      return response.data as unknown as CommentsListResponse;
     } catch (error) {
       log.error('Error getting comments for product', error as Error, { operation: 'getProductComments', product_id: productId });
       throw error;
@@ -833,12 +887,12 @@ export class AhaService {
    * @param goalId The ID of the goal
    * @returns A list of comments for the goal
    */
-  public static async getGoalComments(goalId: string): Promise<CommentsGetEpic200Response> {
+  public static async getGoalComments(goalId: string): Promise<CommentsListResponse> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.commentsGetGoal({ goalId });
-      return response.data;
+      const response = await commentsApi.goalsByGoalCommentsGet({ goalId });
+      return response.data as unknown as CommentsListResponse;
     } catch (error) {
       log.error('Error getting comments for goal', error as Error, { operation: 'getGoalComments', goal_id: goalId });
       throw error;
@@ -850,12 +904,12 @@ export class AhaService {
    * @param releaseId The ID of the release
    * @returns A list of comments for the release
    */
-  public static async getReleaseComments(releaseId: string): Promise<CommentsGetEpic200Response> {
+  public static async getReleaseComments(releaseId: string): Promise<CommentsListResponse> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.commentsGetRelease({ releaseId });
-      return response.data;
+      const response = await commentsApi.releasesByReleaseCommentsGet({ releaseId });
+      return response.data as unknown as CommentsListResponse;
     } catch (error) {
       log.error('Error getting comments for release', error as Error, { operation: 'getReleaseComments', release_id: releaseId });
       throw error;
@@ -867,12 +921,12 @@ export class AhaService {
    * @param releasePhaseId The ID of the release phase
    * @returns A list of comments for the release phase
    */
-  public static async getReleasePhaseComments(releasePhaseId: string): Promise<CommentsGetEpic200Response> {
+  public static async getReleasePhaseComments(releasePhaseId: string): Promise<CommentsListResponse> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.commentsGetReleasePhase({ releasePhaseId });
-      return response.data;
+      const response = await commentsApi.releasePhasesByReleasePhaseCommentsGet({ releasePhaseId });
+      return response.data as unknown as CommentsListResponse;
     } catch (error) {
       log.error('Error getting comments for release phase', error as Error, { operation: 'getReleasePhaseComments', release_phase_id: releasePhaseId });
       throw error;
@@ -884,12 +938,12 @@ export class AhaService {
    * @param requirementId The ID of the requirement
    * @returns A list of comments for the requirement
    */
-  public static async getRequirementComments(requirementId: string): Promise<CommentsGetEpic200Response> {
+  public static async getRequirementComments(requirementId: string): Promise<CommentsListResponse> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.commentsGetRequirement({ requirementId });
-      return response.data;
+      const response = await commentsApi.requirementsByRequirementCommentsGet({ requirementId });
+      return response.data as unknown as CommentsListResponse;
     } catch (error) {
       log.error('Error getting comments for requirement', error as Error, { operation: 'getRequirementComments', requirement_id: requirementId });
       throw error;
@@ -901,12 +955,12 @@ export class AhaService {
    * @param todoId The ID of the todo
    * @returns A list of comments for the todo
    */
-  public static async getTodoComments(todoId: string): Promise<CommentsGetEpic200Response> {
+  public static async getTodoComments(todoId: string): Promise<CommentsListResponse> {
     const commentsApi = this.getCommentsApi();
 
     try {
-      const response = await commentsApi.commentsGetTodo({ todoId });
-      return response.data;
+      const response = await commentsApi.tasksByTaskCommentsGet({ taskId: todoId });
+      return response.data as unknown as CommentsListResponse;
     } catch (error) {
       log.error('Error getting comments for todo', error as Error, { operation: 'getTodoComments', todo_id: todoId });
       throw error;
@@ -922,8 +976,11 @@ export class AhaService {
     const goalsApi = this.getGoalsApi();
 
     try {
-      const response = await goalsApi.goalsGet({ id: goalId });
-      return response.data;
+      const response = await goalsApi.goalsByIdGet({ id: goalId });
+      // Generator defect: `goalsByIdGet` is typed as returning the list response
+      // (`{ goals, pagination }`); the endpoint genuinely returns a single goal wrapped as
+      // `{ goal }`.
+      return response.data as unknown as GoalGetResponse;
     } catch (error) {
       log.error('Error getting goal', error as Error, { operation: 'getGoal', goal_id: goalId });
       throw error;
@@ -947,19 +1004,28 @@ export class AhaService {
     status?: string,
     page?: number,
     perPage?: number
-  ): Promise<SdkGoalsListResponse> {
+  ): Promise<GoalsListResponse> {
     const goalsApi = this.getGoalsApi();
 
     try {
-      const response = await goalsApi.goalsList({
-        page,
-        perPage,
-        q: query,
-        updatedSince,
-        assignedToUser,
-        status
-      });
-      return response.data;
+      // `q`, `updatedSince`, `assignedToUser` and `status` are sent via `options.params`
+      // because Aha's spec under-documents this endpoint's query string - only pagination
+      // remains in the generated request type.
+      const response = await goalsApi.goalsGet(
+        {
+          page: this.numParam(page),
+          perPage: this.numParam(perPage)
+        },
+        {
+          params: this.extraParams({
+            q: query,
+            updated_since: updatedSince,
+            assigned_to_user: assignedToUser,
+            status
+          })
+        }
+      );
+      return response.data as unknown as GoalsListResponse;
     } catch (error) {
       log.error('Error listing goals', error as Error, { operation: 'listGoals' });
       throw error;
@@ -975,8 +1041,8 @@ export class AhaService {
     const epicsApi = this.getEpicsApi();
 
     try {
-      const response = await epicsApi.epicsListByGoal({ goalId });
-      return response.data;
+      const response = await epicsApi.goalsByGoalEpicsGet({ goalId });
+      return response.data as unknown as GoalEpicsResponse;
     } catch (error) {
       log.error('Error getting epics for goal', error as Error, { operation: 'getGoalEpics', goal_id: goalId });
       throw error;
@@ -992,49 +1058,13 @@ export class AhaService {
     const releasesApi = this.getReleasesApi();
 
     try {
-      const response = await releasesApi.releasesGet({ id: releaseId });
-      return response.data;
+      const response = await releasesApi.releasesByIdGet({ id: releaseId });
+      // Generator defect: `releasesByIdGet` is typed as returning the list response
+      // (`{ releases, pagination }`); the endpoint genuinely returns a single release wrapped
+      // as `{ release }`.
+      return response.data as unknown as ReleaseGetResponse;
     } catch (error) {
       log.error('Error getting release', error as Error, { operation: 'getRelease', release_id: releaseId });
-      throw error;
-    }
-  }
-
-  /**
-   * List releases from Aha.io
-   * @param query Search query (optional)
-   * @param updatedSince Filter by updated since date (optional)
-   * @param assignedToUser Filter by assigned user (optional)
-   * @param status Filter by status (optional)
-   * @param parkingLot Filter by parking lot (optional)
-   * @param page Page number for pagination (optional)
-   * @param perPage Number of items per page (max 200) (optional)
-   * @returns A list of releases
-   */
-  public static async listReleases(
-    query?: string,
-    updatedSince?: string,
-    assignedToUser?: string,
-    status?: string,
-    parkingLot?: boolean,
-    page?: number,
-    perPage?: number
-  ): Promise<SdkReleasesListResponse> {
-    const releasesApi = this.getReleasesApi();
-
-    try {
-      const response = await releasesApi.releasesList({
-        page,
-        perPage,
-        q: query,
-        updatedSince,
-        assignedToUser,
-        status,
-        parkingLot
-      });
-      return response.data;
-    } catch (error) {
-      log.error('Error listing releases', error as Error, { operation: 'listReleases' });
       throw error;
     }
   }
@@ -1073,12 +1103,12 @@ export class AhaService {
    * @param releaseId The ID of the release
    * @returns A list of epics associated with the release
    */
-  public static async getReleaseEpics(releaseId: string): Promise<EpicsList200Response> {
+  public static async getReleaseEpics(releaseId: string): Promise<EpicsListResponse> {
     const epicsApi = this.getEpicsApi();
 
     try {
-      const response = await epicsApi.epicsListInRelease({ releaseId });
-      return response.data;
+      const response = await epicsApi.releasesByReleaseEpicsGet({ releaseId });
+      return response.data as unknown as EpicsListResponse;
     } catch (error) {
       log.error('Error getting epics for release', error as Error, { operation: 'getReleaseEpics', release_id: releaseId });
       throw error;
@@ -1090,15 +1120,19 @@ export class AhaService {
    * @param releasePhaseId The ID of the release phase
    * @returns The release phase details
    */
-  public static async getReleasePhase(releasePhaseId: string): Promise<SdkReleasePhase> {
+  public static async getReleasePhase(releasePhaseId: string): Promise<ReleasePhase> {
     const releasePhasesApi = this.getReleasePhasesApi();
 
     try {
-      const response = await releasePhasesApi.releasePhasesGet({ id: releasePhaseId });
-      if (!response.data.release_phase) {
+      const response = await releasePhasesApi.releasePhasesByIdGet({ id: releasePhaseId });
+      // Generator defect: `releasePhasesByIdGet` is typed as returning the list response
+      // (`{ release_phases, pagination }`); the endpoint genuinely returns a single release
+      // phase wrapped as `{ release_phase }`.
+      const data = response.data as unknown as { release_phase?: ReleasePhase };
+      if (!data.release_phase) {
         throw new Error(`Release phase ${releasePhaseId} not found`);
       }
-      return response.data.release_phase;
+      return data.release_phase;
     } catch (error) {
       log.error('Error getting release phase', error as Error, { operation: 'getReleasePhase', release_phase_id: releasePhaseId });
       throw error;
@@ -1109,12 +1143,12 @@ export class AhaService {
    * List release phases from Aha.io
    * @returns A list of release phases
    */
-  public static async listReleasePhases(): Promise<ReleasePhasesList200Response> {
+  public static async listReleasePhases(): Promise<ReleasePhasesListResponse> {
     const releasePhasesApi = this.getReleasePhasesApi();
 
     try {
-      const response = await releasePhasesApi.releasePhasesList();
-      return response.data;
+      const response = await releasePhasesApi.releasePhasesGet();
+      return response.data as unknown as ReleasePhasesListResponse;
     } catch (error) {
       log.error('Error listing release phases', error as Error, { operation: 'listReleasePhases' });
       throw error;
@@ -1130,11 +1164,12 @@ export class AhaService {
     const requirementsApi = this.getRequirementsApi();
 
     try {
-      const response = await requirementsApi.requirementsGet({ id: requirementId });
-      if (!response.data.requirement) {
+      const response = await requirementsApi.requirementsByIdGet({ id: requirementId });
+      const data = response.data as unknown as { requirement?: Requirement };
+      if (!data.requirement) {
         throw new Error(`Requirement ${requirementId} not found`);
       }
-      return response.data.requirement as Requirement;
+      return data.requirement;
     } catch (error) {
       log.error('Error getting requirement', error as Error, { operation: 'getRequirement', requirement_id: requirementId });
       throw error;
@@ -1150,8 +1185,11 @@ export class AhaService {
     const competitorsApi = this.getCompetitorsApi();
 
     try {
-      const response = await competitorsApi.competitorsGet({ competitorId });
-      return response.data;
+      const response = await competitorsApi.competitorsByIdGet({ id: competitorId });
+      // Generator defect: `competitorsByIdGet` is typed as returning the (product-scoped)
+      // list response (`{ competitors, pagination }`); the endpoint genuinely returns a
+      // single competitor with no wrapper.
+      return response.data as unknown as Competitor;
     } catch (error) {
       log.error('Error getting competitor', error as Error, { operation: 'getCompetitor', competitor_id: competitorId });
       throw error;
@@ -1167,11 +1205,15 @@ export class AhaService {
     const todosApi = this.getTodosApi();
 
     try {
-      const response = await todosApi.todosGet({ id: todoId });
-      if (!response.data.task) {
+      const response = await todosApi.tasksByIdGet({ id: todoId });
+      // Generator defect: `tasksByIdGet` is typed as returning the list response
+      // (`{ tasks, pagination }`); the endpoint genuinely returns a single task wrapped as
+      // `{ task }`.
+      const data = response.data as unknown as { task?: Todo };
+      if (!data.task) {
         throw new Error(`Todo ${todoId} not found`);
       }
-      return response.data.task as Todo;
+      return data.task;
     } catch (error) {
       log.error('Error getting todo', error as Error, { operation: 'getTodo', todo_id: todoId });
       throw error;
@@ -1187,8 +1229,8 @@ export class AhaService {
     const competitorsApi = this.getCompetitorsApi();
 
     try {
-      const response = await competitorsApi.competitorsListProduct({ productId });
-      return response.data;
+      const response = await competitorsApi.productsByProductCompetitorsGet({ productId });
+      return response.data as unknown as CompetitorsListResponse;
     } catch (error) {
       log.error('Error listing competitors for product', error as Error, { operation: 'listCompetitors', product_id: productId });
       throw error;
@@ -1209,15 +1251,16 @@ export class AhaService {
     const featuresApi = this.getFeaturesApi();
 
     try {
-      const response = await featuresApi.featuresIdEpicPut({
+      const response = await featuresApi.featuresByIdPut({
         id: featureId,
-        featuresIdEpicPutRequest: {
+        featuresPutRequest: {
           feature: {
             epic: epicId
           }
         }
       });
-      return response.data;
+      const data = response.data as unknown as { feature?: Feature };
+      return data.feature as Feature;
     } catch (error) {
       log.error('Error associating feature with epic', error as Error, { operation: 'associateFeatureWithEpic', feature_id: featureId, epic_id: epicId });
       throw error;
@@ -1234,15 +1277,16 @@ export class AhaService {
     const featuresApi = this.getFeaturesApi();
 
     try {
-      const response = await featuresApi.featuresIdReleasePut({
+      const response = await featuresApi.featuresByIdPut({
         id: featureId,
-        featuresIdReleasePutRequest: {
+        featuresPutRequest: {
           feature: {
             release: releaseId
           }
         }
       });
-      return response.data;
+      const data = response.data as unknown as { feature?: Feature };
+      return data.feature as Feature;
     } catch (error) {
       log.error('Error moving feature to release', error as Error, { operation: 'moveFeatureToRelease', feature_id: featureId, release_id: releaseId });
       throw error;
@@ -1259,15 +1303,16 @@ export class AhaService {
     const featuresApi = this.getFeaturesApi();
 
     try {
-      const response = await featuresApi.featuresIdGoalsPut({
+      const response = await featuresApi.featuresByIdPut({
         id: featureId,
-        featuresIdGoalsPutRequest: {
+        featuresPutRequest: {
           feature: {
             goals: goalIds
           }
         }
       });
-      return response.data;
+      const data = response.data as unknown as { feature?: Feature };
+      return data.feature as Feature;
     } catch (error) {
       log.error('Error associating feature with goals', error as Error, { operation: 'associateFeatureWithGoals', feature_id: featureId, goal_ids: goalIds });
       throw error;
@@ -1284,15 +1329,16 @@ export class AhaService {
     const featuresApi = this.getFeaturesApi();
 
     try {
-      const response = await featuresApi.featuresIdTagsPut({
+      const response = await featuresApi.featuresByIdPut({
         id: featureId,
-        featuresIdTagsPutRequest: {
+        featuresPutRequest: {
           feature: {
             tags: tags
           }
         }
       });
-      return response.data;
+      const data = response.data as unknown as { feature?: Feature };
+      return data.feature as Feature;
     } catch (error) {
       log.error('Error updating tags for feature', error as Error, { operation: 'updateFeatureTags', feature_id: featureId });
       throw error;
@@ -1309,11 +1355,12 @@ export class AhaService {
     const epicsApi = this.getEpicsApi();
 
     try {
-      const response = await epicsApi.epicsCreateInProduct({
+      const response = await epicsApi.productsByProductEpicsPost({
         productId: productId,
-        epicCreateRequest: epicData
+        epicsPostRequest: epicData
       });
-      return response.data;
+      const data = response.data as unknown as { epic?: Epic };
+      return data.epic as Epic;
     } catch (error) {
       log.error('Error creating epic in product', error as Error, { operation: 'createEpicInProduct', product_id: productId });
       throw error;
@@ -1330,11 +1377,12 @@ export class AhaService {
     const epicsApi = this.getEpicsApi();
 
     try {
-      const response = await epicsApi.epicsCreateInRelease({
+      const response = await epicsApi.releasesByReleaseEpicsPost({
         releaseId: releaseId,
-        epicCreateRequest: epicData
+        epicsPostRequest: epicData
       });
-      return response.data;
+      const data = response.data as unknown as { epic?: Epic };
+      return data.epic as Epic;
     } catch (error) {
       log.error('Error creating epic in release', error as Error, { operation: 'createEpicInRelease', release_id: releaseId });
       throw error;
@@ -1351,11 +1399,11 @@ export class AhaService {
     const initiativesApi = this.getInitiativesApi();
 
     try {
-      const response = await initiativesApi.initiativesCreate({
+      const response = await initiativesApi.productsByProductInitiativesPost({
         productId: productId,
-        initiativeCreateRequest: initiativeData
+        initiativesPostRequest: initiativeData
       });
-      return response.data;
+      return response.data as unknown as InitiativeResponse;
     } catch (error) {
       log.error('Error creating initiative in product', error as Error, { operation: 'createInitiativeInProduct', product_id: productId });
       throw error;
@@ -1372,16 +1420,17 @@ export class AhaService {
    * @param featureData The feature data to create
    * @returns The created feature response, if the endpoint returned a body
    *
-   * `unknown` rather than `Feature`: aha-js types this endpoint's response as `void`, so
+   * `unknown` rather than `Feature`: aha-js types this endpoint's response loosely, so
    * whatever Aha sends back is undeclared. The tool treats a missing body as an empty
    * record rather than assuming a feature came back.
    */
-  public static async createFeature(releaseId: string, _featureData: any): Promise<unknown> {
-    const defaultApi = this.getDefaultApi();
+  public static async createFeature(releaseId: string, featureData: any): Promise<unknown> {
+    const featuresApi = this.getFeaturesApi();
 
     try {
-      const response = await defaultApi.releasesReleaseIdFeaturesPost({
-        releaseId: releaseId
+      const response = await featuresApi.releasesByReleaseFeaturesPost({
+        releaseId: releaseId,
+        featuresPostRequest: featureData ?? {}
       });
       return response.data;
     } catch (error) {
@@ -1400,11 +1449,12 @@ export class AhaService {
     const featuresApi = this.getFeaturesApi();
 
     try {
-      const response = await featuresApi.featuresUpdate({
+      const response = await featuresApi.featuresByIdPut({
         id: featureId,
-        featureUpdateRequest: featureData
+        featuresPutRequest: featureData
       });
-      return response.data.feature;
+      const data = response.data as unknown as { feature?: Feature };
+      return data.feature as Feature;
     } catch (error) {
       log.error('Error updating feature', error as Error, { operation: 'updateFeature', feature_id: featureId });
       throw error;
@@ -1420,7 +1470,7 @@ export class AhaService {
     const featuresApi = this.getFeaturesApi();
 
     try {
-      await featuresApi.featuresDelete({ id: featureId });
+      await featuresApi.featuresByIdDelete({ id: featureId });
     } catch (error) {
       log.error('Error deleting feature', error as Error, { operation: 'deleteFeature', feature_id: featureId });
       throw error;
@@ -1437,15 +1487,16 @@ export class AhaService {
     const featuresApi = this.getFeaturesApi();
 
     try {
-      const response = await featuresApi.featuresIdProgressPut({
+      const response = await featuresApi.featuresByIdPut({
         id: featureId,
-        featuresIdProgressPutRequest: {
+        featuresPutRequest: {
           feature: {
             progress: progress
           }
         }
       });
-      return response.data;
+      const data = response.data as unknown as { feature?: Feature };
+      return data.feature as Feature;
     } catch (error) {
       log.error('Error updating progress for feature', error as Error, { operation: 'updateFeatureProgress', feature_id: featureId });
       throw error;
@@ -1462,16 +1513,17 @@ export class AhaService {
     const featuresApi = this.getFeaturesApi();
 
     try {
-      const response = await featuresApi.featuresIdScorePut({
+      const response = await featuresApi.featuresByIdPut({
         id: featureId,
-        featuresIdScorePutRequest: {
+        featuresPutRequest: {
           feature: {
             // Note: Need to check exact structure for score updates
             score_facts: [{ value: score }]
           }
         }
       });
-      return response.data;
+      const data = response.data as unknown as { feature?: Feature };
+      return data.feature as Feature;
     } catch (error) {
       log.error('Error updating score for feature', error as Error, { operation: 'updateFeatureScore', feature_id: featureId });
       throw error;
@@ -1488,17 +1540,18 @@ export class AhaService {
     const featuresApi = this.getFeaturesApi();
 
     try {
-      // This used to call `DefaultApi.featuresIdCustomFieldsPut`, whose generated signature
-      // takes an id and nothing else - the operation is declared without a request body, so
-      // the values could not be sent at all and every call was a no-op reported as success.
-      // `PUT /features/:id` carries `feature.custom_fields`, so route through that instead.
-      const response = await featuresApi.featuresUpdate({
+      // This used to call a generated operation whose signature took an id and nothing
+      // else - the operation was declared without a request body, so the values could not be
+      // sent at all and every call was a no-op reported as success. `PUT /features/:id`
+      // carries `feature.custom_fields`, so route through that instead.
+      const response = await featuresApi.featuresByIdPut({
         id: featureId,
-        featureUpdateRequest: {
+        featuresPutRequest: {
           feature: { custom_fields: customFields } as any
         }
       });
-      return response.data.feature;
+      const data = response.data as unknown as { feature?: Feature };
+      return data.feature as Feature;
     } catch (error) {
       log.error('Error updating custom fields for feature', error as Error, { operation: 'updateFeatureCustomFields', feature_id: featureId });
       throw error;
@@ -1519,11 +1572,12 @@ export class AhaService {
     const epicsApi = this.getEpicsApi();
 
     try {
-      const response = await epicsApi.epicsUpdate({
-        epicId: epicId,
-        epicUpdateRequest: epicData
+      const response = await epicsApi.epicsByIdPut({
+        id: epicId,
+        epicsPostRequest: epicData
       });
-      return response.data;
+      const data = response.data as unknown as { epic?: Epic };
+      return data.epic as Epic;
     } catch (error) {
       log.error('Error updating epic', error as Error, { operation: 'updateEpic', epic_id: epicId });
       throw error;
@@ -1539,7 +1593,7 @@ export class AhaService {
     const epicsApi = this.getEpicsApi();
 
     try {
-      await epicsApi.epicsDelete({ epicId: epicId });
+      await epicsApi.epicsByIdDelete({ id: epicId });
     } catch (error) {
       log.error('Error deleting epic', error as Error, { operation: 'deleteEpic', epic_id: epicId });
       throw error;
@@ -1560,11 +1614,11 @@ export class AhaService {
     const ideasApi = this.getIdeasApi();
 
     try {
-      const response = await ideasApi.ideasCreate({
+      const response = await ideasApi.productsByProductIdeasPost({
         productId: productId,
-        ideaCreateRequest: ideaData
+        ideasPostRequest: ideaData
       });
-      return response.data;
+      return response.data as unknown as IdeaResponse;
     } catch (error) {
       log.error('Error creating idea in product', error as Error, { operation: 'createIdea', product_id: productId });
       throw error;
@@ -1644,7 +1698,7 @@ export class AhaService {
     const ideasApi = this.getIdeasApi();
 
     try {
-      await ideasApi.ideasDelete({ id: ideaId });
+      await ideasApi.ideasByIdDelete({ id: ideaId });
     } catch (error) {
       log.error('Error deleting idea', error as Error, { operation: 'deleteIdea', idea_id: ideaId });
       throw error;
@@ -1663,15 +1717,63 @@ export class AhaService {
     const competitorsApi = this.getCompetitorsApi();
 
     try {
-      const response = await competitorsApi.competitorsCreate({
+      const response = await competitorsApi.productsByProductCompetitorsPost({
         productId: productId,
-        competitorCreateRequest: competitorData
+        competitorsPostRequest: competitorData
       });
-      return response.data;
+      const data = response.data as unknown as { competitor?: Competitor };
+      return data.competitor as Competitor;
     } catch (error) {
       log.error('Error creating competitor in product', error as Error, { operation: 'createCompetitor', product_id: productId });
       throw error;
     }
+  }
+
+  /**
+   * `PUT /competitors/{id}` and `DELETE /competitors/{id}` are documented by Aha but absent
+   * from the OpenAPI document this SDK is generated from, so `CompetitorsApi` has no method
+   * for either (only the product-scoped `PUT/DELETE /products/{id}/competitors/{id}`, which
+   * needs a product id this service's callers do not have). Call them directly instead, the
+   * same way `aha-graphql.ts` reaches endpoints aha-js does not cover: read credentials
+   * through `getCredentials()` so a runtime `configure_server` call is honoured, and build
+   * the request against the same `/api/v1` base path used everywhere else in this class.
+   */
+  private static async competitorRequest(
+    method: 'PUT' | 'DELETE',
+    competitorId: string,
+    body?: unknown
+  ): Promise<unknown> {
+    const { subdomain, accessToken } = this.getCredentials();
+    if (!subdomain || !accessToken) {
+      throw new Error(
+        'Aha API client not initialized. Set AHA_COMPANY and AHA_TOKEN, or call initialize().'
+      );
+    }
+
+    const url = `https://${subdomain}.aha.io/api/v1/competitors/${competitorId}`;
+    const response = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined
+    });
+
+    if (!response.ok) {
+      // Shaped like the axios errors every SDK-backed call in this class throws, so
+      // `describeAhaError` maps the status the same way it would for those.
+      const error = new Error(`Aha.io competitor request failed (HTTP ${response.status})`) as Error & {
+        isAxiosError: boolean;
+        response: { status: number; headers: Record<string, string> };
+      };
+      error.isAxiosError = true;
+      error.response = { status: response.status, headers: Object.fromEntries(response.headers.entries()) };
+      throw error;
+    }
+
+    if (response.status === 204) return undefined;
+    return response.json().catch(() => undefined);
   }
 
   /**
@@ -1681,14 +1783,10 @@ export class AhaService {
    * @returns The updated competitor
    */
   public static async updateCompetitor(competitorId: string, competitorData: any): Promise<Competitor> {
-    const competitorsApi = this.getCompetitorsApi();
-
     try {
-      const response = await competitorsApi.competitorsUpdate({
-        competitorId: competitorId,
-        competitorUpdateRequest: competitorData
-      });
-      return response.data;
+      const data = await this.competitorRequest('PUT', competitorId, competitorData);
+      const wrapped = data as { competitor?: Competitor } | null | undefined;
+      return (wrapped?.competitor ?? (data as Competitor)) as Competitor;
     } catch (error) {
       log.error('Error updating competitor', error as Error, { operation: 'updateCompetitor', competitor_id: competitorId });
       throw error;
@@ -1701,10 +1799,8 @@ export class AhaService {
    * @returns Success response
    */
   public static async deleteCompetitor(competitorId: string): Promise<void> {
-    const competitorsApi = this.getCompetitorsApi();
-
     try {
-      await competitorsApi.competitorsDelete({ competitorId: competitorId });
+      await this.competitorRequest('DELETE', competitorId);
     } catch (error) {
       log.error('Error deleting competitor', error as Error, { operation: 'deleteCompetitor', competitor_id: competitorId });
       throw error;
@@ -1718,12 +1814,12 @@ export class AhaService {
    * @param initiativeId The ID of the initiative
    * @returns A list of epics associated with the initiative
    */
-  public static async getInitiativeEpics(initiativeId: string): Promise<EpicsList200Response> {
+  public static async getInitiativeEpics(initiativeId: string): Promise<EpicsListResponse> {
     const epicsApi = this.getEpicsApi();
 
     try {
-      const response = await epicsApi.epicsListByInitiative({ initiativeId });
-      return response.data;
+      const response = await epicsApi.initiativesByInitiativeEpicsGet({ initiativeId });
+      return response.data as unknown as EpicsListResponse;
     } catch (error) {
       log.error('Error getting epics for initiative', error as Error, { operation: 'getInitiativeEpics', initiative_id: initiativeId });
       throw error;
@@ -1774,11 +1870,11 @@ export class AhaService {
     const ideasApi = this.getIdeasApi();
 
     try {
-      const response = await ideasApi.ideasCreate({
+      const response = await ideasApi.productsByProductIdeasPost({
         productId: productId,
-        ideaCreateRequest: ideaData
+        ideasPostRequest: ideaData
       });
-      return response.data;
+      return response.data as unknown as IdeaResponse;
     } catch (error) {
       log.error('Error creating idea with portal settings in product', error as Error, { operation: 'createIdeaWithPortalSettings', product_id: productId });
       throw error;
@@ -1794,11 +1890,14 @@ export class AhaService {
   public static async getStrategicModel(strategicModelId: string): Promise<StrategicModel> {
     const strategicModelsApi = this.getStrategicModelsApi();
     try {
-      const response = await strategicModelsApi.strategicModelsGet({ id: strategicModelId });
-      if (!response.data.strategic_model) {
+      // Aha renamed `/strategic_models` to `/strategy_models` upstream; the response field
+      // followed suit (`strategy_model` rather than the old `strategic_model`).
+      const response = await strategicModelsApi.strategyModelsByIdGet({ id: strategicModelId });
+      const data = response.data as unknown as { strategy_model?: StrategicModel };
+      if (!data.strategy_model) {
         throw new Error(`Strategic model ${strategicModelId} not found`);
       }
-      return response.data.strategic_model;
+      return data.strategy_model;
     } catch (error) {
       log.error('Error getting strategic model', error as Error, { operation: 'getStrategicModel', strategic_model_id: strategicModelId });
       throw error;
@@ -1823,14 +1922,29 @@ export class AhaService {
   ): Promise<StrategicModelsListResponse> {
     const strategicModelsApi = this.getStrategicModelsApi();
     try {
-      const response = await strategicModelsApi.strategicModelsList({
-        page,
-        perPage,
-        q: query,
-        type: type as any, // Cast to any since the enum type is not exported
-        updatedSince
-      });
-      return response.data;
+      // `strategyModelsGet`'s generated request type only documents pagination now; `q`,
+      // `type` and `updatedSince` are sent via `options.params` because Aha's spec
+      // under-documents this endpoint's query string. The response type is also a generator
+      // defect: it is shared with the by-id endpoint and shaped `{ strategy_model }`
+      // (singular); the real list endpoint returns an array. The exact plural field name
+      // post-rename is unconfirmed, so both `strategic_models` (the pre-rename name the
+      // domain type uses) and `strategy_models` are checked.
+      const response = await strategicModelsApi.strategyModelsGet(
+        {
+          page: this.numParam(page),
+          perPage: this.numParam(perPage)
+        },
+        { params: this.extraParams({ q: query, type, updated_since: updatedSince }) }
+      );
+      const data = response.data as unknown as {
+        strategic_models?: StrategicModel[];
+        strategy_models?: StrategicModel[];
+        pagination?: Pagination;
+      };
+      return {
+        strategic_models: data.strategic_models ?? data.strategy_models ?? [],
+        pagination: data.pagination
+      };
     } catch (error) {
       log.error('Error listing strategic models', error as Error, { operation: 'listStrategicModels' });
       throw error;
@@ -1842,11 +1956,11 @@ export class AhaService {
    * List to-dos
    * @returns The list of to-dos
    */
-  public static async listTodos(): Promise<TodosList200Response> {
+  public static async listTodos(): Promise<TodosListResponse> {
     const todosApi = this.getTodosApi();
     try {
-      const response = await todosApi.todosList();
-      return response.data;
+      const response = await todosApi.tasksGet();
+      return response.data as unknown as TodosListResponse;
     } catch (error) {
       log.error('Error listing todos', error as Error, { operation: 'listTodos' });
       throw error;
@@ -1862,11 +1976,12 @@ export class AhaService {
   public static async getIdeaOrganization(ideaOrganizationId: string): Promise<IdeaOrganization> {
     const ideaOrganizationsApi = this.getIdeaOrganizationsApi();
     try {
-      const response = await ideaOrganizationsApi.ideaOrganizationsGet({ id: ideaOrganizationId });
-      if (!response.data.idea_organization) {
+      const response = await ideaOrganizationsApi.ideaOrganizationsByIdGet({ id: ideaOrganizationId });
+      const data = response.data as unknown as { idea_organization?: IdeaOrganization };
+      if (!data.idea_organization) {
         throw new Error(`Idea organization ${ideaOrganizationId} not found`);
       }
-      return response.data.idea_organization;
+      return data.idea_organization;
     } catch (error) {
       log.error('Error getting idea organization', error as Error, { operation: 'getIdeaOrganization', idea_organization_id: ideaOrganizationId });
       throw error;
@@ -1889,13 +2004,20 @@ export class AhaService {
   ): Promise<IdeaOrganizationsListResponse> {
     const ideaOrganizationsApi = this.getIdeaOrganizationsApi();
     try {
-      const response = await ideaOrganizationsApi.ideaOrganizationsList({
-        page,
-        perPage,
-        q: query,
-        emailDomain
-      });
-      return response.data;
+      // `q` and `emailDomain` are sent via `options.params` because Aha's spec
+      // under-documents this endpoint's query string - the generated request type has no
+      // such fields. Its response type is also a generator defect: shared with the by-id
+      // endpoint and shaped `{ idea_organization }` (singular). The real list endpoint
+      // returns `{ idea_organizations, pagination }`.
+      const response = await ideaOrganizationsApi.ideaOrganizationsGet(
+        {
+          page: this.numParam(page),
+          perPage: this.numParam(perPage)
+        },
+        { params: this.extraParams({ q: query, email_domain: emailDomain }) }
+      );
+      const data = response.data as unknown as { idea_organizations?: IdeaOrganization[]; pagination?: Pagination };
+      return { idea_organizations: data.idea_organizations ?? [], pagination: data.pagination };
     } catch (error) {
       log.error('Error listing idea organizations', error as Error, { operation: 'listIdeaOrganizations' });
       throw error;
@@ -1910,8 +2032,11 @@ export class AhaService {
   public static async getAssignedRecords(): Promise<MeAssignedRecordsResponse> {
     const meApi = this.getMeApi();
     try {
-      const response = await meApi.meGetAssignedRecords();
-      return response.data;
+      const response = await meApi.meAssignedGet();
+      // Generator defect: `meAssignedGet` shares its response type with `meTasksGet`
+      // (`{ tasks, pagination }`); the endpoint genuinely returns `{ records, pagination }`.
+      const data = response.data as unknown as { records?: RecordRef[]; pagination?: Pagination };
+      return { records: data.records ?? [], pagination: data.pagination };
     } catch (error) {
       log.error('Error getting assigned records', error as Error, { operation: 'getMeAssignedRecords' });
       throw error;
@@ -1925,8 +2050,8 @@ export class AhaService {
   public static async getPendingTasks(): Promise<MePendingTasksResponse> {
     const meApi = this.getMeApi();
     try {
-      const response = await meApi.meGetPendingTasks();
-      return response.data;
+      const response = await meApi.meTasksGet();
+      return response.data as unknown as MePendingTasksResponse;
     } catch (error) {
       log.error('Error getting pending tasks', error as Error, { operation: 'getMePendingTasks' });
       throw error;
@@ -1947,16 +2072,16 @@ export class AhaService {
     proxy?: boolean,
     page?: number,
     perPage?: number
-  ): Promise<IdeasGetEndorsements200Response> {
-    const ideasApi = this.getIdeasApi();
+  ): Promise<IdeaEndorsementsResponse> {
+    const ideasApi = this.getIdeaVotesApi();
     try {
-      const response = await ideasApi.ideasGetEndorsements({
-        id: ideaId,
-        proxy,
-        page,
-        perPage
+      const response = await ideasApi.ideasByIdeaEndorsementsGet({
+        ideaId: ideaId,
+        proxy: this.boolParam(proxy),
+        page: this.numParam(page),
+        perPage: this.numParam(perPage)
       });
-      return response.data;
+      return response.data as unknown as IdeaEndorsementsResponse;
     } catch (error) {
       log.error('Error getting endorsements for idea', error as Error, { operation: 'getIdeaEndorsements', idea_id: ideaId });
       throw error;
@@ -1974,33 +2099,20 @@ export class AhaService {
     ideaId: string,
     page?: number,
     perPage?: number
-  ): Promise<IdeasGetVotes200Response> {
-    const ideasApi = this.getIdeasApi();
+  ): Promise<IdeaVotesResponse> {
+    // Aha models votes and endorsements as the same underlying record; there is no separate
+    // `/ideas/{id}/votes` endpoint in the generated SDK, so this calls the same operation as
+    // `getIdeaEndorsements`.
+    const ideaVotesApi = this.getIdeaVotesApi();
     try {
-      const response = await ideasApi.ideasGetVotes({
-        id: ideaId,
-        page,
-        perPage
+      const response = await ideaVotesApi.ideasByIdeaEndorsementsGet({
+        ideaId: ideaId,
+        page: this.numParam(page),
+        perPage: this.numParam(perPage)
       });
-      return response.data;
+      return response.data as unknown as IdeaVotesResponse;
     } catch (error) {
       log.error('Error getting votes for idea', error as Error, { operation: 'getIdeaVotes', idea_id: ideaId });
-      throw error;
-    }
-  }
-
-  /**
-   * Get watchers for an idea
-   * @param ideaId The ID of the idea
-   * @returns The watchers for the idea
-   */
-  public static async getIdeaWatchers(ideaId: string): Promise<IdeasGetWatchers200Response> {
-    const ideasApi = this.getIdeasApi();
-    try {
-      const response = await ideasApi.ideasGetWatchers({ id: ideaId });
-      return response.data;
-    } catch (error) {
-      log.error('Error getting watchers for idea', error as Error, { operation: 'getIdeaWatchers', idea_id: ideaId });
       throw error;
     }
   }
@@ -2050,27 +2162,36 @@ export class AhaService {
   ): Promise<IdeasListResponse> {
     const ideasApi = this.getIdeasApi();
     try {
-      const response = await ideasApi.ideasList({
-        page,
-        perPage,
-        q: query,
-        updatedSince,
-        assignedToUser,
-        status,
-        category,
-        fields,
-        productId,
-        ideaPortalId,
-        spam,
-        workflowStatus,
-        sort,
-        createdBefore,
-        createdSince,
-        tag,
-        userId,
-        ideaUserId
-      });
-      return response.data;
+      // `ideasGet`'s generated request type has no `status`, `category`, `productId`,
+      // `ideaPortalId` or `ideaUserId` fields, so those are sent via `options.params` because
+      // Aha's spec under-documents this endpoint's query string.
+      const response = await ideasApi.ideasGet(
+        {
+          page: this.numParam(page),
+          perPage: this.numParam(perPage),
+          q: query,
+          updatedSince,
+          assignedToUser,
+          workflowStatus,
+          spam: this.boolParam(spam),
+          sort,
+          createdBefore,
+          createdSince,
+          tag,
+          userId,
+          fields
+        },
+        {
+          params: this.extraParams({
+            status,
+            category,
+            product_id: productId,
+            idea_portal_id: ideaPortalId,
+            idea_user_id: ideaUserId
+          })
+        }
+      );
+      return response.data as unknown as IdeasListResponse;
     } catch (error) {
       log.error('Error listing ideas', error as Error, { operation: 'listIdeas' });
       throw error;
@@ -2096,19 +2217,28 @@ export class AhaService {
     parkingLot?: boolean,
     page?: number,
     perPage?: number
-  ): Promise<SdkReleasesListResponse> {
+  ): Promise<ReleasesListResponse> {
     const releasesApi = this.getReleasesApi();
     try {
-      const response = await releasesApi.productReleasesList({
-        productId,
-        page,
-        perPage,
-        q: query,
-        updatedSince,
-        status,
-        parkingLot
-      });
-      return response.data;
+      // `q`, `updatedSince`, `status` and `parkingLot` are sent via `options.params` because
+      // Aha's spec under-documents this endpoint's query string - only pagination remains in
+      // the generated request type.
+      const response = await releasesApi.productsByProductReleasesGet(
+        {
+          productId,
+          page: this.numParam(page),
+          perPage: this.numParam(perPage)
+        },
+        {
+          params: this.extraParams({
+            q: query,
+            updated_since: updatedSince,
+            status,
+            parking_lot: parkingLot
+          })
+        }
+      );
+      return response.data as unknown as ReleasesListResponse;
     } catch (error) {
       log.error('Error listing releases for product', error as Error, { operation: 'getProductReleases', product_id: productId });
       throw error;
@@ -2123,11 +2253,15 @@ export class AhaService {
    * List all custom field definitions
    * @returns A list of custom field definitions
    */
-  public static async listCustomFields(): Promise<CustomFieldsListAll200Response> {
+  public static async listCustomFields(): Promise<CustomFieldDefinitionsResponse> {
     const customFieldsApi = this.getCustomFieldsApi();
     try {
-      const response = await customFieldsApi.customFieldsListAll();
-      return response.data;
+      const response = await customFieldsApi.customFieldDefinitionsGet();
+      // Generator defect: `customFieldDefinitionsGet` (list-all) shares its response type
+      // with `...ByCustomFieldDefinitionOptionsGet` (`{ options }`), which is wrong for the
+      // list-all case. Build the real `{ custom_field_definitions }` shape ourselves.
+      const data = response.data as unknown as { custom_field_definitions?: CustomFieldDefinition[] };
+      return { custom_field_definitions: data.custom_field_definitions ?? [] };
     } catch (error) {
       log.error('Error listing custom fields', error as Error, { operation: 'listCustomFields' });
       throw error;
@@ -2139,13 +2273,13 @@ export class AhaService {
    * @param customFieldDefinitionId The ID of the custom field definition
    * @returns A list of options for the custom field
    */
-  public static async listCustomFieldOptions(customFieldDefinitionId: string): Promise<CustomFieldsListOptions200Response> {
+  public static async listCustomFieldOptions(customFieldDefinitionId: string): Promise<CustomFieldOptionsResponse> {
     const customFieldsApi = this.getCustomFieldsApi();
     try {
-      const response = await customFieldsApi.customFieldsListOptions({
+      const response = await customFieldsApi.customFieldDefinitionsByCustomFieldDefinitionOptionsGet({
         customFieldDefinitionId
       });
-      return response.data;
+      return response.data as unknown as CustomFieldOptionsResponse;
     } catch (error) {
       log.error('Error listing custom field options', error as Error, { operation: 'listCustomFieldOptions', custom_field_definition_id: customFieldDefinitionId });
       throw error;

@@ -68,7 +68,7 @@ export function registerSampling(server: McpServer) {
 - **aha://products** - List all products/workspaces
 - **aha://features** - Search features across all products
 - **aha://ideas** - Search ideas and feedback
-- **aha://releases** - List releases/workstreams
+- **aha://releases/{product_id}** - List releases/workstreams for a product (get the id from aha://products)
 
 What would you like to explore?`
           }

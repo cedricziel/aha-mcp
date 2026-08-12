@@ -230,10 +230,6 @@ describe('AhaService', () => {
       expect(typeof AhaService.getRelease).toBe('function');
     });
 
-    it('should have listReleases method', () => {
-      expect(typeof AhaService.listReleases).toBe('function');
-    });
-
     it('should have getReleaseFeatures method', () => {
       expect(typeof AhaService.getReleaseFeatures).toBe('function');
     });

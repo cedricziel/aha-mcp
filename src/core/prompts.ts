@@ -725,7 +725,7 @@ I can help you find and use Aha.io resources. Here's how to get started:
 - \`aha://products\` - List all products/workspaces
 - \`aha://features\` - Search features globally
 - \`aha://ideas\` - Search ideas and feedback
-- \`aha://releases\` - List releases/workstreams
+- \`aha://releases/{product_id}\` - List releases/workstreams for a product (get the id from \`aha://products\`)
 
 **Common Questions:**
 
@@ -736,7 +736,7 @@ A: Use \`aha://products\` - in Aha.io, products and workspaces are the same thin
 A: Product Areas are not currently exposed as resources. Use \`aha://products\` to access products, which may include area information in the response.
 
 **Q: "How do I find workstreams?"**
-A: Use \`aha://releases\` - releases function as workstreams for organizing work.
+A: Use \`aha://releases/{product_id}\` - releases function as workstreams for organizing work. Get the product id from \`aha://products\` first.
 
 **Resource Navigation Pattern:**
 1. Start with top-level resources (products, features, ideas, releases)
