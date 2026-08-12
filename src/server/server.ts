@@ -125,15 +125,17 @@ async function startServer() {
     });
 
     // Add health check tool
-    server.tool(
+    server.registerTool(
       "server_health_check",
-      "Get server health status and diagnostics",
-      {},
-      // openWorld: the check calls Aha's /me endpoint when credentials are present.
       {
-        title: "Check server health",
-        readOnlyHint: true,
-        openWorldHint: true,
+        description: "Get server health status and diagnostics",
+        inputSchema: {},
+        // openWorld: the check calls Aha's /me endpoint when credentials are present.
+        annotations: {
+          title: "Check server health",
+          readOnlyHint: true,
+          openWorldHint: true,
+        },
       },
       async () => {
         const healthCheck = await performHealthCheck();
@@ -147,14 +149,16 @@ async function startServer() {
     );
 
     // Add server status tool
-    server.tool(
+    server.registerTool(
       "server_status",
-      "Get detailed server status and configuration",
-      {},
       {
-        title: "Get server status",
-        readOnlyHint: true,
-        openWorldHint: false,
+        description: "Get detailed server status and configuration",
+        inputSchema: {},
+        annotations: {
+          title: "Get server status",
+          readOnlyHint: true,
+          openWorldHint: false,
+        },
       },
       async () => {
         updateServerStatus(serverStatus.status);
@@ -183,25 +187,27 @@ async function startServer() {
     );
 
     // Add configuration management tools
-    server.tool(
+    server.registerTool(
       "configure_server",
-      "Configure server settings (company, token, mode)",
       {
-        company: z.string().optional().describe("Aha.io company subdomain"),
-        token: z.string().optional().describe("Aha.io API token"),
-        // This previously read ["stdio", "sse"], so the recommended transport could not be
-        // configured through this tool at all, and the removed one still could.
-        mode: z.enum(["stdio", "streamable-http"]).optional().describe("Transport mode"),
-        port: z.number().optional().describe("Port number for the streamable-http transport"),
-        host: z.string().optional().describe("Host address for the streamable-http transport")
-      },
-      // non-destructive: only the fields supplied are merged into ~/.aha-mcp-config.json.
-      {
-        title: "Configure server",
-        readOnlyHint: false,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: false,
+        description: "Configure server settings (company, token, mode)",
+        inputSchema: {
+          company: z.string().optional().describe("Aha.io company subdomain"),
+          token: z.string().optional().describe("Aha.io API token"),
+          // This previously read ["stdio", "sse"], so the recommended transport could not be
+          // configured through this tool at all, and the removed one still could.
+          mode: z.enum(["stdio", "streamable-http"]).optional().describe("Transport mode"),
+          port: z.number().optional().describe("Port number for the streamable-http transport"),
+          host: z.string().optional().describe("Host address for the streamable-http transport")
+        },
+        // non-destructive: only the fields supplied are merged into ~/.aha-mcp-config.json.
+        annotations: {
+          title: "Configure server",
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       async (params) => {
         try {
@@ -245,14 +251,16 @@ async function startServer() {
       }
     );
 
-    server.tool(
+    server.registerTool(
       "get_server_config",
-      "Get current server configuration",
-      {},
       {
-        title: "Get server configuration",
-        readOnlyHint: true,
-        openWorldHint: false,
+        description: "Get current server configuration",
+        inputSchema: {},
+        annotations: {
+          title: "Get server configuration",
+          readOnlyHint: true,
+          openWorldHint: false,
+        },
       },
       async () => {
         const configSummary = ConfigService.getConfigSummary();
@@ -277,14 +285,16 @@ async function startServer() {
       }
     );
 
-    server.tool(
+    server.registerTool(
       "test_configuration",
-      "Test current Aha.io configuration",
-      {},
       {
-        title: "Test Aha.io configuration",
-        readOnlyHint: true,
-        openWorldHint: true,
+        description: "Test current Aha.io configuration",
+        inputSchema: {},
+        annotations: {
+          title: "Test Aha.io configuration",
+          readOnlyHint: true,
+          openWorldHint: true,
+        },
       },
       async () => {
         try {
