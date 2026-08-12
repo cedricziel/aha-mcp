@@ -16,3 +16,9 @@ package-lock.json
 *.dxt
 *.mcpb
 .dxt-cache/
+
+# scripts/bench/ derives from real Aha account data. Fixtures are captured locally to
+# ~/.cache/aha-mcp-bench/, never here; questions.json is generated from them by
+# `bun run bench:questions` and regenerated on demand, not committed.
+scripts/bench/fixtures/
+scripts/bench/questions.json
