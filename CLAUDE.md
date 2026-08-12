@@ -428,14 +428,49 @@ what it protects is Aha's API, which all sessions share. Default 120/minute, set
 
 #### Schema dialects
 
-Input and output schemas are advertised as draft-07, because `toJsonSchemaCompat` in the
-SDK converts Zod with a hardcoded `draft-7` target and never passes `target` for tools. The
-spec permits an explicit dialect and only *recommends* 2020-12, so this conforms; it changes
-when the SDK lets the target through, not before. Zero-argument tools use
-`z.strictObject({}).optional()` and emit no `$schema`, so they default to 2020-12 - and,
-unlike the raw `{}` shape they replaced, they accept a `tools/call` with `arguments` omitted
-entirely, which the spec allows. An e2e test pins the dialects so an SDK upgrade surfaces
-here rather than in a client.
+The SDK converts Zod with a hardcoded `draft-7` target and never passes `target` for tools
+(`toJsonSchemaCompat`), so everything it emits is labelled draft-07. The spec permits an
+explicit dialect and only *recommends* 2020-12 - but **"permitted" is not "accepted"**:
+Claude Code's validator implements the recommendation and nothing else, and refused *every
+tool on this server at once* with `invalid outputSchema: JSON Schema declares an unsupported
+dialect`. Reads, writes and the diagnostics tools all went with it, so there was no tool left
+to diagnose the server with. A dialect a client will not compile does not degrade a result, it
+removes the tool.
+
+So the two sides are advertised differently, and that asymmetry is deliberate:
+
+- **Output schemas are relabelled to 2020-12** by `installOutputSchemaDialect`
+  (`src/core/schema-dialect.ts`), installed in `startServer()` **before** any registration,
+  next to `installToolRateLimit` and for the same reason - it wraps `server.registerTool`, so
+  a tool registered ahead of it keeps the SDK default. It tags the registered schema with
+  Zod's `.meta({ $schema })`, which lands in the emitted document and overrides the target's
+  own `$schema`. That is what keeps this on the public registration API instead of patching
+  the SDK's private `tools/list` handler. `.meta()` clones rather than mutates, which is why
+  the tag belongs at registration and not beside each schema's definition: several output
+  schemas nest inside others (`keyResultOutputSchema` inside `keyResultsListOutputSchema`),
+  and a nested subschema carrying its own `$schema` is meaningless.
+- **Input schemas stay on draft-07.** Every client measured accepts them, and relabelling a
+  dialect nothing has rejected would be a change with no evidence behind it. An e2e assertion
+  pins both sides so they cannot drift silently.
+
+**The relabel is verified, not asserted.** `schema-dialect.test.ts` compares the advertised
+document for all 19 output schemas against `z.toJSONSchema(schema, { target: 'draft-2020-12',
+io: 'output' })` and requires them equal - today every body is byte-identical between the two
+targets, so the label is true rather than optimistic. If a future field makes them diverge
+(tuples emit `items` vs `prefixItems`, definitions `definitions` vs `$defs`) that test fails,
+and the fix at that point is converting at the right target, not loosening the comparison.
+Relabelling stays safe for the SDK's own client, which compiles the advertised schema with
+draft-07 Ajv at `validateSchema: false` and accepts a 2020-12 label - fixing one client by
+breaking another is not a fix, so a real call through a real client is part of that test file.
+
+An `outputSchema` given as a raw Zod shape has no `.meta()` to tag and keeps the draft-07
+label, with a warning: wrapping the shape here would change its `additionalProperties`
+semantics to fix a dialect. The e2e assertion over the real tool list is what stops that
+passing unnoticed.
+
+Zero-argument tools use `z.strictObject({}).optional()` and emit no `$schema`, so they default
+to 2020-12 - and, unlike the raw `{}` shape they replaced, they accept a `tools/call` with
+`arguments` omitted entirely, which the spec allows.
 
 ### Resources
 

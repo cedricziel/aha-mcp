@@ -252,6 +252,18 @@ describe('E2E Streamable HTTP Transport', () => {
           // MUST be a valid schema object with an object root.
           expect((tool.inputSchema as any).type).toBe('object');
         }
+
+        // Output schemas are relabelled to 2020-12 by installOutputSchemaDialect, because a
+        // validator implementing only the recommended dialect rejects the tool outright rather
+        // than degrading - which is what happened in Claude Code, to every tool at once. Run
+        // over the spawned server so the tools registered in server.ts (server_status and the
+        // configuration tools) are covered too, not just the ones registerTools adds.
+        const outputDialects = tools.map(t => ({
+          name: t.name,
+          dialect: (t.outputSchema as any)?.$schema
+        }));
+        expect(outputDialects.filter(t => t.dialect !== 'https://json-schema.org/draft/2020-12/schema'))
+          .toEqual([]);
       });
     }, 30000);
 
