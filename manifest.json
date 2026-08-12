@@ -4,7 +4,7 @@
   "display_name": "Aha.io MCP Server",
   "version": "0.9.0",
   "description": "Model Context Protocol server for Aha.io product management platform",
-  "long_description": "A comprehensive MCP server that provides seamless integration with Aha.io's API. This extension enables AI assistants to interact with Aha.io workspaces, manage features, ideas, epics, initiatives, competitors and more, with 49 tools, 15 resources and 14 guided prompts.\n\nNote: the local-cache features (the `aha_sync_*` tools and the embedding/semantic-search tools) need the native `sqlite3` module, which is not bundled in this extension. Everything else works out of the box; install the server from npm (`npx @cedricziel/aha-mcp`) or run the Docker image if you need the cache and semantic search.",
+  "long_description": "A comprehensive MCP server that provides seamless integration with Aha.io's API. This extension enables AI assistants to interact with Aha.io workspaces, manage features, ideas, epics, initiatives, competitors and more, with 30 tools, 15 resources and 14 guided prompts.\n\nAll tools query Aha.io directly, so results are always current and nothing is cached locally. The optional local-cache features (the `aha_sync_*` tools and the embedding/semantic-search tools) are disabled here: they require the native `sqlite3` module, which is not bundled in an extension, and a writable data directory. If you need them, install the server from npm (`npx @cedricziel/aha-mcp`) or run the Docker image and set `AHA_ENABLE_LOCAL_CACHE=true`.",
   "author": {
     "name": "Cedric Ziel",
     "email": "mail@cedric-ziel.com",
@@ -107,10 +107,6 @@
       "description": "Delete a competitor in Aha.io"
     },
     {
-      "name": "aha_delete_entity_embedding",
-      "description": "Delete the stored vector embedding for a specific entity"
-    },
-    {
       "name": "aha_delete_epic",
       "description": "Delete an epic in Aha.io"
     },
@@ -123,76 +119,8 @@
       "description": "Delete an idea in Aha.io"
     },
     {
-      "name": "aha_embedding_status",
-      "description": "Get the status and progress of embedding generation jobs"
-    },
-    {
-      "name": "aha_find_similar",
-      "description": "Find entities similar to a specific entity using embeddings"
-    },
-    {
-      "name": "aha_generate_embeddings",
-      "description": "Generate vector embeddings for specified Aha entities to enable semantic search"
-    },
-    {
-      "name": "aha_generate_entity_embedding",
-      "description": "Generate an embedding for a specific entity by ID"
-    },
-    {
-      "name": "aha_get_entity_embedding",
-      "description": "Retrieve the stored vector embedding for a specific entity"
-    },
-    {
       "name": "aha_move_feature_to_release",
       "description": "Move a feature to a different release in Aha.io"
-    },
-    {
-      "name": "aha_pause_embeddings",
-      "description": "Pause a running embedding generation job"
-    },
-    {
-      "name": "aha_semantic_search",
-      "description": "Search for Aha entities using semantic similarity (vector embeddings)"
-    },
-    {
-      "name": "aha_stop_embeddings",
-      "description": "Stop an embedding generation job completely"
-    },
-    {
-      "name": "aha_sync_cleanup",
-      "description": "Clean up old completed/failed sync jobs and optimize database"
-    },
-    {
-      "name": "aha_sync_config",
-      "description": "View or update sync configuration settings"
-    },
-    {
-      "name": "aha_sync_entity",
-      "description": "Quickly sync a specific entity by ID (bypasses background queue)"
-    },
-    {
-      "name": "aha_sync_health",
-      "description": "Get comprehensive health status of the sync system, database, and cached data"
-    },
-    {
-      "name": "aha_sync_history",
-      "description": "Get detailed history and logs for a specific sync job or recent sync activities"
-    },
-    {
-      "name": "aha_sync_pause",
-      "description": "Pause a running background sync operation"
-    },
-    {
-      "name": "aha_sync_start",
-      "description": "Start a background synchronization for specified Aha entity types"
-    },
-    {
-      "name": "aha_sync_status",
-      "description": "Get current status of all sync operations including progress, active jobs, and recent history"
-    },
-    {
-      "name": "aha_sync_stop",
-      "description": "Stop a background sync operation completely"
     },
     {
       "name": "aha_update_competitor",
@@ -221,10 +149,6 @@
     {
       "name": "aha_update_feature_tags",
       "description": "Update tags for a feature in Aha.io"
-    },
-    {
-      "name": "aha_vector_status",
-      "description": "Check if vector operations are available and view vector storage statistics"
     },
     {
       "name": "configure_server",

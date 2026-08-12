@@ -2,6 +2,7 @@ import type sqlite3 from 'sqlite3';
 import type { Database } from 'sqlite';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { homedir } from 'os';
 import { fileURLToPath } from 'url';
 import { log } from '../logger.js';
 
@@ -94,6 +95,25 @@ export interface SearchResult {
 }
 
 /**
+ * Where the local cache lives.
+ *
+ * This used to be `process.cwd()/data`, which only worked when the server happened to be
+ * started from the project root (or from /app in the Docker image). A Claude Desktop
+ * extension is launched with cwd `/`, so every sync and embedding call failed with
+ * "ENOENT: no such file or directory, mkdir '/data'".
+ *
+ * Resolution order:
+ *  - AHA_MCP_DATA_DIR, for deployments that mount a specific volume
+ *  - MCP_CONFIG_DIR, already set by the Docker image
+ *  - ~/.aha-mcp/, which is writable for a desktop or npx install
+ */
+export function defaultDatabasePath(): string {
+  const explicitDir = process.env.AHA_MCP_DATA_DIR || process.env.MCP_CONFIG_DIR;
+  const baseDir = explicitDir ? explicitDir : path.join(homedir(), '.aha-mcp');
+  return path.join(baseDir, 'aha-mcp.db');
+}
+
+/**
  * Database service for Aha MCP Server with SQLite and vector embeddings
  */
 export class DatabaseService {
@@ -103,8 +123,7 @@ export class DatabaseService {
   private vectorEnabled = false;
 
   constructor(dbPath?: string) {
-    // Default to data directory in project root
-    this.dbPath = dbPath || path.join(process.cwd(), 'data', 'aha-mcp.db');
+    this.dbPath = dbPath || defaultDatabasePath();
   }
 
   /**

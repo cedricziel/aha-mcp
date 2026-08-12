@@ -27,6 +27,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `src/core/uri-template.ts` vendors the still-unmerged upstream fix from
   modelcontextprotocol/typescript-sdk#1083. Delete it once that lands, not before -
   without it, resource URIs carrying query parameters do not match.
+- The cache path must never be derived from `process.cwd()`. It used to be, and a desktop
+  extension (cwd `/`) failed every sync with `ENOENT: mkdir '/data'`. Use
+  `defaultDatabasePath()`.
+- `manifest.json`'s tool list must match the *default* surface (currently 30), not the
+  full set. Regenerate it from a running server with the local cache disabled, and keep
+  prompts as `prompts_generated: true` - the schema requires a `text` field on any
+  statically declared prompt, which the server generates at runtime instead.
+- `aha_semantic_search` is not semantic: `generateSimpleEmbedding()` hashes character codes
+  through `Math.sin()`. Do not describe it as embedding- or transformer-based. Aha's own
+  `searchDocuments` GraphQL query at `POST /api/v2/graphql` is the real search facility.
 
 ## Runtime Configuration
 
@@ -114,7 +124,9 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
 
 - **AhaService**: Singleton service class that wraps the `aha-js` library for API interactions
 - **ConfigService**: Manages runtime configuration with file persistence and validation
-- **Tools**: 49 MCP tools for Aha.io operations (CRUD, sync, embeddings, health checks, configuration)
+- **Tools**: 30 MCP tools enabled by default (CRUD, health checks, configuration), plus 19
+  sync/embedding tools gated behind `AHA_ENABLE_LOCAL_CACHE=true` (see `isLocalCacheEnabled()`
+  in `src/core/tools.ts`)
 - **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes
 - **Prompts**: 14 domain-specific workflow prompts with context-aware responses
 - **Authentication**: Runtime configuration with environment variables and config file support

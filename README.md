@@ -14,9 +14,9 @@ Download `aha-mcp-v<version>.mcpb` from the [latest release](https://github.com/
 and open it with Claude Desktop, which will prompt you for your Aha.io subdomain and API
 token. No Node.js or Docker setup and no manual JSON editing required.
 
-The extension bundles the server itself but not the native `sqlite3` module, so the
-local-cache tools (`aha_sync_*`) and the embedding/semantic-search tools are unavailable
-inside it. Everything else works; use the npx or Docker setup below if you need those.
+The extension exposes 30 tools that query Aha.io directly, so results are always current.
+The optional local-cache tools (`aha_sync_*`) and embedding/semantic-search tools are
+disabled by default — see [Local cache and semantic search](#local-cache-and-semantic-search).
 
 ### Claude Desktop Configuration
 
@@ -645,19 +645,47 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 - **Comprehensive Entity Coverage**: Full CRUD operations for features, epics, ideas, and competitors
 
 #### Technical Achievements
-- **49 total MCP tools** (comprehensive Aha.io integration + sync + embeddings + config)
-- **50 total MCP resources** (complete entity coverage)
-- **13 domain-specific prompts** (workflow automation)
+- **30 MCP tools enabled by default**, all querying Aha.io directly
+- **19 further tools** behind the opt-in local cache (9 sync, 10 embedding)
+- **15 listed MCP resources** covering the entity set, plus templated resource URIs
+- **14 domain-specific prompts** (workflow automation)
 - **25 core CRUD and write operation tools** for complete lifecycle management
-- **9 sync & database tools** for offline data management
-- **10 embedding & semantic search tools** for AI-powered content discovery
 - **5 server configuration tools** for runtime configuration
-- **209 tests passing** with comprehensive service coverage
-- **SQLite database with vector extensions** for high-performance local storage
+- **345 tests passing** with comprehensive service coverage
 - **Background job processing** with real-time progress tracking
-- **Semantic search capabilities** using transformer models
 - **Comprehensive error handling** with proper Zod schema validation
-- **Professional-grade implementation** following MCP best practices
+
+## 🔍 Local cache and semantic search
+
+The `aha_sync_*` and embedding tools keep a local SQLite copy of your Aha data. They are
+**disabled by default** and must be enabled explicitly:
+
+```bash
+export AHA_ENABLE_LOCAL_CACHE=true
+```
+
+Two reasons they are opt-in:
+
+1. **They need infrastructure that is not always present** — the native `sqlite3` module
+   (deliberately not bundled in the desktop extension) and a writable data directory.
+2. **`aha_semantic_search` is not currently semantic.** The embedding function is a
+   placeholder that hashes character codes through `Math.sin()`; it carries no meaning, so
+   similarity scores are not meaningful. Treat these tools as unfinished.
+
+The cache location is resolved from `AHA_MCP_DATA_DIR`, then `MCP_CONFIG_DIR`, then
+`~/.aha-mcp/`. It is never derived from the working directory.
+
+### Searching Aha without the cache
+
+Aha.io provides server-side search, which needs no sync and is always current:
+
+| What | Endpoint | Searches |
+|------|----------|----------|
+| Global search | `POST /api/v2/graphql` — `searchDocuments(filters: {query, searchableType})` | Names and descriptions across record types; supports `*` prefix and `AND`/`OR`/`NOT` |
+| Idea search | `GET /api/v1/ideas/related?q=` | Idea name, description, ID |
+| Per-entity filter | `GET /api/v1/features?q=` | **Name only** |
+
+Aha also hosts its own MCP server at `https://<yourcompany>.aha.io/api/v1/mcp`.
 
 ## 🛠️ Adding Custom Tools and Resources
 
