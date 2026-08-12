@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { toMcpError } from "./services/aha-errors.js";
 import { ResourceTemplate } from "./uri-template.js";
 import type { ServerRequest, ServerNotification } from "@modelcontextprotocol/sdk/types.js";
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
@@ -113,7 +114,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving idea ${id}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -152,7 +153,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving feature ${id}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -190,7 +191,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving user ${id}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -228,7 +229,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving epic ${id}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -258,7 +259,7 @@ export function registerResources(server: McpServer) {
       };
     } catch (error) {
       console.error(`Error retrieving features list:`, error);
-      throw error;
+      throw toMcpError(error, uri.toString());
     }
   };
 
@@ -318,7 +319,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving users list:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -360,7 +361,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving epics list for product ${productId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -398,7 +399,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving product ${id}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -425,7 +426,7 @@ export function registerResources(server: McpServer) {
       };
     } catch (error) {
       console.error(`Error retrieving products list:`, error);
-      throw error;
+      throw toMcpError(error, uri.toString());
     }
   };
 
@@ -497,7 +498,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving initiative ${id}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -531,7 +532,7 @@ export function registerResources(server: McpServer) {
       };
     } catch (error) {
       console.error(`Error retrieving initiatives list:`, error);
-      throw error;
+      throw toMcpError(error, uri.toString());
     }
   };
 
@@ -633,7 +634,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving ideas list for product ${productId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -675,7 +676,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving comments for epic ${epicId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -717,7 +718,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving comments for idea ${ideaId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -759,7 +760,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving comments for initiative ${initiativeId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -801,7 +802,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving comments for product ${productId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -843,7 +844,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving comments for goal ${goalId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -885,7 +886,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving comments for release ${releaseId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -927,7 +928,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving comments for release phase ${releasePhaseId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -969,7 +970,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving comments for requirement ${requirementId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1011,7 +1012,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving comments for todo ${todoId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1049,7 +1050,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving goal ${id}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1079,7 +1080,7 @@ export function registerResources(server: McpServer) {
       };
     } catch (error) {
       console.error(`Error retrieving goals list:`, error);
-      throw error;
+      throw toMcpError(error, uri.toString());
     }
   };
 
@@ -1155,7 +1156,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving epics for goal ${goalId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1193,7 +1194,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving release ${id}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1228,7 +1229,7 @@ export function registerResources(server: McpServer) {
       };
     } catch (error) {
       console.error(`Error retrieving releases list:`, error);
-      throw error;
+      throw toMcpError(error, uri.toString());
     }
   };
 
@@ -1305,7 +1306,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving features for release ${releaseId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1347,7 +1348,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving epics for release ${releaseId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1385,7 +1386,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving release phase ${id}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1411,7 +1412,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving release phases list:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1449,7 +1450,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving requirement ${id}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1487,7 +1488,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving competitor ${id}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1525,7 +1526,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving todo ${id}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1563,7 +1564,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving competitors for product ${productId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1601,7 +1602,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving strategic model ${id}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1629,7 +1630,7 @@ export function registerResources(server: McpServer) {
       };
     } catch (error) {
       console.error('Error retrieving strategic models list:', error);
-      throw error;
+      throw toMcpError(error, uri.toString());
     }
   };
 
@@ -1688,7 +1689,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error('Error retrieving todos list:', error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1726,7 +1727,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving idea organization ${id}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1753,7 +1754,7 @@ export function registerResources(server: McpServer) {
       };
     } catch (error) {
       console.error('Error retrieving idea organizations list:', error);
-      throw error;
+      throw toMcpError(error, uri.toString());
     }
   };
 
@@ -1812,7 +1813,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error('Error retrieving user profile:', error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1837,7 +1838,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error('Error retrieving assigned records:', error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1862,7 +1863,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error('Error retrieving pending tasks:', error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1914,7 +1915,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving endorsements for idea ${ideaId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -1961,7 +1962,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving votes for idea ${ideaId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -2002,7 +2003,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving watchers for idea ${ideaId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -2051,7 +2052,7 @@ export function registerResources(server: McpServer) {
       };
     } catch (error) {
       console.error('Error retrieving global ideas list:', error);
-      throw error;
+      throw toMcpError(error, uri.toString());
     }
   };
 
@@ -2143,7 +2144,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving releases list for product ${productId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -2185,7 +2186,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving epics for initiative ${initiativeId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -2211,7 +2212,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error('Error retrieving custom fields list:', error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );
@@ -2253,7 +2254,7 @@ export function registerResources(server: McpServer) {
         };
       } catch (error) {
         console.error(`Error retrieving options for custom field ${customFieldId}:`, error);
-        throw error;
+        throw toMcpError(error, uri.toString());
       }
     }
   );

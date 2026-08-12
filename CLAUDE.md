@@ -61,6 +61,26 @@ A previous local-cache implementation (SQLite plus a placeholder embedding that 
 character codes through `Math.sin()`) was removed in favour of this. Do not reintroduce
 client-side "semantic" ranking without a real embedding model.
 
+### Error handling
+
+Aha's REST failures are mapped by `src/core/services/aha-errors.ts` rather than surfaced
+raw. `aha-js` throws axios errors whose message is `Request failed with status code 403`,
+which names neither what was refused nor why, and reads like a bug in this server.
+
+- Tools call `describeAhaError(error)` in their catch branch. The existing per-tool prefix
+  already names the operation, so the mapper only explains the status.
+- Resources throw `toMcpError(error, uri.toString())`. A record the token cannot reach is
+  `InvalidParams` (-32602), matching the SDK's own code for an unrecognised URI; only
+  genuine server-side or unclassified failures stay `InternalError` (-32603). Letting a raw
+  error escape produced -32603 for everything, which claims a server bug for what is
+  usually a permissions problem.
+- **404 must not be reported as "does not exist".** Aha returns 404 both for a missing
+  record and for one the token cannot see, so the message says so. Do not tighten it.
+- Errors this server raises itself (missing credentials and the like) pass through
+  untouched - they already say what to do.
+- Nothing retries. A 429 is reported with Aha's `retry_after` and the documented limits;
+  whether to wait belongs to the caller.
+
 ## Runtime Configuration
 
 The server supports runtime configuration through three key parameters:

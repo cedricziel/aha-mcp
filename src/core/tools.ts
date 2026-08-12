@@ -3,6 +3,7 @@ import * as z from "zod/v4";
 import * as services from "./services/index.js";
 import { registerSearchTools } from "./tools/search-tools.js";
 import { log } from "./logger.js";
+import { describeAhaError } from "./services/aha-errors.js";
 
 /**
  * Register all tools with the MCP server
@@ -45,7 +46,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error creating comment: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error creating comment: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -92,7 +93,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error associating feature with epic: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error associating feature with epic: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -135,7 +136,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error moving feature to release: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error moving feature to release: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -179,7 +180,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error associating feature with goals: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error associating feature with goals: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -223,7 +224,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error updating feature tags: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error updating feature tags: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -271,7 +272,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error creating epic in product: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error creating epic in product: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -319,7 +320,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error creating epic in release: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error creating epic in release: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -367,7 +368,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error creating initiative in product: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error creating initiative in product: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -419,7 +420,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error creating feature: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error creating feature: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -467,7 +468,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error updating feature: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error updating feature: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -509,7 +510,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error deleting feature: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error deleting feature: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -552,7 +553,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error updating feature progress: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error updating feature progress: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -595,7 +596,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error updating feature score: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error updating feature score: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -642,7 +643,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error updating feature custom fields: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error updating feature custom fields: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -694,7 +695,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error updating epic: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error updating epic: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -736,7 +737,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error deleting epic: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error deleting epic: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -789,7 +790,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error creating idea: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error creating idea: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -839,7 +840,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error creating idea with category: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error creating idea with category: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -889,7 +890,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error creating idea with score: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error creating idea with score: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -931,7 +932,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error deleting idea: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error deleting idea: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -984,7 +985,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error creating competitor: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error creating competitor: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -1033,7 +1034,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error updating competitor: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error updating competitor: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -1075,7 +1076,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error deleting competitor: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error deleting competitor: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -1137,7 +1138,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error creating idea by portal user: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error creating idea by portal user: ${describeAhaError(error)}`
             }
           ],
           isError: true
@@ -1189,7 +1190,7 @@ export function registerTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Error creating idea with portal settings: ${error instanceof Error ? error.message : String(error)}`
+              text: `Error creating idea with portal settings: ${describeAhaError(error)}`
             }
           ],
           isError: true
