@@ -52,7 +52,11 @@ export class TokenBucket {
    */
   public take(): number | null {
     const now = this.now();
-    this.tokens = Math.min(this.capacity, this.tokens + (now - this.lastRefill) * this.refillPerMs);
+    // Clamped: `Date.now()` can move backward across an NTP correction, and a negative
+    // elapsed time would subtract tokens rather than add them, locking callers out until the
+    // bucket recovered.
+    const elapsed = Math.max(0, now - this.lastRefill);
+    this.tokens = Math.min(this.capacity, this.tokens + elapsed * this.refillPerMs);
     this.lastRefill = now;
 
     if (this.tokens >= 1) {
@@ -75,15 +79,19 @@ export function configuredRateLimit(env: Record<string, string | undefined> = pr
   if (raw === undefined || raw.trim() === '') return DEFAULT_RATE_LIMIT_PER_MINUTE;
 
   const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed < 0) {
+  // Integers only. Flooring a fractional value used to turn `0.5` into `0`, and `0` is the
+  // documented way to disable rate limiting entirely - so a typo silently removed the limit
+  // while skipping the warning below.
+  if (!Number.isInteger(parsed) || parsed < 0) {
     log.warn('Ignoring invalid MCP_TOOL_RATE_LIMIT_PER_MINUTE', {
       value: raw,
+      reason: Number.isFinite(parsed) ? 'expected a non-negative whole number' : 'not a number',
       using: DEFAULT_RATE_LIMIT_PER_MINUTE
     });
     return DEFAULT_RATE_LIMIT_PER_MINUTE;
   }
 
-  return Math.floor(parsed);
+  return parsed;
 }
 
 /**

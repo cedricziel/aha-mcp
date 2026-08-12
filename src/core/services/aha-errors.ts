@@ -1,4 +1,5 @@
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
+import { log } from "../logger.js";
 
 /**
  * Turning Aha's REST failures into something a caller can act on.
@@ -49,6 +50,24 @@ function isTransportFailure(error: unknown): boolean {
 
 function fallbackMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * A local system error - `EACCES` writing the config file, and the like.
+ *
+ * These are the one class whose message is worth withholding: a syscall error carries the
+ * filesystem path it failed on, which a remote client over streamable-http has no business
+ * seeing and cannot act on anyway. Everything else reaching `fallbackMessage` is authored in
+ * this codebase and says something useful, so it is passed through - a blanket redaction
+ * would make `configure_server` undebuggable.
+ */
+function systemErrorCode(error: unknown): string | null {
+  const candidate = error as { code?: unknown; syscall?: unknown } | null;
+  if (!candidate || typeof candidate !== "object") return null;
+
+  const { code, syscall } = candidate;
+  const looksLikeSyscall = typeof code === "string" && /^E[A-Z]+$/.test(code) && typeof syscall === "string";
+  return looksLikeSyscall ? code : null;
 }
 
 /**
@@ -117,6 +136,19 @@ export function describeAhaError(error: unknown, subject?: string): string {
     return (
       `Could not reach Aha.io: ${fallbackMessage(error)}. Check network access and that the ` +
       "configured company subdomain is right."
+    );
+  }
+
+  const systemCode = systemErrorCode(error);
+  if (systemCode) {
+    // Logged rather than returned, so the detail survives for whoever runs the server.
+    log.error("Local system error while serving a request", error as Error, {
+      operation: "describeAhaError",
+      system_error_code: systemCode
+    });
+    return (
+      `The server hit a local system error (${systemCode}) while handling this. The detail is ` +
+      "in the server log."
     );
   }
 

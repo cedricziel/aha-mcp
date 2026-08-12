@@ -165,3 +165,35 @@ describe('installToolRateLimit', () => {
     expect(result.structuredContent).toEqual({ value: 'through' });
   });
 });
+
+describe('robustness of the limiter against its inputs', () => {
+  it('does not drain the bucket when the clock moves backward', () => {
+    // An NTP correction mid-run used to make elapsed time negative, subtracting tokens.
+    let now = 1_000_000;
+    const bucket = new TokenBucket({ perMinute: 60, now: () => now });
+
+    expect(bucket.take()).toBeNull();
+    now -= 30_000; // clock corrected backwards
+    expect(bucket.take()).toBeNull();
+    expect(bucket.take()).toBeNull();
+  });
+
+  it('rejects a fractional limit instead of flooring it to "disabled"', () => {
+    // 0.5 used to floor to 0, and 0 is the documented way to switch rate limiting off - so a
+    // typo silently removed the limit, skipping the warning too.
+    expect(configuredRateLimit({ MCP_TOOL_RATE_LIMIT_PER_MINUTE: '0.5' })).toBe(
+      DEFAULT_RATE_LIMIT_PER_MINUTE
+    );
+    expect(configuredRateLimit({ MCP_TOOL_RATE_LIMIT_PER_MINUTE: '119.9' })).toBe(
+      DEFAULT_RATE_LIMIT_PER_MINUTE
+    );
+  });
+
+  it('still honours an explicit 0 as "disabled"', () => {
+    expect(configuredRateLimit({ MCP_TOOL_RATE_LIMIT_PER_MINUTE: '0' })).toBe(0);
+  });
+
+  it('still accepts a whole number', () => {
+    expect(configuredRateLimit({ MCP_TOOL_RATE_LIMIT_PER_MINUTE: '42' })).toBe(42);
+  });
+});
