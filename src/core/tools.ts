@@ -611,7 +611,11 @@ export function registerTools(server: McpServer) {
       description: "Update a feature's custom fields in Aha.io",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
-        customFields: z.object({}).describe("Custom fields data")
+        // Not z.object({}): zod strips keys a shape does not declare, so every custom field
+        // sent by the caller was discarded before the handler ever saw it.
+        customFields: z.record(z.string(), z.any()).describe(
+          "Custom fields as a key/value object, keyed by the custom field's API key"
+        )
       },
       annotations: {
         title: "Update feature custom fields",
@@ -621,15 +625,15 @@ export function registerTools(server: McpServer) {
         openWorldHint: true,
       },
     },
-    async (params: { featureId: string; customFields: any }) => {
+    async (params: { featureId: string; customFields: Record<string, any> }) => {
       try {
-        await services.AhaService.updateFeatureCustomFields(params.featureId, params.customFields);
+        const feature = await services.AhaService.updateFeatureCustomFields(params.featureId, params.customFields);
 
         return {
           content: [
             {
               type: "text",
-              text: `Feature ${params.featureId} custom fields successfully updated`
+              text: `Feature ${params.featureId} custom fields updated:\n\n${JSON.stringify(feature, null, 2)}`
             }
           ]
         };
