@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "aha-mcp",
   "display_name": "Aha.io MCP Server",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "description": "Model Context Protocol server for Aha.io product management platform",
   "long_description": "A comprehensive MCP server that provides seamless integration with Aha.io's API. This extension enables AI assistants to search and manage Aha.io records - ideas, features, epics, initiatives, goals, requirements, releases and competitors - with 39 tools, 17 resources and 17 guided prompts.\n\nSearch is served by Aha.io's own index via aha_search, so results are always current and nothing is cached locally. Search returns names, types and links; aha_get_feature and its siblings return a full record - workflow status, release, assignee and custom field values - so a change can be checked against what the record says now. Comments are readable and writable on every record type that supports them, and an idea's ideas-portal conversation is handled as its own stream - so a customer's own words are visible, and a reply can be aimed at portal users or kept to employees. Every tool queries Aha.io directly; the extension stores no data and needs no native dependencies.",
   "author": {
