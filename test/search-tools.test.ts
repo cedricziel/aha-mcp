@@ -121,6 +121,12 @@ describe('aha_search', () => {
     expect((await call(await connected([one]))).content[0].text).toContain(' - 1 vote');
   });
 
+  // Only reachable when the two disagree, which is the branch that keeps both numbers.
+  it('says "1 endorsement" rather than "1 endorsements"', async () => {
+    const one = { ...idea, searchable: { ...idea.searchable, votes: 4, numEndorsements: 1 } };
+    expect((await call(await connected([one]))).content[0].text).toContain(' - 4 votes, 1 endorsement');
+  });
+
   /**
    * Every idea on the account probed scored exactly 20 - one distinct value across 200 - so
    * the score ranks nothing there and would only take room in a line a person reads.

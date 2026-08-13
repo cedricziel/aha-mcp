@@ -95,7 +95,9 @@ function demand(hit: SearchHitPayload): string {
 
   const parts: string[] = [];
   if (typeof votes === "number") parts.push(`${votes} ${votes === 1 ? "vote" : "votes"}`);
-  if (typeof endorsements === "number") parts.push(`${endorsements} endorsements`);
+  if (typeof endorsements === "number") {
+    parts.push(`${endorsements} ${endorsements === 1 ? "endorsement" : "endorsements"}`);
+  }
   return ` - ${parts.join(", ")}`;
 }
 
