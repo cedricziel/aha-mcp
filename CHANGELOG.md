@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v5.1.0...aha-mcp-v5.2.0) (2026-08-13)
+
+
+### Features
+
+* carry reference numbers, votes and links on search hits ([#333](https://github.com/cedricziel/aha-mcp/issues/333)) ([542ffba](https://github.com/cedricziel/aha-mcp/commit/542ffba734e032825182b4efcbf9547dbd2b19a9))
+
 ## [5.1.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v5.0.1...aha-mcp-v5.1.0) (2026-08-12)
 
 

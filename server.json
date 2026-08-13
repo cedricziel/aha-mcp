@@ -3,7 +3,7 @@
   "name": "io.github.cedricziel/aha-mcp",
   "title": "Aha.io",
   "description": "Search, read and update Aha.io ideas, features, epics, releases, goals and comments",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "repository": {
     "url": "https://github.com/cedricziel/aha-mcp",
     "source": "github"
@@ -19,7 +19,7 @@
     {
       "registryType": "npm",
       "identifier": "@cedricziel/aha-mcp",
-      "version": "5.1.0",
+      "version": "5.2.0",
       "transport": {
         "type": "stdio"
       },
