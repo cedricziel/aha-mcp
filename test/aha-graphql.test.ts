@@ -260,6 +260,131 @@ describe('AhaGraphQLClient', () => {
     });
   });
 
+  /**
+   * Per-record fields reached through `searchable`. A hit's own fields carry no reference
+   * number, so before this an agent's only human-readable identifier was the tail of the url
+   * path - and a truncated one (`I-9930` for `IDEASVOC-I-9930`) 404s on every subsequent read.
+   */
+  describe('per-record enrichment', () => {
+    const enriched = (searchable: unknown) =>
+      page({
+        nodes: [
+          {
+            name: 'Support Otel HTTP Metrics in App-O11y',
+            searchableId: '7615609440903611104',
+            searchableType: 'Idea',
+            projectId: 'p1',
+            url: '/ideas/ideas/IDEASVOC-I-9930',
+            updatedAt: '2026-08-01T00:00:00Z',
+            searchable
+          }
+        ]
+      });
+
+    it('asks for the reference number through the searchable union', async () => {
+      const { client, calls } = stub(page());
+      await client.searchDocuments({ query: 'otel' });
+
+      expect(calls[0].body.query).toContain('searchable {');
+      expect(calls[0].body.query).toContain('... on ReferenceInterface { referenceNum }');
+    });
+
+    /**
+     * Goal, Initiative and Task declare `referenceNum` without implementing
+     * `ReferenceInterface`, and the interface fragment returns null for them rather than
+     * failing - so the miss would be silent. Measured against a live account.
+     */
+    it('asks the three types the interface does not cover explicitly', async () => {
+      const { client, calls } = stub(page());
+      await client.searchDocuments({ query: 'otel' });
+
+      for (const type of ['Goal', 'Initiative', 'Task']) {
+        expect(calls[0].body.query).toContain(`... on ${type} { referenceNum }`);
+      }
+    });
+
+    it('flattens the per-record fields into the hit', async () => {
+      const { client } = stub(
+        enriched({ __typename: 'Idea', referenceNum: 'IDEASVOC-I-9930', score: 12.5, votes: 7, numEndorsements: 3 })
+      );
+      const hit = (await client.searchDocuments({ query: 'otel' })).results[0];
+
+      expect(hit.referenceNum).toBe('IDEASVOC-I-9930');
+      expect(hit.votes).toBe(7);
+      expect(hit.endorsements).toBe(3);
+      expect(hit.score).toBe(12.5);
+      // The nesting is an artefact of how the fields have to be asked for.
+      expect(hit).not.toHaveProperty('searchable');
+    });
+
+    it('reports a type with no votes as null rather than zero', async () => {
+      const { client } = stub(enriched({ __typename: 'Feature', referenceNum: 'APPO11Y-43', score: 4 }));
+      const hit = (await client.searchDocuments({ query: 'otel' })).results[0];
+
+      expect(hit.referenceNum).toBe('APPO11Y-43');
+      // A feature has no portal votes at all; zero would claim it has none of them.
+      expect(hit.votes).toBeNull();
+      expect(hit.endorsements).toBeNull();
+    });
+
+    it('keeps a zero vote count, which is not the same as having no votes field', async () => {
+      const { client } = stub(enriched({ __typename: 'Idea', referenceNum: 'IDEASVOC-I-1', votes: 0 }));
+      expect((await client.searchDocuments({ query: 'otel' })).results[0].votes).toBe(0);
+    });
+
+    it('nulls every enrichment field when a hit carries no searchable', async () => {
+      const { client } = stub(page());
+      const hit = (await client.searchDocuments({ query: 'otel' })).results[0];
+
+      expect(hit.referenceNum).toBeNull();
+      expect(hit.score).toBeNull();
+      expect(hit.votes).toBeNull();
+    });
+
+    /**
+     * Aha validates the enriched query server-side and rarely gives up: one attempt in
+     * roughly twenty answered HTTP 200 with `Timeout on validation of query`. Enrichment is
+     * not worth failing a search over.
+     */
+    it('falls back to the unenriched query when Aha rejects the enriched one', async () => {
+      const calls: { query: string }[] = [];
+      const client = new AhaGraphQLClient({
+        credentials: () => ({ subdomain: 'acme', accessToken: 'tok' }),
+        fetchImpl: async (_url, init) => {
+          const body = JSON.parse(String(init.body));
+          calls.push({ query: body.query });
+          const failing = body.query.includes('searchable {');
+          return new Response(
+            JSON.stringify(failing ? { errors: [{ message: 'Timeout on validation of query' }] } : page()),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+      });
+
+      const r = await client.searchDocuments({ query: 'otel' });
+
+      expect(calls).toHaveLength(2);
+      expect(calls[1].query).not.toContain('searchable {');
+      // The hits still arrive; only the per-record fields are missing.
+      expect(r.results[0].name).toBe('Alerting: silence by label');
+      expect(r.results[0].referenceNum).toBeNull();
+    });
+
+    it('does not retry a rejected token, which fewer fields cannot fix', async () => {
+      const calls: string[] = [];
+      const client = new AhaGraphQLClient({
+        credentials: () => ({ subdomain: 'acme', accessToken: 'tok' }),
+        fetchImpl: async (_url, init) => {
+          calls.push(JSON.parse(String(init.body)).query);
+          return new Response('{}', { status: 401 });
+        }
+      });
+
+      await expect(client.searchDocuments({ query: 'otel' })).rejects.toThrow(/401/);
+      expect(calls).toHaveLength(1);
+    });
+  });
+
   describe('record links', () => {
     const withUrl = (url: unknown) =>
       page({
