@@ -34,7 +34,7 @@
 
     "@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@7.29.7", "", {}, "sha512-qehxGkRj55h/ff8EMaJ+cYhyaKlHIxqYDn682wQD7RNp9UujOQsHog2uS0r2vzr4pW+sXf90NeeayjcNaX3fFg=="],
 
-    "@cedricziel/aha-js": ["@cedricziel/aha-js@2.0.0", "", { "dependencies": { "axios": "^1.6.1" } }, "sha512-FOoMk0uf1Ya/CjmHo83gqERX4FoTrqouZOKQI+GFoKKJ7tomVt25dLei2JulLsPcUTj9ELSZrYvcf2/Ib03sLg=="],
+    "@cedricziel/aha-js": ["@cedricziel/aha-js@2.0.1", "", { "dependencies": { "axios": "^1.6.1" } }, "sha512-73zNQ7RCLUQ2t8c/rb4vEipJz/C3D2TDB7CmqBR8x4iRThHeiQ3tc4f5/T+qTv0+NY5NsCy3w+zxGql24bFmFA=="],
 
     "@commitlint/cli": ["@commitlint/cli@21.2.1", "", { "dependencies": { "@commitlint/config-conventional": "^21.2.0", "@commitlint/format": "^21.2.0", "@commitlint/lint": "^21.2.0", "@commitlint/load": "^21.2.0", "@commitlint/read": "^21.2.1", "@commitlint/types": "^21.2.0", "tinyexec": "^1.0.0", "yargs": "^18.0.0" }, "bin": { "commitlint": "cli.js" } }, "sha512-blsZGe29hJ72VGEFVl72IVYX+1vsfINpjA9yWQA6i7OKD/McGEOXg08sKIRKjFk4JvzhV/9n0l3i6NooPLTNfg=="],
 
