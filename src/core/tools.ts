@@ -6,6 +6,7 @@ import { registerRecordTools } from "./tools/record-tools.js";
 import { registerCommentTools } from "./tools/comment-tools.js";
 import { registerGoalTools } from "./tools/goal-tools.js";
 import { registerReleaseTools } from "./tools/release-tools.js";
+import { registerIdeaTools } from "./tools/idea-tools.js";
 import {
   commentOutputSchema,
   competitorOutputSchema,
@@ -1360,4 +1361,7 @@ export function registerTools(server: McpServer) {
   // are shaped differently from the rest: goal creation and deletion are workspace-scoped,
   // and key results only exist under a goal.
   registerGoalTools(server);
+
+  // Routine idea updates, including workspace-specific workflow status changes.
+  registerIdeaTools(server);
 }

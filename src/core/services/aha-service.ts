@@ -2082,6 +2082,31 @@ export class AhaService {
   }
 
   /**
+   * Update an idea. The generated SDK's request model only includes promotion fields even
+   * though Aha documents the same endpoint for status and ordinary field updates, so the
+   * validated tool payload is cast at this boundary rather than narrowed and silently lost.
+   *
+   * @param ideaId The reference number or internal ID of the idea
+   * @param ideaData The idea fields to update, wrapped as `{ idea: { ... } }`
+   * @returns The updated idea response
+   */
+  public static async updateIdea(ideaId: string, ideaData: any): Promise<IdeaResponse> {
+    const ideasApi = this.getIdeasApi();
+    const payload = ideaData?.idea ? ideaData : { idea: ideaData ?? {} };
+
+    try {
+      const response = await ideasApi.ideasByIdPut({
+        id: ideaId,
+        ideasPutRequest: payload
+      });
+      return response.data as unknown as IdeaResponse;
+    } catch (error) {
+      log.error('Error updating idea', error as Error, { operation: 'updateIdea', idea_id: ideaId });
+      throw error;
+    }
+  }
+
+  /**
    * Create an idea with a category in a product
    * @param productId The ID of the product
    * @param ideaData The idea data to create

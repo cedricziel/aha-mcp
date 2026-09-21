@@ -28,7 +28,7 @@ Download `aha-mcp-v<version>.mcpb` from the [latest release](https://github.com/
 and open it with Claude Desktop, which will prompt you for your Aha.io subdomain and API
 token. No Node.js or Docker setup and no manual JSON editing required.
 
-The extension exposes 50 tools that query Aha.io directly, so results are always current and
+The extension exposes 51 tools that query Aha.io directly, so results are always current and
 nothing is stored locally. Cross-record search is served by Aha.io's own index — see
 [Search](#-search).
 
@@ -519,7 +519,20 @@ the state of any one record.
 - `aha_create_idea`: Create an idea in a product
 - `aha_create_idea_with_category`: Create an idea with a category
 - `aha_create_idea_with_score`: Create an idea with a score
+- `aha_update_idea`: Update an idea's workflow status and other fields
 - `aha_delete_idea`: Delete an idea
+
+Read the idea with `aha_get_idea` before updating it. Status names depend on the workspace;
+use the intended status exactly, for example:
+
+```json
+{
+  "ideaId": "PRJ1-I-7",
+  "ideaData": { "idea": { "workflow_status": "Product Evaluating" } }
+}
+```
+
+Pass this to `aha_update_idea`. Fields omitted from `ideaData.idea` are left unchanged.
 
 #### Goal and Key Result Tools (OKRs)
 - `aha_create_goal`: Create a goal (objective) in a workspace
@@ -582,10 +595,11 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 - `aha_update_epic`: Update existing epics
 - `aha_delete_epic`: Delete epics
 
-**Idea Management (4 Tools)**
+**Idea Management (5 Tools)**
 - `aha_create_idea`: Create ideas in products
 - `aha_create_idea_with_category`: Create ideas with categories
 - `aha_create_idea_with_score`: Create ideas with scores
+- `aha_update_idea`: Update an idea's workflow status and other fields
 - `aha_delete_idea`: Delete ideas
 
 #### Phase 8B - Competitor Management (3 Tools)
@@ -607,10 +621,10 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 - **Comprehensive Entity Coverage**: Full CRUD operations for features, epics, ideas, and competitors
 
 #### Technical Achievements
-- **50 MCP tools**, all querying Aha.io directly — no local state
+- **51 MCP tools**, all querying Aha.io directly — no local state
 - **17 listed MCP resources** covering the entity set, plus templated resource URIs
 - **17 domain-specific prompts** (workflow automation)
-- **32 core CRUD and write operation tools** for complete lifecycle management, including OKRs (goals and key results)
+- **33 core CRUD and write operation tools** for complete lifecycle management, including OKRs (goals and key results)
 - **Cross-record search** over Aha's own index, covering 20 record types
 - **7 single-record read tools**, so a write can be checked against the record's current state on clients that do not surface resources
 - **Comment reads and writes** on every record type Aha supports, with an idea's ideas-portal conversation handled as its own stream
