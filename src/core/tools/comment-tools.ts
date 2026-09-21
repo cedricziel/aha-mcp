@@ -277,8 +277,11 @@ export function registerCommentTools(server: McpServer) {
         "release phase, requirement or todo. The comment is internal: visible to Aha.io users " +
         "and never shown in an ideas portal, including on an idea. To reply to a customer in " +
         "the ideas portal, use aha_create_idea_portal_comment instead. Returns the created " +
-        "comment and a link to the record it was added to. Use HTML in body for formatting; " +
-        "Markdown is stored as literal text.",
+        "comment and a link to the record it was added to. " +
+        "For formatting, send raw HTML in body, e.g. <p>A <strong>formatted</strong> reply.</p>. " +
+        "Do not escape tags as &lt;p&gt; or wrap the body in a Markdown code fence. Plain text " +
+        "also works; Markdown is not converted. The text preview strips tags; structuredContent " +
+        "retains the body returned by Aha. Read it back with aha_list_comments to verify.",
       inputSchema: {
         recordType: z.enum(WRITABLE).describe("Type of record to comment on."),
         recordId: z
@@ -341,9 +344,13 @@ export function registerCommentTools(server: McpServer) {
     {
       title: "Update internal comment",
       description:
-        "Replace the body of an internal Aha.io comment by its numeric comment id. Use HTML " +
-        "in body for formatting; Markdown is stored as literal text. This endpoint does not " +
-        "edit ideas-portal comments, whose API only supports moderation fields.",
+        "Replace the body of an internal Aha.io comment by its numeric comment id. " +
+        "Use aha_list_comments first to find the id and confirm source is internal. " +
+        "For formatting, send raw HTML in body, e.g. <p>A <strong>formatted</strong> reply.</p>. " +
+        "Do not escape tags as &lt;p&gt; or wrap the body in a Markdown code fence. Plain text " +
+        "also works; Markdown is not converted. The text preview strips tags; structuredContent " +
+        "retains the body returned by Aha. Read it back with aha_list_comments to verify. " +
+        "This endpoint does not edit ideas-portal comments, whose API only supports moderation fields.",
       inputSchema: {
         commentId: z.string().min(1).describe("Numeric id of the internal comment to update."),
         body: z
@@ -446,8 +453,11 @@ export function registerCommentTools(server: McpServer) {
         "portal user, 'employee_or_creator' restricts it to employees and the idea's creator. " +
         "Aha.io itself defaults to 'public', so nothing here is optional by design. For a note " +
         "that must stay inside Aha.io, use aha_create_comment. Returns the created comment and " +
-        "a link to the idea. Use HTML in body for formatting; Markdown is stored as literal " +
-        "text.",
+        "a link to the idea. For formatting, send raw HTML in body, " +
+        "e.g. <p>A <strong>formatted</strong> reply.</p>. Do not escape tags as &lt;p&gt; or wrap " +
+        "the body in a Markdown code fence. Plain text also works; Markdown is not converted. " +
+        "The text preview strips tags; structuredContent retains the body returned by Aha. " +
+        "Read it back with aha_list_comments to verify.",
       inputSchema: {
         ideaId: z
           .string()

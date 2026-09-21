@@ -60,7 +60,7 @@
     },
     {
       "name": "aha_create_comment",
-      "description": "Add a comment to an Aha.io record - feature, idea, epic, initiative, goal, release, release phase, requirement or todo. The comment is internal: visible to Aha.io users and never shown in an ideas portal, including on an idea. To reply to a customer in the ideas portal, use aha_create_idea_portal_comment instead. Returns the created comment and a link to the record it was added to. Use HTML in body for formatting; Markdown is stored as literal text."
+      "description": "Add a comment to an Aha.io record - feature, idea, epic, initiative, goal, release, release phase, requirement or todo. The comment is internal: visible to Aha.io users and never shown in an ideas portal, including on an idea. To reply to a customer in the ideas portal, use aha_create_idea_portal_comment instead. Returns the created comment and a link to the record it was added to. For formatting, send raw HTML in body, e.g. <p>A <strong>formatted</strong> reply.</p>. Do not escape tags as &lt;p&gt; or wrap the body in a Markdown code fence. Plain text also works; Markdown is not converted. The text preview strips tags; structuredContent retains the body returned by Aha. Read it back with aha_list_comments to verify."
     },
     {
       "name": "aha_create_competitor",
@@ -80,7 +80,7 @@
     },
     {
       "name": "aha_create_feature_comment",
-      "description": "Create a comment on a feature in Aha.io. Returns the created comment. Use HTML in body for formatting; Markdown is stored as literal text. aha_create_comment does the same for features and every other record type, and aha_list_comments reads them back - prefer those unless you specifically want this one."
+      "description": "Create a comment on a feature in Aha.io. Returns the created comment. For formatting, send raw HTML in body, e.g. <p>A <strong>formatted</strong> reply.</p>. Do not escape tags as &lt;p&gt; or wrap the body in a Markdown code fence. Plain text also works; Markdown is not converted. structuredContent retains the body returned by Aha; read it back with aha_list_comments to verify. aha_create_comment does the same for features and every other record type, and aha_list_comments reads them back - prefer those unless you specifically want this one."
     },
     {
       "name": "aha_create_goal",
@@ -96,7 +96,7 @@
     },
     {
       "name": "aha_create_idea_portal_comment",
-      "description": "Comment on an idea in a way that can be seen outside Aha.io, in the ideas portal - this is how you reply to a customer who submitted or commented on an idea. visibility is required and decides the audience: 'public' shows the comment to every portal user, 'employee_or_creator' restricts it to employees and the idea's creator. Aha.io itself defaults to 'public', so nothing here is optional by design. For a note that must stay inside Aha.io, use aha_create_comment. Returns the created comment and a link to the idea. Use HTML in body for formatting; Markdown is stored as literal text."
+      "description": "Comment on an idea in a way that can be seen outside Aha.io, in the ideas portal - this is how you reply to a customer who submitted or commented on an idea. visibility is required and decides the audience: 'public' shows the comment to every portal user, 'employee_or_creator' restricts it to employees and the idea's creator. Aha.io itself defaults to 'public', so nothing here is optional by design. For a note that must stay inside Aha.io, use aha_create_comment. Returns the created comment and a link to the idea. For formatting, send raw HTML in body, e.g. <p>A <strong>formatted</strong> reply.</p>. Do not escape tags as &lt;p&gt; or wrap the body in a Markdown code fence. Plain text also works; Markdown is not converted. The text preview strips tags; structuredContent retains the body returned by Aha. Read it back with aha_list_comments to verify."
     },
     {
       "name": "aha_create_idea_with_category",
@@ -204,7 +204,7 @@
     },
     {
       "name": "aha_update_comment",
-      "description": "Replace the body of an internal Aha.io comment by its numeric comment id. Use HTML in body for formatting; Markdown is stored as literal text. This endpoint does not edit ideas-portal comments, whose API only supports moderation fields."
+      "description": "Replace the body of an internal Aha.io comment by its numeric comment id. Use aha_list_comments first to find the id and confirm source is internal. For formatting, send raw HTML in body, e.g. <p>A <strong>formatted</strong> reply.</p>. Do not escape tags as &lt;p&gt; or wrap the body in a Markdown code fence. Plain text also works; Markdown is not converted. The text preview strips tags; structuredContent retains the body returned by Aha. Read it back with aha_list_comments to verify. This endpoint does not edit ideas-portal comments, whose API only supports moderation fields."
     },
     {
       "name": "aha_update_competitor",

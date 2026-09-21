@@ -39,7 +39,10 @@ export function registerTools(server: McpServer) {
       // not left choosing between two tools that look identical for features.
       description:
         "Create a comment on a feature in Aha.io. Returns the created comment. " +
-        "Use HTML in body for formatting; Markdown is stored as literal text. " +
+        "For formatting, send raw HTML in body, e.g. <p>A <strong>formatted</strong> reply.</p>. " +
+        "Do not escape tags as &lt;p&gt; or wrap the body in a Markdown code fence. Plain text " +
+        "also works; Markdown is not converted. structuredContent retains the body returned " +
+        "by Aha; read it back with aha_list_comments to verify. " +
         "aha_create_comment does the same for features and every other record type, and " +
         "aha_list_comments reads them back - prefer those unless you specifically want this one.",
       inputSchema: {
