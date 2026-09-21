@@ -28,7 +28,7 @@ Download `aha-mcp-v<version>.mcpb` from the [latest release](https://github.com/
 and open it with Claude Desktop, which will prompt you for your Aha.io subdomain and API
 token. No Node.js or Docker setup and no manual JSON editing required.
 
-The extension exposes 51 tools that query Aha.io directly, so results are always current and
+The extension exposes 54 tools that query Aha.io directly, so results are always current and
 nothing is stored locally. Cross-record search is served by Aha.io's own index — see
 [Search](#-search).
 
@@ -501,6 +501,22 @@ the state of any one record.
 - `aha_create_feature_comment`: Create a comment on a feature
 - `aha_create_initiative_in_product`: Create an initiative within a specific product
 
+#### Comment Tools
+- `aha_list_comments`: Read comments; ideas include separate internal and portal streams
+- `aha_create_comment`: Add an internal comment to a supported record
+- `aha_update_comment`: Replace an internal comment's body using its comment ID
+- `aha_delete_comment`: Delete an internal comment using its comment ID
+- `aha_create_idea_portal_comment`: Add a portal comment with explicit visibility
+- `aha_delete_idea_portal_comment`: Delete a portal comment using its idea and comment IDs
+
+Comment `body` accepts raw HTML, such as `<p>A <strong>formatted</strong> reply.</p>`,
+or plain text. Markdown is not converted. Send HTML directly, without escaping the tags
+as `&lt;p&gt;` or wrapping it in a code fence. The server preserves the body sent to Aha;
+the short text preview removes tags, while `structuredContent` retains the returned body.
+Use the comment's `source` from `aha_list_comments` to select internal or portal tools.
+Portal body editing is not exposed because Aha documents its update endpoint only for
+spam and visibility changes.
+
 #### Feature CRUD Tools
 - `aha_create_feature`: Create a feature within a specific release
 - `aha_update_feature`: Update a feature
@@ -621,10 +637,10 @@ The MCP server now provides comprehensive lifecycle management for Aha.io entiti
 - **Comprehensive Entity Coverage**: Full CRUD operations for features, epics, ideas, and competitors
 
 #### Technical Achievements
-- **51 MCP tools**, all querying Aha.io directly — no local state
+- **54 MCP tools**, all querying Aha.io directly — no local state
 - **17 listed MCP resources** covering the entity set, plus templated resource URIs
 - **17 domain-specific prompts** (workflow automation)
-- **33 core CRUD and write operation tools** for complete lifecycle management, including OKRs (goals and key results)
+- **36 core CRUD and write operation tools** for complete lifecycle management, including OKRs (goals and key results)
 - **Cross-record search** over Aha's own index, covering 20 record types
 - **7 single-record read tools**, so a write can be checked against the record's current state on clients that do not surface resources
 - **Comment reads and writes** on every record type Aha supports, with an idea's ideas-portal conversation handled as its own stream

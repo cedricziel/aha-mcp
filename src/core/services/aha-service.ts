@@ -1107,6 +1107,41 @@ export class AhaService {
     );
   }
 
+  /** Update the HTML body of an internal comment. */
+  public static async updateComment(commentId: string, body: string): Promise<Comment> {
+    const commentsApi = this.getCommentsApi();
+
+    try {
+      const response = await commentsApi.commentsByIdPut({
+        id: commentId,
+        commentsPostRequest: { comment: { body } }
+      });
+      const data = response.data as unknown as { comment?: Comment };
+      return data.comment as Comment;
+    } catch (error) {
+      log.error('Error updating comment', error as Error, {
+        operation: 'updateComment',
+        comment_id: commentId
+      });
+      throw error;
+    }
+  }
+
+  /** Delete an internal comment. Aha addresses these globally by comment id. */
+  public static async deleteComment(commentId: string): Promise<void> {
+    const commentsApi = this.getCommentsApi();
+
+    try {
+      await commentsApi.commentsByIdDelete({ id: commentId });
+    } catch (error) {
+      log.error('Error deleting comment', error as Error, {
+        operation: 'deleteComment',
+        comment_id: commentId
+      });
+      throw error;
+    }
+  }
+
   /**
    * An idea's portal comments - a different endpoint from `getIdeaComments`, over records
    * that endpoint never returns. See the `IdeaComment` type for what the split is and why
@@ -1160,6 +1195,25 @@ export class AhaService {
         operation: 'createIdeaPortalComment',
         idea_id: ideaId,
         visibility
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete an ideas-portal comment. This is intentionally separate from `deleteComment`:
+   * it uses a different, idea-scoped endpoint and removes content visible outside Aha.io.
+   */
+  public static async deleteIdeaPortalComment(ideaId: string, commentId: string): Promise<void> {
+    const ideaCommentsApi = this.getIdeaCommentsApi();
+
+    try {
+      await ideaCommentsApi.ideasByIdeaIdeaCommentsByIdDelete({ ideaId, id: commentId });
+    } catch (error) {
+      log.error('Error deleting portal comment on idea', error as Error, {
+        operation: 'deleteIdeaPortalComment',
+        idea_id: ideaId,
+        comment_id: commentId
       });
       throw error;
     }

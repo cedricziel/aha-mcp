@@ -203,6 +203,8 @@ export interface IAhaService {
   createReleasePhaseComment(releasePhaseId: string, body: string): Promise<Comment>;
   createRequirementComment(requirementId: string, body: string): Promise<Comment>;
   createTodoComment(todoId: string, body: string): Promise<Comment>;
+  updateComment(commentId: string, body: string): Promise<Comment>;
+  deleteComment(commentId: string): Promise<void>;
 
   /**
    * An idea's portal comments, which `getIdeaComments` does not return - the two endpoints
@@ -219,6 +221,7 @@ export interface IAhaService {
     body: string,
     visibility: IdeaCommentVisibility
   ): Promise<IdeaComment>;
+  deleteIdeaPortalComment(ideaId: string, commentId: string): Promise<void>;
 
   // Additional list methods
   listIdeasByProduct(

@@ -60,7 +60,7 @@
     },
     {
       "name": "aha_create_comment",
-      "description": "Add a comment to an Aha.io record - feature, idea, epic, initiative, goal, release, release phase, requirement or todo. The comment is internal: visible to Aha.io users and never shown in an ideas portal, including on an idea. To reply to a customer in the ideas portal, use aha_create_idea_portal_comment instead. Returns the created comment and a link to the record it was added to."
+      "description": "Add a comment to an Aha.io record - feature, idea, epic, initiative, goal, release, release phase, requirement or todo. The comment is internal: visible to Aha.io users and never shown in an ideas portal, including on an idea. To reply to a customer in the ideas portal, use aha_create_idea_portal_comment instead. Returns the created comment and a link to the record it was added to. For formatting, send raw HTML in body, e.g. <p>A <strong>formatted</strong> reply.</p>. Do not escape tags as &lt;p&gt; or wrap the body in a Markdown code fence. Plain text also works; Markdown is not converted. The text preview strips tags; structuredContent retains the body returned by Aha. Read it back with aha_list_comments to verify."
     },
     {
       "name": "aha_create_competitor",
@@ -80,7 +80,7 @@
     },
     {
       "name": "aha_create_feature_comment",
-      "description": "Create a comment on a feature in Aha.io. Returns the created comment. aha_create_comment does the same for features and every other record type, and aha_list_comments reads them back - prefer those unless you specifically want this one."
+      "description": "Create a comment on a feature in Aha.io. Returns the created comment. For formatting, send raw HTML in body, e.g. <p>A <strong>formatted</strong> reply.</p>. Do not escape tags as &lt;p&gt; or wrap the body in a Markdown code fence. Plain text also works; Markdown is not converted. structuredContent retains the body returned by Aha; read it back with aha_list_comments to verify. aha_create_comment does the same for features and every other record type, and aha_list_comments reads them back - prefer those unless you specifically want this one."
     },
     {
       "name": "aha_create_goal",
@@ -96,7 +96,7 @@
     },
     {
       "name": "aha_create_idea_portal_comment",
-      "description": "Comment on an idea in a way that can be seen outside Aha.io, in the ideas portal - this is how you reply to a customer who submitted or commented on an idea. visibility is required and decides the audience: 'public' shows the comment to every portal user, 'employee_or_creator' restricts it to employees and the idea's creator. Aha.io itself defaults to 'public', so nothing here is optional by design. For a note that must stay inside Aha.io, use aha_create_comment. Returns the created comment and a link to the idea."
+      "description": "Comment on an idea in a way that can be seen outside Aha.io, in the ideas portal - this is how you reply to a customer who submitted or commented on an idea. visibility is required and decides the audience: 'public' shows the comment to every portal user, 'employee_or_creator' restricts it to employees and the idea's creator. Aha.io itself defaults to 'public', so nothing here is optional by design. For a note that must stay inside Aha.io, use aha_create_comment. Returns the created comment and a link to the idea. For formatting, send raw HTML in body, e.g. <p>A <strong>formatted</strong> reply.</p>. Do not escape tags as &lt;p&gt; or wrap the body in a Markdown code fence. Plain text also works; Markdown is not converted. The text preview strips tags; structuredContent retains the body returned by Aha. Read it back with aha_list_comments to verify."
     },
     {
       "name": "aha_create_idea_with_category",
@@ -119,6 +119,10 @@
       "description": "Create a key result under a goal in Aha.io - the measurable half of an OKR. Aha documents name, description, workflow_status, current_metric, assigned_to_user and watchers for creation; if a starting or target metric does not come back set, follow with aha_update_key_result, which documents those. Returns the created key result and a link to it."
     },
     {
+      "name": "aha_delete_comment",
+      "description": "Permanently delete an internal Aha.io comment by its numeric comment id. This cannot delete an ideas-portal comment; use aha_delete_idea_portal_comment for that distinct, customer-visible stream."
+    },
+    {
       "name": "aha_delete_competitor",
       "description": "Delete a competitor in Aha.io. Returns a confirmation naming the deleted competitor; there is no record to return."
     },
@@ -137,6 +141,10 @@
     {
       "name": "aha_delete_idea",
       "description": "Delete an idea in Aha.io. Returns a confirmation naming the deleted idea; there is no record to return."
+    },
+    {
+      "name": "aha_delete_idea_portal_comment",
+      "description": "Permanently delete a comment from an idea's customer-visible portal conversation. This uses the ideas-portal comment endpoint, which requires both the parent idea and the numeric comment id. For an internal comment, use aha_delete_comment instead."
     },
     {
       "name": "aha_delete_key_result",
@@ -172,7 +180,7 @@
     },
     {
       "name": "aha_list_comments",
-      "description": "Read the comments on an Aha.io record - feature, idea, epic, initiative, goal, release, release phase, requirement, todo or product. For an idea this returns both streams: internal comments and the ideas-portal conversation, which are separate records in Aha, so a customer's own words arrive alongside internal discussion. Every comment is labelled with its source ('internal' or 'portal') and, for portal comments, its visibility. Returns the comments oldest first as structuredContent, a summary listing author and an excerpt of each, and a link to the parent record."
+      "description": "Read the comments on an Aha.io record - feature, idea, epic, initiative, goal, release, release phase, requirement, todo or product. For an idea this returns both streams: internal comments and the ideas-portal conversation, which are separate records in Aha, so a customer's own words arrive alongside internal discussion. Every comment is labelled with its source ('internal' or 'portal') and, for portal comments, its visibility. Returns the comments oldest first as structuredContent, a summary listing each comment id, author and an excerpt, and a link to the parent record. Use the id with the update or matching delete tool."
     },
     {
       "name": "aha_list_key_results",
@@ -193,6 +201,10 @@
     {
       "name": "aha_search",
       "description": "Search across Aha.io records - ideas, features, epics, initiatives, goals, key results, requirements, releases, tasks, pages, comments and more. Queries Aha.io directly, so results are always current. Supports 'term*' for prefix matching, AND/OR/NOT, and \"quoted phrases\". There is no match-all query: '*' is rejected, because Aha.io returns nothing for it once workspaceId is set. Returns each hit's name, type, reference number and absolute Aha.io URL, already rendered as markdown links, plus paging counts. Idea hits also carry portal vote and endorsement counts, and scorable types their Aha.io score, so ideas can be ranked by demand from a search alone. Quote a reference number in full - the workspace prefix is part of it (IDEASVOC-I-9930, not I-9930), and every read of a truncated one fails. Feature, epic, idea, initiative, goal, key result, release, requirement and competitor hits come with a resource link; other types are reachable by their URL only. Still no workflow status, release membership or custom fields: read a specific record with aha_get_feature, aha_get_epic, aha_get_idea, aha_get_initiative or aha_get_release when you need its current field values, and always do so before writing to it."
+    },
+    {
+      "name": "aha_update_comment",
+      "description": "Replace the body of an internal Aha.io comment by its numeric comment id. Use aha_list_comments first to find the id and confirm source is internal. For formatting, send raw HTML in body, e.g. <p>A <strong>formatted</strong> reply.</p>. Do not escape tags as &lt;p&gt; or wrap the body in a Markdown code fence. Plain text also works; Markdown is not converted. The text preview strips tags; structuredContent retains the body returned by Aha. Read it back with aha_list_comments to verify. This endpoint does not edit ideas-portal comments, whose API only supports moderation fields."
     },
     {
       "name": "aha_update_competitor",
