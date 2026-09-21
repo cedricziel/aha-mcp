@@ -406,6 +406,11 @@ export class MockAhaService implements IAhaService {
     return generateMockIdea(1) as IdeaResponse;
   }
 
+  async updateIdea(_ideaId: string, ideaData: any): Promise<IdeaResponse> {
+    const inner = ideaData?.idea ?? ideaData ?? {};
+    return { idea: { ...generateMockIdea(1).idea, ...inner } } as IdeaResponse;
+  }
+
   async listUsers(): Promise<{ users: User[] }> {
     return {
       users: [{

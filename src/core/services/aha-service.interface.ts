@@ -163,6 +163,7 @@ export interface IAhaService {
     ideaUserId?: string
   ): Promise<IdeasListResponse>;
   getIdea(ideaId: string): Promise<IdeaResponse>;
+  updateIdea(ideaId: string, ideaData: any): Promise<IdeaResponse>;
 
   // Users
   listUsers(): Promise<{ users: User[] }>;

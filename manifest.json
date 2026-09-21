@@ -227,6 +227,10 @@
       "description": "Update a goal in Aha.io - its name, description, success metric, status, time frame or progress. Only the fields you send change. Read the goal first with aha_get_goal: a goal's status lives under success_metric.workflow_status, and progress is only writable when progress_source is progress_manual. Returns the updated goal and a link to it."
     },
     {
+      "name": "aha_update_idea",
+      "description": "Update an idea in Aha.io, including its workflow status, name, description, assignee, or custom fields. Only the fields you send change. Read the idea first with aha_get_idea because workflow statuses are workspace-specific. Returns the updated idea and a link to it."
+    },
+    {
       "name": "aha_update_key_result",
       "description": "Update a key result in Aha.io - its status, its starting, current or target metric, its name or description. This is how an OKR gets re-graded: move current_metric and set workflow_status. Only the fields you send change; read the key result first with aha_get_key_result. Returns the updated key result and a link to it."
     },

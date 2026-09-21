@@ -169,6 +169,13 @@ The SDK's `IdeacommentsPostRequest` model captured only `spam`, because aha-js 2
 generated from recorded test responses. `createIdeaPortalComment` casts the documented
 `{ idea_comment: { body, visibility } }` body onto it; if a regenerated SDK types that
 properly, drop the cast.
+
+### Idea updates
+
+`aha_update_idea` takes `ideaId` and `ideaData: { idea: { ... } }`, matching the other record
+update tools. `workflow_status` is a workspace-specific status name or ID. Read the current
+idea first and only send fields intended to change; omission leaves a field unchanged.
+
 ### Goals and key results (OKRs)
 
 `src/core/tools/goal-tools.ts` holds the writers; the two readers live with the others in
@@ -370,7 +377,7 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
   does not cover. Reads credentials via `AhaService.getCredentials()` so `configure_server`
   applies at runtime
 - **ConfigService**: Manages runtime configuration with file persistence and validation
-- **Tools**: 50 MCP tools (CRUD, single-record reads, collection reads, comments, OKRs,
+- **Tools**: 51 MCP tools (CRUD, single-record reads, collection reads, comments, OKRs,
   search, health checks, configuration), none of which keep local state
 - **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes. Every
   registration carries `annotations` from `resourceAnnotations()`, and collection reads are
