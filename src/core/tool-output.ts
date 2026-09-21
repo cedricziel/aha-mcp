@@ -384,6 +384,20 @@ export const ideaCommentOutputSchema = z.looseObject({
 });
 
 /**
+ * Result of deleting either kind of comment. Portal comments need their parent idea id for
+ * Aha's nested DELETE endpoint, while internal comments are addressed by comment id alone.
+ */
+export const commentDeletionOutputSchema = z.object({
+  deleted: z.literal(true).describe("Always true; failures come back with isError instead"),
+  source: z.enum(["internal", "portal"]).describe("The comment stream the deleted comment belonged to"),
+  comment_id: z.string().describe("Numeric id of the deleted comment"),
+  idea_id: z
+    .string()
+    .optional()
+    .describe("Parent idea id or reference number; present only for an ideas-portal comment")
+});
+
+/**
  * Aha's DELETE endpoints answer with an empty body, so there is no record to hand back -
  * only a restatement of what went away, which the caller can use to confirm the right
  * record was targeted.

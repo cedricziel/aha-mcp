@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
 import * as services from "../services/index.js";
 import {
+  commentDeletionOutputSchema,
   commentListOutputSchema,
   commentOutputSchema,
   ideaCommentOutputSchema,
@@ -170,7 +171,8 @@ export function registerCommentTools(server: McpServer) {
         "records in Aha, so a customer's own words arrive alongside internal discussion. " +
         "Every comment is labelled with its source ('internal' or 'portal') and, for portal " +
         "comments, its visibility. Returns the comments oldest first as structuredContent, a " +
-        "summary listing author and an excerpt of each, and a link to the parent record.",
+        "summary listing each comment id, author and an excerpt, and a link to the parent " +
+        "record. Use the id with the update or matching delete tool.",
       inputSchema: {
         recordType: z
           .enum(READABLE)
@@ -230,7 +232,11 @@ export function registerCommentTools(server: McpServer) {
             comment.source === "portal" && typeof comment.visibility === "string"
               ? ` [${comment.visibility}]`
               : "";
-          return `- ${comment.source}${visibility} - ${authorOf(comment)}: ${preview(comment.body)}`;
+          const id = comment.id === undefined ? "unknown id" : String(comment.id);
+          return (
+            `- ${comment.source}${visibility} - ${authorOf(comment)}: ${preview(comment.body)}` +
+            ` (comment id: ${id})`
+          );
         });
 
         const heading =
@@ -271,7 +277,8 @@ export function registerCommentTools(server: McpServer) {
         "release phase, requirement or todo. The comment is internal: visible to Aha.io users " +
         "and never shown in an ideas portal, including on an idea. To reply to a customer in " +
         "the ideas portal, use aha_create_idea_portal_comment instead. Returns the created " +
-        "comment and a link to the record it was added to.",
+        "comment and a link to the record it was added to. Use HTML in body for formatting; " +
+        "Markdown is stored as literal text.",
       inputSchema: {
         recordType: z.enum(WRITABLE).describe("Type of record to comment on."),
         recordId: z
@@ -281,7 +288,10 @@ export function registerCommentTools(server: McpServer) {
         body: z
           .string()
           .min(1)
-          .describe("Comment body. HTML is accepted, e.g. <p>text</p>; plain text also works.")
+          .describe(
+            "Comment body as HTML or plain text. Markdown is not converted to HTML. The HTML " +
+              "is sent to Aha.io unchanged, e.g. <p>text</p>."
+          )
       },
       outputSchema: commentOutputSchema,
       annotations: {
@@ -327,6 +337,105 @@ export function registerCommentTools(server: McpServer) {
   );
 
   server.registerTool(
+    "aha_update_comment",
+    {
+      title: "Update internal comment",
+      description:
+        "Replace the body of an internal Aha.io comment by its numeric comment id. Use HTML " +
+        "in body for formatting; Markdown is stored as literal text. This endpoint does not " +
+        "edit ideas-portal comments, whose API only supports moderation fields.",
+      inputSchema: {
+        commentId: z.string().min(1).describe("Numeric id of the internal comment to update."),
+        body: z
+          .string()
+          .min(1)
+          .describe(
+            "Replacement body as HTML or plain text. Markdown is not converted to HTML. The " +
+              "HTML is sent to Aha.io unchanged, e.g. <p>updated text</p>."
+          )
+      },
+      outputSchema: commentOutputSchema,
+      annotations: {
+        title: "Update internal comment",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true
+      }
+    },
+    async ({ commentId, body }) => {
+      try {
+        const comment = (await services.AhaService.updateComment(commentId, body)) ?? {};
+        const record = comment as unknown as Record<string, unknown>;
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Updated internal comment ${commentId}: ${preview(record.body ?? body)}`
+            }
+          ],
+          structuredContent: record
+        };
+      } catch (error) {
+        log.error(`Failed to update internal comment ${commentId}`, error as Error);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Error updating comment: ${describeAhaError(error, `comment ${commentId}`)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  server.registerTool(
+    "aha_delete_comment",
+    {
+      title: "Delete internal comment",
+      description:
+        "Permanently delete an internal Aha.io comment by its numeric comment id. This cannot " +
+        "delete an ideas-portal comment; use aha_delete_idea_portal_comment for that distinct, " +
+        "customer-visible stream.",
+      inputSchema: {
+        commentId: z.string().min(1).describe("Numeric id of the internal comment to delete.")
+      },
+      outputSchema: commentDeletionOutputSchema,
+      annotations: {
+        title: "Delete internal comment",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true
+      }
+    },
+    async ({ commentId }) => {
+      try {
+        await services.AhaService.deleteComment(commentId);
+        const payload = { deleted: true as const, source: "internal" as const, comment_id: commentId };
+        return {
+          content: [{ type: "text" as const, text: `Deleted internal comment ${commentId}.` }],
+          structuredContent: payload
+        };
+      } catch (error) {
+        log.error(`Failed to delete internal comment ${commentId}`, error as Error);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Error deleting comment: ${describeAhaError(error, `comment ${commentId}`)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  server.registerTool(
     "aha_create_idea_portal_comment",
     {
       title: "Reply in ideas portal",
@@ -337,7 +446,8 @@ export function registerCommentTools(server: McpServer) {
         "portal user, 'employee_or_creator' restricts it to employees and the idea's creator. " +
         "Aha.io itself defaults to 'public', so nothing here is optional by design. For a note " +
         "that must stay inside Aha.io, use aha_create_comment. Returns the created comment and " +
-        "a link to the idea.",
+        "a link to the idea. Use HTML in body for formatting; Markdown is stored as literal " +
+        "text.",
       inputSchema: {
         ideaId: z
           .string()
@@ -346,7 +456,10 @@ export function registerCommentTools(server: McpServer) {
         body: z
           .string()
           .min(1)
-          .describe("Comment body. HTML is accepted, e.g. <p>text</p>; plain text also works."),
+          .describe(
+            "Comment body as HTML or plain text. Markdown is not converted to HTML. The HTML " +
+              "is sent to Aha.io unchanged, e.g. <p>text</p>."
+          ),
         visibility: z
           .enum(["public", "employee_or_creator"])
           .describe(
@@ -394,6 +507,66 @@ export function registerCommentTools(server: McpServer) {
             {
               type: "text" as const,
               text: `Error adding portal comment: ${describeAhaError(error, `idea ${ideaId}`)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
+  server.registerTool(
+    "aha_delete_idea_portal_comment",
+    {
+      title: "Delete ideas-portal comment",
+      description:
+        "Permanently delete a comment from an idea's customer-visible portal conversation. " +
+        "This uses the ideas-portal comment endpoint, which requires both the parent idea and " +
+        "the numeric comment id. For an internal comment, use aha_delete_comment instead.",
+      inputSchema: {
+        ideaId: z
+          .string()
+          .min(1)
+          .describe("Reference number (e.g. PRJ1-I-7) or internal id of the parent idea."),
+        commentId: z.string().min(1).describe("Numeric id of the ideas-portal comment to delete.")
+      },
+      outputSchema: commentDeletionOutputSchema,
+      annotations: {
+        title: "Delete ideas-portal comment",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true
+      }
+    },
+    async ({ ideaId, commentId }) => {
+      try {
+        await services.AhaService.deleteIdeaPortalComment(ideaId, commentId);
+        const payload = {
+          deleted: true as const,
+          source: "portal" as const,
+          comment_id: commentId,
+          idea_id: ideaId
+        };
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Deleted ideas-portal comment ${commentId} from idea ${ideaId}.`
+            },
+            ...recordLinks("idea", {}, ideaId)
+          ],
+          structuredContent: payload
+        };
+      } catch (error) {
+        log.error(`Failed to delete portal comment ${commentId} from idea ${ideaId}`, error as Error);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text:
+                `Error deleting portal comment: ` +
+                describeAhaError(error, `idea ${ideaId}, comment ${commentId}`)
             }
           ],
           isError: true

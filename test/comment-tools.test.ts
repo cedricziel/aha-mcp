@@ -68,11 +68,18 @@ describe('Comment tools', () => {
     patched.length = 0;
   });
 
-  it('registers a reader, an internal writer and a portal writer', async () => {
+  it('registers comment tools for both internal and portal streams', async () => {
     const client = await connected();
     const names = (await client.listTools()).tools.map(t => t.name).sort();
 
-    expect(names).toEqual(['aha_create_comment', 'aha_create_idea_portal_comment', 'aha_list_comments']);
+    expect(names).toEqual([
+      'aha_create_comment',
+      'aha_create_idea_portal_comment',
+      'aha_delete_comment',
+      'aha_delete_idea_portal_comment',
+      'aha_list_comments',
+      'aha_update_comment'
+    ]);
   });
 
   it('reads both of an idea\'s comment streams and labels each one', async () => {
@@ -113,6 +120,7 @@ describe('Comment tools', () => {
     // Bodies are HTML; the summary is for reading, so tags and entities are resolved.
     expect(text).toContain("Isn't Grafana meant to be open?");
     expect(text).not.toContain('<p>');
+    expect(text).toContain('(comment id: 7667211158746962968)');
   });
 
   it('reads the internal stream alone when portal comments are declined', async () => {
@@ -224,6 +232,70 @@ describe('Comment tools', () => {
     expect(result.content[0].text).toBe('Added internal comment to epic PRJ1-E-4: Scoped for Q3.');
   });
 
+  it('passes an HTML body through unchanged when updating an internal comment', async () => {
+    let received: unknown;
+    patch('updateComment', async (_id: string, body: string) => {
+      received = body;
+      return { id: 'C-1', body };
+    });
+    const client = await connected();
+    const html = '<p>Now <strong>shipping</strong> in Q3 &amp; Q4.</p>';
+
+    const result: any = await client.callTool({
+      name: 'aha_update_comment',
+      arguments: { commentId: 'C-1', body: html }
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(received).toBe(html);
+    expect(result.structuredContent.body).toBe(html);
+    expect(result.content[0].text).toBe('Updated internal comment C-1: Now shipping in Q3 & Q4.');
+  });
+
+  it('deletes an internal comment by its numeric id', async () => {
+    let received: unknown;
+    patch('deleteComment', async (id: string) => {
+      received = id;
+    });
+    const client = await connected();
+
+    const result: any = await client.callTool({
+      name: 'aha_delete_comment',
+      arguments: { commentId: '7469723628198768234' }
+    });
+
+    expect(received).toBe('7469723628198768234');
+    expect(result.structuredContent).toEqual({
+      deleted: true,
+      source: 'internal',
+      comment_id: '7469723628198768234'
+    });
+  });
+
+  it('deletes a portal comment only through the idea-scoped portal endpoint', async () => {
+    let received: unknown[] = [];
+    patch('deleteIdeaPortalComment', async (...args: unknown[]) => {
+      received = args;
+    });
+    const client = await connected();
+
+    const result: any = await client.callTool({
+      name: 'aha_delete_idea_portal_comment',
+      arguments: { ideaId: 'PRJ1-I-7', commentId: '7667211158746962968' }
+    });
+
+    expect(received).toEqual(['PRJ1-I-7', '7667211158746962968']);
+    expect(result.structuredContent).toEqual({
+      deleted: true,
+      source: 'portal',
+      comment_id: '7667211158746962968',
+      idea_id: 'PRJ1-I-7'
+    });
+    expect(result.content.find((c: any) => c.type === 'resource_link').uri).toBe(
+      'aha://idea/PRJ1-I-7'
+    );
+  });
+
   it('offers no internal write for product comments, which Aha has no endpoint for', async () => {
     const client = await connected();
     const tool = (await client.listTools()).tools.find(t => t.name === 'aha_create_comment')!;
@@ -282,7 +354,7 @@ describe('Comment tools', () => {
     expect(result.isError).toBe(true);
   });
 
-  it('annotates the reader read-only and both writers as non-idempotent writes', async () => {
+  it('annotates reads, creates, updates and deletes according to their effects', async () => {
     const client = await connected();
     const tools = (await client.listTools()).tools;
 
@@ -299,10 +371,35 @@ describe('Comment tools', () => {
       expect(writer.annotations!.destructiveHint).toBe(false);
     }
 
+    const updater = tools.find(t => t.name === 'aha_update_comment')!;
+    expect(updater.annotations!.readOnlyHint).toBe(false);
+    expect(updater.annotations!.idempotentHint).toBe(true);
+    expect(updater.annotations!.destructiveHint).toBe(true);
+
+    for (const name of ['aha_delete_comment', 'aha_delete_idea_portal_comment']) {
+      const deleter = tools.find(t => t.name === name)!;
+      expect(deleter.annotations!.readOnlyHint).toBe(false);
+      expect(deleter.annotations!.idempotentHint).toBe(true);
+      expect(deleter.annotations!.destructiveHint).toBe(true);
+    }
+
     for (const tool of tools) {
       expect(tool.title).toBe(tool.annotations!.title as string);
       expect(tool.outputSchema).toBeDefined();
       expect(tool.annotations!.openWorldHint).toBe(true);
+    }
+  });
+
+  it('documents the raw HTML contract on every comment body input', async () => {
+    const client = await connected();
+    const tools = (await client.listTools()).tools;
+
+    for (const name of ['aha_create_comment', 'aha_update_comment', 'aha_create_idea_portal_comment']) {
+      const tool = tools.find(t => t.name === name)!;
+      const body = (tool.inputSchema as any).properties.body;
+      expect(body.description).toContain('HTML');
+      expect(body.description).toContain('Markdown is not converted');
+      expect(body.description).toContain('unchanged');
     }
   });
 

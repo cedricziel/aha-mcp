@@ -505,6 +505,12 @@ export class MockAhaService implements IAhaService {
     return { id: '1', body, created_at: new Date().toISOString() } as Comment;
   }
 
+  async updateComment(commentId: string, body: string): Promise<Comment> {
+    return { id: commentId, body, updated_at: new Date().toISOString() } as Comment;
+  }
+
+  async deleteComment(_commentId: string): Promise<void> {}
+
   /**
    * Portal comments are a separate endpoint from `getIdeaComments`, so the mock keeps them
    * separate too - a mock that returned the same list for both would hide the very split
@@ -539,6 +545,8 @@ export class MockAhaService implements IAhaService {
       created_at: new Date().toISOString()
     } as IdeaComment;
   }
+
+  async deleteIdeaPortalComment(_ideaId: string, _commentId: string): Promise<void> {}
 
   async getEpicComments(_epicId: string): Promise<CommentsListResponse> {
     return { comments: [] } as CommentsListResponse;

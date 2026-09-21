@@ -139,7 +139,8 @@ client-side "semantic" ranking without a real embedding model.
 ### Comments
 
 Comments live in `src/core/tools/comment-tools.ts` (`aha_list_comments`, `aha_create_comment`,
-`aha_create_idea_portal_comment`) plus the `aha://comments/{type}/{id}` resources. Three
+`aha_update_comment`, `aha_delete_comment`, `aha_create_idea_portal_comment`,
+`aha_delete_idea_portal_comment`) plus the `aha://comments/{type}/{id}` resources. Three
 things here are not guessable from Aha's docs:
 
 - **An idea has two comment streams, and they are disjoint.** `/ideas/{id}/comments` holds
@@ -169,6 +170,13 @@ The SDK's `IdeacommentsPostRequest` model captured only `spam`, because aha-js 2
 generated from recorded test responses. `createIdeaPortalComment` casts the documented
 `{ idea_comment: { body, visibility } }` body onto it; if a regenerated SDK types that
 properly, drop the cast.
+
+Comment bodies are raw HTML or plain text in `body`, not `html_body`. Preserve them on the
+wire: do not escape tags, decode entities, or convert Markdown implicitly. Tool summaries
+strip HTML only for their short preview; structured output retains the API's body.
+Internal comments can be edited or deleted through `/comments/{id}`. Portal comments use
+their separate `/ideas/{idea_id}/idea_comments/{id}` delete endpoint. Aha documents portal
+updates for spam/visibility, not body replacement, so do not advertise portal body editing.
 
 ### Idea updates
 
@@ -377,7 +385,7 @@ This is a Model Context Protocol (MCP) server that provides integration with Aha
   does not cover. Reads credentials via `AhaService.getCredentials()` so `configure_server`
   applies at runtime
 - **ConfigService**: Manages runtime configuration with file persistence and validation
-- **Tools**: 51 MCP tools (CRUD, single-record reads, collection reads, comments, OKRs,
+- **Tools**: 54 MCP tools (CRUD, single-record reads, collection reads, comments, OKRs,
   search, health checks, configuration), none of which keep local state
 - **Resources**: 40+ resource types for accessing Aha.io entities via URI schemes. Every
   registration carries `annotations` from `resourceAnnotations()`, and collection reads are
@@ -469,7 +477,7 @@ missing. Conventions used here:
   `test_configuration`.
 - `destructiveHint` and `idempotentHint` are **omitted** when `readOnlyHint` is true - the
   spec only gives them meaning for writers.
-- `destructiveHint: true` covers the deletes plus the two PUT endpoints that replace a whole
+- `destructiveHint: true` covers the deletes, internal comment body replacement, and the two PUT endpoints that replace a whole
   collection: `aha_update_feature_tags` and `aha_associate_feature_with_goals` drop anything
   left out of the request.
 - `openWorldHint: true` for anything that reaches Aha.io. That includes

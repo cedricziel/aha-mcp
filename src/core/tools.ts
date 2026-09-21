@@ -39,11 +39,15 @@ export function registerTools(server: McpServer) {
       // not left choosing between two tools that look identical for features.
       description:
         "Create a comment on a feature in Aha.io. Returns the created comment. " +
+        "Use HTML in body for formatting; Markdown is stored as literal text. " +
         "aha_create_comment does the same for features and every other record type, and " +
         "aha_list_comments reads them back - prefer those unless you specifically want this one.",
       inputSchema: {
         featureId: z.string().describe("ID of the feature"),
-        body: z.string().describe("Comment body")
+        body: z
+          .string()
+          .min(1)
+          .describe("Comment body as HTML or plain text. Markdown is not converted to HTML.")
       },
       outputSchema: commentOutputSchema,
       annotations: {
