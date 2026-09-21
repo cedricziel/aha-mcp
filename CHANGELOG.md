@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.3.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v5.2.0...aha-mcp-v5.3.0) (2026-09-21)
+
+
+### Features
+
+* **comments:** support comment editing and deletion ([#354](https://github.com/cedricziel/aha-mcp/issues/354)) ([a795702](https://github.com/cedricziel/aha-mcp/commit/a795702d44ac1e28272c3567c4f7947288505c7d))
+* **ideas:** support idea status updates ([#355](https://github.com/cedricziel/aha-mcp/issues/355)) ([1d1c34f](https://github.com/cedricziel/aha-mcp/commit/1d1c34fbf7d4254e483b9557ae2ae7c717bbfb1e))
+
 ## [5.2.0](https://github.com/cedricziel/aha-mcp/compare/aha-mcp-v5.1.0...aha-mcp-v5.2.0) (2026-08-13)
 
 
